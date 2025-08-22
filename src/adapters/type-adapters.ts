@@ -45,21 +45,7 @@ export class RuntimeAdapter {
      * Get character with defaults
      */
     getCharacter(): Character {
-        return this.runtime.character || {
-            name: 'Unknown',
-            id: 'unknown',
-            modelProvider: 'openai' as any,
-            settings: {},
-            bio: [],
-            lore: [],
-            messageExamples: [],
-            postExamples: [],
-            topics: [],
-            adjectives: [],
-            knowledge: [],
-            clients: [],
-            plugins: []
-        };
+        return this.runtime.character;
     }
 }
 
@@ -79,7 +65,7 @@ export class MemoryWrapper {
     
     getSessionId(): string {
         return (this.memory as any).sessionId ||
-               (this.memory as any).roomId ||
+               this.memory.roomId ||
                'default';
     }
     
@@ -241,14 +227,3 @@ export class UUIDUtils {
         return str as UUID;
     }
 }
-
-/**
- * Export all adapters
- */
-export {
-    RuntimeAdapter,
-    MemoryWrapper,
-    StateAdapter,
-    ContentBuilder,
-    UUIDUtils
-};
