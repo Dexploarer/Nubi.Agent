@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nubi-agent-green
+  namespace: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nubi-agent
+      version: green
+  template:
+    metadata:
+      labels:
+        app: nubi-agent
+        version: green
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/metrics"
+        prometheus.io/port: "8080"
+    spec:
+      containers:
+        - name: agent
+          image: ghcr.io/anubis-chat/nubi:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: openai-api-key
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: telegram-bot-token
+            - name: SUPABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: supabase-url
+            - name: SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: supabase-anon-key
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: database-url
+            - name: REDIS_URL
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: redis-url
+            - name: CLICKHOUSE_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: clickhouse-host
+            - name: CLICKHOUSE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: clickhouse-user
+            - name: CLICKHOUSE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: nubi-secrets
+                  key: clickhouse-password
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -1,0 +1,49 @@
+{
+  "knowledge": {
+    "files": [
+      {
+        "path": "src/knowledge/anubis-chat-platform.md",
+        "title": "Anubis.Chat Platform Knowledge",
+        "description": "Core platform overview, features, and competitive advantages",
+        "tags": ["platform", "anubis", "features", "competitive"]
+      },
+      {
+        "path": "src/knowledge/conversation-patterns.md",
+        "title": "Conversation Patterns",
+        "description": "Natural conversation flow and interaction patterns",
+        "tags": ["conversation", "patterns", "interaction"]
+      },
+      {
+        "path": "src/knowledge/creativity-innovation.md",
+        "title": "Creativity and Innovation",
+        "description": "Creative thinking and innovative problem-solving approaches",
+        "tags": ["creativity", "innovation", "problem-solving"]
+      },
+      {
+        "path": "src/knowledge/emotional-intelligence.md",
+        "title": "Emotional Intelligence",
+        "description": "Understanding and responding to emotional contexts",
+        "tags": ["emotional", "intelligence", "empathy"]
+      },
+      {
+        "path": "src/knowledge/technical-expertise.md",
+        "title": "Technical Expertise",
+        "description": "Technical knowledge and development expertise",
+        "tags": ["technical", "expertise", "development"]
+      },
+      {
+        "path": "src/knowledge/agent-capabilities.md",
+        "title": "Agent Capabilities",
+        "description": "AI agent capabilities and limitations",
+        "tags": ["agent", "capabilities", "ai"]
+      }
+    ],
+    "settings": {
+      "chunkSize": 1000,
+      "chunkOverlap": 200,
+      "embeddingModel": "text-embedding-3-small",
+      "retrievalLimit": 5,
+      "similarityThreshold": 0.7
+    }
+  }
+}

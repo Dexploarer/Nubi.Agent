@@ -22,7 +22,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
@@ -31,9 +31,12 @@
       ]
     },
     "types": [
-      "node",
       "bun-types"
-    ]
+    ],
+    "noEmit": true,
+    "allowJs": false,
+    "checkJs": false,
+    "isolatedModules": true
   },
   "include": [
     "src/**/*"
@@ -43,6 +46,13 @@
     "**/__tests__.bak/**",
     "**/tests/**",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "node_modules",
+    "dist",
+    "verify-full-integration.ts",
+    "scripts/**/*",
+    "**/*.js",
+    "**/*.mjs",
+    "**/*.cjs"
   ]
 }

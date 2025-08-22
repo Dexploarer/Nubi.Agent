@@ -6,7 +6,10 @@
     "sourceMap": true,
     "inlineSources": true,
     "declaration": true,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "types": ["bun-types"],
+    "skipLibCheck": true,
+    "isolatedModules": true
   },
   "include": ["src/index.ts", "src/plugin.ts", "src/frontend/**/*.ts", "src/frontend/**/*.tsx"],
   "exclude": [
@@ -15,6 +18,9 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "src/__tests__/**/*",
-    "src/**/cypress/**/*"
+    "src/**/cypress/**/*",
+    "**/*.js",
+    "**/*.mjs",
+    "**/*.cjs"
   ]
 }

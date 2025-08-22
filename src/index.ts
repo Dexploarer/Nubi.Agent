@@ -6,7 +6,7 @@ import {
 } from "@elizaos/core";
 import { nubiCharacter } from "./nubi-character";
 import nubiPlugin from "./nubi-plugin";
-// import clickhouseAnalyticsPlugin from "../../packages/plugin-clickhouse-analytics/index.ts";
+import clickhouseAnalyticsPlugin from "./plugins/clickhouse-analytics";
 
 // Remove explicit telegram plugin import to avoid duplicate registration
 // The character's plugins array handles telegram via `@elizaos/plugin-telegram`
@@ -84,7 +84,7 @@ export const projectAgent: ProjectAgent = {
   plugins: [
     // Prefer plugin resolution via character.plugins to avoid duplicate registration
     nubiPlugin, // Enhanced NUBI plugin with raids integration
-    // clickhouseAnalyticsPlugin, // Analytics and observability
+    clickhouseAnalyticsPlugin, // Analytics and observability
   ],
 //   tests: [ProjectStarterTestSuite],
 };

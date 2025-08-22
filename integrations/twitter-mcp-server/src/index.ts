@@ -387,19 +387,6 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         }
       } as Tool,
 
-      {
-        name: 'post_raid_tweet',
-        description: 'Post a raid tweet with community hashtags and return the X link',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            message: { type: 'string', description: 'Main tweet text' },
-            hashtags: { type: 'array', items: { type: 'string' }, description: 'Optional hashtags; defaults to community tags' }
-          },
-          required: ['message']
-        }
-      } as Tool,
-
       
 // Profile tools
       {
@@ -645,14 +632,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request: { params: unknow
           return { content: [{ type: 'text', text: JSON.stringify(res) }] as TextContent[] };
         }
 
-
-      case 'post_raid_tweet':
-        return {
-          content: [{
-            type: 'text',
-            text: JSON.stringify(await tweetTools.postRaidTweet(authConfig, args))
-          }] as TextContent[]
-        };
 
       // Profile tools
       case 'get_user_profile':

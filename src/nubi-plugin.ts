@@ -70,6 +70,7 @@ import { EnhancedTelegramRaidsService } from "./telegram-raids/elizaos-enhanced-
 
 // Security services
 import SecurityFilter from "./services/security-filter";
+import { metricsGetText, metricsIncrementMessageReceived, metricsIncrementErrors } from "./observability/metrics";
 
 // REMOVED: Pyramid system to reduce codebase complexity
 
@@ -371,6 +372,29 @@ const nubiPlugin: Plugin = {
         }
       },
     },
+    // Prometheus metrics endpoint
+    {
+      path: "/metrics",
+      type: "GET",
+      handler: async (request: any, response: any) => {
+        try {
+          const text = metricsGetText();
+          if (typeof response.setHeader === "function") {
+            response.setHeader("Content-Type", "text/plain; version=0.0.4; charset=utf-8");
+          }
+          if (typeof response.send === "function") {
+            return response.send(text);
+          }
+          // Fallback to json if send is not available
+          return response.end ? response.end(text) : response.json({ metrics: text });
+        } catch (err) {
+          if (typeof response.status === "function") {
+            response.status(500);
+          }
+          return response.json({ success: false });
+        }
+      },
+    },
   ],
 
   events: {
@@ -400,6 +424,7 @@ const nubiPlugin: Plugin = {
           if (state) state.security = { blocked: true, reason: result.violationType };
           return { ...payload, stopProcessing: true };
         }
+        try { metricsIncrementMessageReceived(); } catch {}
         return payload;
       },
       // Enhanced message processing with NUBI personality

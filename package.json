@@ -120,6 +120,7 @@
     "cypress:e2e": "bun run test:install && cypress run --e2e",
     "cypress:open": "bun run test:install && cypress open",
     "test:run": "bun test",
+    "test:e2e:runner": "bun src/__tests__/e2e/run-e2e-tests.ts",
     "test:migrations": "vitest run src/__tests__/migrations.test.ts",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
