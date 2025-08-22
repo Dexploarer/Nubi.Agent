@@ -10,6 +10,7 @@ node_modules/
 .env.development
 .env.bak
 *.env
+.env.mcp
 
 # OS files
 .DS_Store

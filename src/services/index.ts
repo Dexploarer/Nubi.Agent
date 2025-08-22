@@ -6,7 +6,10 @@
  */
 
 // Re-export core types
-export type { IAgentRuntime, Service, Memory, logger } from '../core';
+export type { IAgentRuntime, Memory } from '../core';
+
+// Re-export core values
+export { Service, logger } from '../core';
 
 // Service types
 export interface ServiceRegistry {
@@ -86,7 +89,7 @@ export { RaidSocketService } from './raid-socket-service';
 export { RaidPromptOrchestrator } from './raid-prompt-orchestrator';
 export { PersonalityService } from './personality-service';
 export { ElizaOSRaidService } from './elizaos-raid-service';
-export { SocketIOAnalyticsEnhanced } from './socket-io-analytics-enhanced';
+export { SocketIOAnalyticsService } from './socket-io-analytics-enhanced';
 
 // Service manager implementation
 export class ServiceManagerImpl implements ServiceManager {

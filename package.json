@@ -50,6 +50,7 @@
     "@elizaos/plugin-twitter": "^1.2.21",
     "@elizaos/plugin-video-understanding": "^1.0.2",
     "@elizaos/plugin-web-search": "^0.25.6-alpha.1",
+    "@promptordie/xmcpx": "^1.0.0",
     "@supabase/supabase-js": "^2.56.0",
     "@tanstack/react-query": "^5.29.0",
     "@types/js-yaml": "^4.0.9",
@@ -133,7 +134,9 @@
     "test:services": "bun test src/__tests__/services.test.ts",
     "test:integration": "bun test src/__tests__/integration.test.ts",
     "test:unit": "bun test src/__tests__/*.test.ts",
-    "test:all": "bun test src/**/*.test.ts"
+    "test:all": "bun test src/**/*.test.ts",
+    "setup:mcp": "bun scripts/setup-mcp.ts",
+    "mcp:test": "npx -y @promptordie/xmcpx@latest --help"
   },
   "publishConfig": {
     "access": "public"

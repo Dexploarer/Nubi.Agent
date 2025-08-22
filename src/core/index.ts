@@ -12,7 +12,6 @@ export type {
   State,
   Action,
   HandlerCallback,
-  Service,
   ServiceType,
   UUID,
   Content,
@@ -21,8 +20,10 @@ export type {
   Evaluator,
   Provider,
   ActionResult,
-  logger
 } from '@elizaos/core';
+
+// Re-export ElizaOS core values
+export { Service, logger } from '@elizaos/core';
 
 // Core application types
 export interface BaseEntity {

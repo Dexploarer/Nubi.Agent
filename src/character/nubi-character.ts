@@ -427,6 +427,7 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
     "@elizaos/plugin-sql", // Load SQL plugin FIRST to ensure PostgreSQL connection
     "@elizaos/plugin-bootstrap",
     "@elizaos/plugin-knowledge", // Enable knowledge ingestion/retrieval (RAG)
+    "@elizaos/plugin-mcp", // Enable MCP for external tool capabilities
     ...(process.env.OPENAI_API_KEY?.trim() ? ["@elizaos/plugin-openai"] : []),
     ...(process.env.TWITTER_USERNAME?.trim() &&
     process.env.ENABLE_TWITTER_BOT === "true"
@@ -455,6 +456,33 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
     // Accept both POSTGRES_URL and DATABASE_URL for compatibility with plugin-sql
     databaseUrl:
       (process.env as any).POSTGRES_URL || process.env.DATABASE_URL || "",
+
+    // MCP Configuration for external tool capabilities
+    mcp: {
+      servers: {
+        xmcpx: {
+          type: 'stdio',
+          command: 'npx',
+          args: ['-y', '@promptordie/xmcpx@latest'],
+          env: {
+            // Twitter API Configuration
+            TWITTER_COOKIE_STRING: process.env.TWITTER_COOKIE_STRING || '',
+            TWITTER_CSRF_TOKEN: process.env.TWITTER_CSRF_TOKEN || '',
+            TWITTER_AUTH_TOKEN: process.env.TWITTER_AUTH_TOKEN || '',
+            // Database Configuration (if using persistent storage)
+            DATABASE_URL: process.env.XMCPX_DATABASE_URL || process.env.DATABASE_URL || '',
+            // Logging Configuration
+            LOG_LEVEL: process.env.XMCPX_LOG_LEVEL || 'info',
+            // Session Management
+            SESSION_TIMEOUT: process.env.XMCPX_SESSION_TIMEOUT || '3600',
+            COOKIE_REFRESH_INTERVAL: process.env.XMCPX_COOKIE_REFRESH_INTERVAL || '1800',
+            // Rate Limiting
+            RATE_LIMIT_REQUESTS: process.env.XMCPX_RATE_LIMIT_REQUESTS || '100',
+            RATE_LIMIT_WINDOW: process.env.XMCPX_RATE_LIMIT_WINDOW || '900',
+          },
+        },
+      },
+    },
   },
 };
 

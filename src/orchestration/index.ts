@@ -67,7 +67,7 @@ export interface StrategyConfig {
 
 // Service exports
 export { StrategicActionOrchestrator } from './strategic-action-orchestrator';
-export { PluginConfigurationManager } from './plugin-configuration-manager';
+export { PluginConfigurationManagerService } from './plugin-configuration-manager';
 
 // Orchestration manager implementation
 export class OrchestrationManagerImpl implements OrchestrationManager {

@@ -73,6 +73,7 @@ export interface ProviderRegistry {
 // Plugin implementations
 export { nubiPlugin } from './nubi-plugin';
 export { clickhouseAnalyticsPlugin } from './clickhouse-analytics-plugin';
+export { nubiProviders } from './nubi-providers';
 
 // Plugin manager implementation
 export class PluginManagerImpl implements PluginManager {

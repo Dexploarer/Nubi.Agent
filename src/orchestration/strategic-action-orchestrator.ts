@@ -9,7 +9,7 @@ import {
   Content,
   logger,
 } from "../core";
-import MessageBusService from "./message-bus";
+import { MessageBusService } from "../messaging";
 
 /**
  * Workflow step definition

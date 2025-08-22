@@ -17,52 +17,52 @@ import {
 // import { SupabaseServiceManager } from "./core/supabase-service-manager";
 // import { SERVICE_DEFINITIONS } from "./core/service-definitions";
 // Legacy imports removed - using only clean ElizaOS-compliant components
-import { nubiProviders } from "./providers";
-import MessageBusService from "./message-bus";
-import StrategyActionOrchestratorService from "./strategic-action-orchestrator";
-import PluginConfigurationManagerService from "./plugin-configuration-manager";
+import { nubiProviders } from "./nubi-providers";
+import { MessageBusService } from "../messaging";
+import { StrategicActionOrchestrator } from "../orchestration";
+import { PluginConfigurationManagerService } from "../orchestration";
 import YAMLConfigManager from "./config/yaml-config-manager";
-import UserIdentityService from "./user-identity-service";
+import { UserIdentityService } from "../identity";
 import {
   loadEnvironmentConfig,
   getFeatureAvailability,
-} from "./config/environment";
+} from "../config/environment";
 
 // ElizaOS Sessions API Routes
-import sessionsRoutes from "./routes/sessions-routes";
+import sessionsRoutes from "../routes/sessions-routes";
 
 // New ElizaOS-compliant evaluators and providers
-import { personalityEvolutionEvaluator } from "./evaluators/personality-evolution";
-import { emotionalStateProvider } from "./providers/emotional-state-provider";
-import { knowledgeBaseProvider } from "./providers/knowledge-base-provider";
-import knowledgeRagProvider from "./providers/knowledge-rag-provider";
-import enhancedContextProvider from "./providers/enhanced-context-provider";
-import { dynamicModelParametersProvider } from "./providers/dynamic-model-parameters-provider";
-import { antiDetectionPostProcessor } from "./evaluators/anti-detection-post-processor";
-import { communityTrackingEvaluator } from "./evaluators/community-tracking-evaluator";
+import { personalityEvolutionEvaluator } from "../evaluators/personality-evolution";
+import { emotionalStateProvider } from "../providers/emotional-state-provider";
+import { knowledgeBaseProvider } from "../providers/knowledge-base-provider";
+import knowledgeRagProvider from "../providers/knowledge-rag-provider";
+import enhancedContextProvider from "../providers/enhanced-context-provider";
+import { dynamicModelParametersProvider } from "../providers/dynamic-model-parameters-provider";
+import { antiDetectionPostProcessor } from "../evaluators/anti-detection-post-processor";
+import { communityTrackingEvaluator } from "../evaluators/community-tracking-evaluator";
 
 // Import database schemas for auto-migration
-import { allSchemas } from "./schemas/elizaos-schemas";
-import securityEvaluator from "./evaluators/security-evaluator";
+import { allSchemas } from "../schemas/elizaos-schemas";
+import securityEvaluator from "../evaluators/security-evaluator";
 
 // Import new ritual and record actions
 // // // import { ritualAction, recordAction } from "./actions/ritual-record-actions";
 
 // Import action middleware for proper preprocessing
-import { withActionMiddleware } from "./middleware/action-middleware";
+import { withActionMiddleware } from "../middleware/action-middleware";
 
 // New ElizaOS Services
-import PersonalityEvolutionService from "./services/personality-evolution-service";
-import EmotionalStateService from "./services/emotional-state-service";
-import CommunityManagementService from "./services/community-management-service";
-import { DatabaseMemoryService } from "./services/database-memory-service";
-import { EnhancedResponseGenerator } from "./services/enhanced-response-generator";
-import SessionsService from "./services/sessions-service";
-import ComposeStateService from "./services/compose-state-service";
-import SocketIOEventsService from "./services/socket-io-events-service";
-import { EnhancedRealtimeService } from "./services/enhanced-realtime-service";
-import MessagingAnalyticsService from "./services/messaging-analytics-service";
-import ElizaOSMessageProcessor from "./services/elizaos-message-processor";
+import { PersonalityEvolutionService } from "../services";
+import { EmotionalStateService } from "../services";
+import { CommunityManagementService } from "../services";
+import { DatabaseMemoryService } from "../services";
+import { EnhancedResponseGenerator } from "../services";
+import { SessionsService } from "../services";
+import { ComposeStateService } from "../services";
+import { SocketIOEventsService } from "../services";
+import { EnhancedRealtimeService } from "../services";
+import { MessagingAnalyticsService } from "../services";
+import { ElizaOSMessageProcessor } from "../services";
 // Database service removed - using ElizaOS built-in database adapters
 
 // Enhanced Telegram Raids functionality
