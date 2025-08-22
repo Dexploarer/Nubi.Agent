@@ -41,13 +41,13 @@ export class ElizaOSRaidService extends Service {
     capabilityDescription = 'Manages coordinated Twitter engagement campaigns';
     
     private raids: Map<string, RaidSession> = new Map();
-    private config: RaidConfig;
+    private raidConfig: RaidConfig;
     private eventEmitter: EventEmitter;
     
     constructor(runtime: IAgentRuntime) {
         super(runtime);
         this.eventEmitter = new EventEmitter();
-        this.config = this.loadConfig();
+        this.raidConfig = this.loadConfig();
         logger.info('🚀 ElizaOS Raid Service initialized');
     }
     
@@ -132,7 +132,7 @@ export class ElizaOSRaidService extends Service {
         // Prevent duplicate actions
         if (!participant.actions.includes(action)) {
             participant.actions.push(action);
-            const points = this.config.pointsPerAction[action as keyof typeof this.config.pointsPerAction] || 0;
+            const points = this.raidConfig.pointsPerAction[action as keyof typeof this.raidConfig.pointsPerAction] || 0;
             participant.points += points;
             
             this.eventEmitter.emit('raid:action', { raidId, userId, action, points });
@@ -198,7 +198,7 @@ export class ElizaOSRaidService extends Service {
         // Try multiple ways to get user ID
         return (memory as any).userId || 
                (memory as any).user?.id ||
-               memory.userId ||
+               (memory as any).userId ||
                'anonymous';
     }
     

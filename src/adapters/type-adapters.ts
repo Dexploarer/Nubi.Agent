@@ -1,52 +1,66 @@
 /**
- * Type Adapters for ElizaOS Compatibility
- * Helps bridge the gap between custom implementations and ElizaOS interfaces
+ * Type Adapters
+ * Provides type-safe adapters for ElizaOS interfaces
  */
 
-import { 
-    HandlerCallback, 
-    Content, 
+import {
+    IAgentRuntime,
     Memory,
-    ActionResult,
-    Service,
-    IAgentRuntime
+    State,
+    UUID,
+    Content,
+    Character
 } from '@elizaos/core';
 
 /**
- * Adapts a custom callback to ElizaOS HandlerCallback
+ * Runtime adapter for safe property access
  */
-export function adaptToElizaOSCallback(
-    customCallback?: (success: boolean, message: string) => void
-): HandlerCallback | undefined {
-    if (!customCallback) return undefined;
+export class RuntimeAdapter {
+    constructor(private runtime: IAgentRuntime) {}
     
-    return async (response: Content, files?: any): Promise<Memory[]> => {
-        // Convert Content to string
-        const message = typeof response === 'string' 
-            ? response 
-            : response?.text || 'Action completed';
-        
-        // Call the custom callback
-        customCallback(true, message);
-        
-        // Return empty memories array (ElizaOS requirement)
-        return [];
-    };
-}
-
-/**
- * Creates a proper ActionResult with defaults
- */
-export function createActionResult(
-    partial: Partial<ActionResult> = {}
-): ActionResult {
-    return {
-        success: partial.success ?? true,
-        text: partial.text,
-        values: partial.values,
-        data: partial.data,
-        error: partial.error
-    };
+    /**
+     * Get a setting with type safety
+     */
+    getSetting<T = any>(key: string, defaultValue?: T): T | undefined {
+        try {
+            const value = this.runtime.getSetting(key);
+            return value !== undefined ? value as T : defaultValue;
+        } catch {
+            return defaultValue;
+        }
+    }
+    
+    /**
+     * Check if runtime has a specific service
+     */
+    hasService(serviceName: string): boolean {
+        try {
+            return this.runtime.getService(serviceName as any) !== null;
+        } catch {
+            return false;
+        }
+    }
+    
+    /**
+     * Get character with defaults
+     */
+    getCharacter(): Character {
+        return this.runtime.character || {
+            name: 'Unknown',
+            id: 'unknown',
+            modelProvider: 'openai' as any,
+            settings: {},
+            bio: [],
+            lore: [],
+            messageExamples: [],
+            postExamples: [],
+            topics: [],
+            adjectives: [],
+            knowledge: [],
+            clients: [],
+            plugins: []
+        };
+    }
 }
 
 /**
@@ -60,7 +74,6 @@ export class MemoryWrapper {
         return (this.memory as any).userId ||
                (this.memory as any).user?.id ||
                (this.memory as any).agentId ||
-               this.memory.userId ||
                'anonymous';
     }
     
@@ -69,10 +82,173 @@ export class MemoryWrapper {
                (this.memory as any).roomId ||
                'default';
     }
+    
+    getRoomId(): UUID {
+        return this.memory.roomId;
+    }
+    
+    getAgentId(): UUID {
+        return this.memory.agentId;
+    }
+    
+    getContent(): Content {
+        return this.memory.content;
+    }
+    
+    getText(): string {
+        return this.memory.content?.text || '';
+    }
+    
+    getAction(): string | null {
+        return this.memory.content?.action || null;
+    }
+    
+    getCustomProperty<T = any>(key: string): T | undefined {
+        return (this.memory as any)[key];
+    }
+    
+    setCustomProperty(key: string, value: any): void {
+        (this.memory as any)[key] = value;
+    }
 }
 
-export default {
-    adaptToElizaOSCallback,
-    createActionResult,
-    MemoryWrapper
+/**
+ * State adapter for enhanced state access
+ */
+export class StateAdapter {
+    constructor(private state: State) {}
+    
+    /**
+     * Get actor names as array
+     */
+    getActorNames(): string[] {
+        if (Array.isArray((this.state as any).actorNames)) {
+            return (this.state as any).actorNames;
+        }
+        if (typeof this.state.actors === 'string') {
+            return this.state.actors
+                .split(',')
+                .map(name => name.trim())
+                .filter(Boolean);
+        }
+        return [];
+    }
+    
+    /**
+     * Get recent messages as structured data
+     */
+    getRecentMessagesData(): Memory[] {
+        if (Array.isArray((this.state as any).recentMessagesData)) {
+            return (this.state as any).recentMessagesData;
+        }
+        return [];
+    }
+    
+    /**
+     * Check if state has specific action available
+     */
+    hasAction(actionName: string): boolean {
+        const actionNames = (this.state as any).actionNames || [];
+        return actionNames.includes(actionName);
+    }
+    
+    /**
+     * Get custom state property
+     */
+    getCustomProperty<T = any>(key: string): T | undefined {
+        return (this.state as any)[key];
+    }
+}
+
+/**
+ * Content builder for creating proper Content objects
+ */
+export class ContentBuilder {
+    private text: string = '';
+    private action: string | null = null;
+    private metadata: Record<string, any> = {};
+    
+    setText(text: string): this {
+        this.text = text;
+        return this;
+    }
+    
+    setAction(action: string | null): this {
+        this.action = action;
+        return this;
+    }
+    
+    addMetadata(key: string, value: any): this {
+        this.metadata[key] = value;
+        return this;
+    }
+    
+    build(): Content {
+        const content: Content = {
+            text: this.text,
+            action: this.action
+        };
+        
+        // Add metadata if present
+        if (Object.keys(this.metadata).length > 0) {
+            (content as any).metadata = this.metadata;
+        }
+        
+        return content;
+    }
+    
+    /**
+     * Static helper to create Content quickly
+     */
+    static create(text: string, action?: string | null): Content {
+        return {
+            text,
+            action: action || null
+        };
+    }
+}
+
+/**
+ * UUID utilities
+ */
+export class UUIDUtils {
+    /**
+     * Check if string is valid UUID format
+     */
+    static isValid(uuid: string): boolean {
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(uuid);
+    }
+    
+    /**
+     * Generate a new UUID (v4)
+     */
+    static generate(): UUID {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        }) as UUID;
+    }
+    
+    /**
+     * Convert string to UUID with validation
+     */
+    static fromString(str: string): UUID {
+        if (!this.isValid(str)) {
+            throw new Error(`Invalid UUID format: ${str}`);
+        }
+        return str as UUID;
+    }
+}
+
+/**
+ * Export all adapters
+ */
+export {
+    RuntimeAdapter,
+    MemoryWrapper,
+    StateAdapter,
+    ContentBuilder,
+    UUIDUtils
 };
