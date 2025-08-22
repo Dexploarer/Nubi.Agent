@@ -95,6 +95,9 @@ export { EnhancedResponseGenerator } from "./enhanced-response-generator";
 export { SessionsService } from "./sessions-service";
 export { DatabaseMemoryService } from "./database-memory-service";
 
+// Database Connection Management
+export { DatabasePoolerManager, PoolType } from "./database-pooler-manager";
+
 // Personality & Emotional Services
 export { PersonalityEvolutionService } from "./personality-evolution-service";
 export { EmotionalStateService } from "./emotional-state-service";
@@ -102,6 +105,20 @@ export { EmotionalStateService } from "./emotional-state-service";
 // Community and Identity Services
 export { CommunityManagementService } from "./community-management-service";
 export { CrossPlatformIdentityService } from "./cross-platform-identity-service";
+
+// Socket.IO Services
+export { SocketIOServerService } from "./socket-io-server";
+export { SocketIOClientService } from "./socket-io-client";
+export { SocketIOAnalyticsService } from "./socket-io-analytics";
+
+// Pipeline Services
+export { MessageRouter } from "./message-router";
+export { pipelineAnalytics } from "./clickhouse-pipeline-analytics";
+
+// Optimized Telegram Services
+export { default as OptimizedTelegramService } from "../telegram-raids/optimized-telegram-service";
+export { default as EnhancedRaidCoordinator } from "../telegram-raids/enhanced-raid-coordinator";
+export { default as OptimizedRaidDatabase } from "../telegram-raids/optimized-raid-database";
 
 // ============================================================================
 // SERVICE MANAGER IMPLEMENTATION
@@ -188,9 +205,16 @@ export function getServiceSafely<T extends Service>(
 export const SERVICE_CATEGORIES = {
   SECURITY: ["security-filter"],
   AI: ["enhanced-response-generator"],
-  SESSIONS: ["sessions", "database-memory"],
+  DATABASE: ["database-memory", "database-pooler-manager"],
+  SESSIONS: ["sessions"],
   PERSONALITY: ["personality-evolution", "emotional-state"],
   COMMUNITY: ["community-management", "cross-platform-identity"],
+  SOCKET_IO: ["socket-io-server", "socket-io-client", "socket-io-analytics"],
+  TELEGRAM: [
+    "optimized-telegram",
+    "enhanced-raid-coordinator",
+    "optimized-raid-database",
+  ],
 } as const;
 
 /**
@@ -201,8 +225,15 @@ export const ACTIVE_SERVICES = [
   "EnhancedResponseGenerator",
   "SessionsService",
   "DatabaseMemoryService",
+  "DatabasePoolerManager",
   "PersonalityEvolutionService",
   "EmotionalStateService",
   "CommunityManagementService",
   "CrossPlatformIdentityService",
+  "SocketIOServerService",
+  "SocketIOClientService",
+  "SocketIOAnalyticsService",
+  "OptimizedTelegramService",
+  "EnhancedRaidCoordinator",
+  "OptimizedRaidDatabase",
 ] as const;

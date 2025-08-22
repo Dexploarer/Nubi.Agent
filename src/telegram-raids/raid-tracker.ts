@@ -8,20 +8,24 @@ export interface RaidSession {
   id: string;
   tweetId: string;
   tweetUrl: string;
+  postUrl?: string;
   startTime: number;
   endTime: number;
   status: "active" | "completed" | "cancelled";
   totalParticipants: number;
+  participants: Map<string, any>;
+  totalEngagements: number;
 }
 
 export interface RaidParticipant {
-  raidId: string;
+  raidId?: string;
   userId: string;
   username: string;
   actions: string[]; // JSON array of actions
   points: number;
   joinedAt: number;
-  position: number; // Order of joining
+  position?: number; // Order of joining
+  verified: boolean;
 }
 
 export interface RaidStats {
@@ -475,10 +479,13 @@ export class RaidTracker {
       id: raid.id,
       tweetId: raid.tweet_id,
       tweetUrl: raid.tweet_url,
+      postUrl: raid.tweet_url,
       startTime: raid.started_at,
       endTime: raid.ended_at,
       status: raid.status,
       totalParticipants: raid.total_participants,
+      participants: new Map(),
+      totalEngagements: 0,
     };
   }
 
@@ -592,10 +599,13 @@ export class RaidTracker {
       id: raid.id,
       tweetId: raid.tweet_id,
       tweetUrl: raid.tweet_url,
+      postUrl: raid.tweet_url,
       startTime: raid.started_at,
       endTime: raid.ended_at,
       status: raid.status,
       totalParticipants: raid.total_participants,
+      participants: new Map(),
+      totalEngagements: 0,
     }));
   }
 

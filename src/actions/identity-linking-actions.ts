@@ -350,7 +350,20 @@ export const verificationCodeAction: Action = {
       return { success: false };
     }
   },
-  examples: [],
+  examples: [
+    [
+      {
+        name: "{{user1}}",
+        content: { text: "/identity" },
+      },
+      {
+        name: "{{user2}}",
+        content: {
+          text: "📊 Your linked accounts:\n• Discord: user#1234\n• Telegram: @user\n• X: @user",
+        },
+      },
+    ],
+  ],
 };
 
 /**

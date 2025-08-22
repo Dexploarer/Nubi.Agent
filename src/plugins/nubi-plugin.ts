@@ -49,6 +49,7 @@ import securityEvaluator from "../evaluators/security-evaluator";
 
 // Import actions from centralized index
 import { identityActions, ritualActions, identityProviders } from "../actions";
+import { telegramRaidActions } from "../telegram-raids/interactive-raid-actions";
 
 // Import action middleware for proper preprocessing
 import { withActionMiddleware } from "../middleware";
@@ -60,10 +61,16 @@ import { CommunityManagementService } from "../services";
 import { EnhancedResponseGenerator } from "../services";
 import { SessionsService } from "../services";
 import { CrossPlatformIdentityService } from "../services";
-import { DatabaseMemoryService } from "../services";
+import { DatabaseMemoryService, DatabasePoolerManager } from "../services";
+import { SocketIOServerService } from "../services";
+import { SocketIOClientService } from "../services";
+import { SocketIOAnalyticsService } from "../services";
 
 // Enhanced Telegram Raids functionality
 import { EnhancedTelegramRaidsService } from "../telegram-raids/elizaos-enhanced-telegram-raids";
+import OptimizedTelegramService from "../telegram-raids/optimized-telegram-service";
+import EnhancedRaidCoordinator from "../telegram-raids/enhanced-raid-coordinator";
+import OptimizedRaidDatabase from "../telegram-raids/optimized-raid-database";
 
 // Security services
 import SecurityFilter from "../services/security-filter";
@@ -352,7 +359,8 @@ const nubiPlugin: Plugin = {
     // Ritual actions
     ...ritualActions.map(withActionMiddleware),
 
-    // enhancedTelegramRaidsPlugin.actions || []
+    // Interactive Telegram raid actions
+    ...telegramRaidActions.map(withActionMiddleware),
   ],
 
   evaluators: [
@@ -513,7 +521,7 @@ const nubiPlugin: Plugin = {
   },
 
   services: [
-    // Core NUBI Services (10 focused services following ElizaOS recommendations)
+    // Core NUBI Services (14 focused services following ElizaOS recommendations)
 
     // Security (first priority)
     SecurityFilter, // Prompt injection and spam protection
@@ -524,6 +532,7 @@ const nubiPlugin: Plugin = {
     // Session and memory management
     SessionsService, // Session management and persistence
     DatabaseMemoryService, // Enhanced context retrieval with semantic search
+    DatabasePoolerManager, // Multi-pool database connection manager
 
     // Personality and emotional systems
     EmotionalStateService, // NUBI emotional state management
@@ -534,8 +543,16 @@ const nubiPlugin: Plugin = {
     UserIdentityService, // Cross-platform identity linking
     CrossPlatformIdentityService, // User identity linking across platforms
 
+    // Socket.IO real-time communication
+    SocketIOServerService, // Real-time WebSocket server
+    SocketIOClientService, // Real-time WebSocket client
+    SocketIOAnalyticsService, // Socket.IO analytics and monitoring
+
     // Enhanced Telegram functionality
     EnhancedTelegramRaidsService, // NUBI raids coordination
+    OptimizedTelegramService, // High-performance Telegram operations
+    EnhancedRaidCoordinator, // Interactive raid coordination
+    OptimizedRaidDatabase, // Optimized database operations for raids
   ],
 
   // Enhanced functionality integrated directly into NUBI plugin

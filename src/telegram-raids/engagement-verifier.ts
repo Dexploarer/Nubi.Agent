@@ -73,7 +73,12 @@ export class EngagementVerifier {
     userId: string,
     username: string,
     engagementType: EngagementData["engagementType"],
-  ): Promise<{ verified: boolean; points: number; reason?: string }> {
+  ): Promise<{
+    verified: boolean;
+    points: number;
+    reason?: string;
+    engagements?: number;
+  }> {
     try {
       // Check rate limits first
       const rateLimitCheck = await this.checkRateLimit(userId, engagementType);
@@ -118,6 +123,7 @@ export class EngagementVerifier {
       return {
         verified: true,
         points: points.total,
+        engagements: 1,
       };
     } catch (error) {
       logger.error(
@@ -127,6 +133,7 @@ export class EngagementVerifier {
       return {
         verified: false,
         points: 0,
+        engagements: 0,
         reason: "Verification service temporarily unavailable",
       };
     }

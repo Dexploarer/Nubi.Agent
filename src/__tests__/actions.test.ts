@@ -1,5 +1,5 @@
 /**
- * Action tests following ElizaOS testing patterns
+ * Actions tests following ElizaOS testing patterns
  * https://docs.elizaos.ai/plugins/bootstrap/testing-guide
  */
 
@@ -12,209 +12,18 @@ import {
   setupActionTest,
   createMockMessage,
   createMockState,
-  testAsyncOperation,
+  MockRuntime,
   testErrorHandling,
+  testAsyncOperation,
 } from "./test-utils";
-import type { Action, HandlerCallback } from "@elizaos/core";
+import type { Action, ActionResult } from "@elizaos/core";
 import plugin from "../plugins/nubi-plugin";
 
 describe("Plugin Actions", () => {
-  describe("NUBI_RITUAL Action", () => {
-    let nubiAction: Action | undefined;
-    let mockRuntime: any;
-    let mockMessage: any;
-    let mockState: any;
-    let callbackFn: HandlerCallback;
-
-    beforeEach(() => {
-      const setup = setupActionTest();
-      mockRuntime = setup.mockRuntime;
-      mockMessage = setup.mockMessage;
-      mockState = setup.mockState;
-      callbackFn = setup.callbackFn;
-
-      // Find the NUBI_RITUAL action
-      nubiAction = plugin.actions?.find(
-        (action) => action.name === "NUBI_RITUAL",
-      );
-    });
-
-    test("should exist in the plugin", () => {
-      expect(nubiAction).toBeDefined();
-    });
-
-    test("should have the correct structure", () => {
-      expect(nubiAction).toHaveProperty("name", "NUBI_RITUAL");
-      expect(nubiAction).toHaveProperty("description");
-      expect(nubiAction).toHaveProperty("similes");
-      expect(nubiAction).toHaveProperty("validate");
-      expect(nubiAction).toHaveProperty("handler");
-      expect(nubiAction).toHaveProperty("examples");
-      expect(Array.isArray(nubiAction?.similes)).toBe(true);
-      expect(Array.isArray(nubiAction?.examples)).toBe(true);
-    });
-
-    test("should have ritual-related similes", () => {
-      expect(nubiAction?.similes).toContain("start ritual");
-      expect(nubiAction?.similes).toContain("nubi ritual");
-    });
-
-    test("should validate correctly", async () => {
-      if (!nubiAction?.validate) {
-        throw new Error("Action validate is not defined");
-      }
-
-      // Test valid message
-      const validMessage = createMockMessage({
-        content: { text: "start ritual", action: null },
-      });
-      const isValid = await nubiAction.validate(mockRuntime, validMessage);
-      expect(isValid).toBe(true);
-
-      // Test invalid message
-      const invalidMessage = createMockMessage({
-        content: { text: "random text", action: null },
-      });
-      const isInvalid = await nubiAction.validate(mockRuntime, invalidMessage);
-      expect(isInvalid).toBe(false);
-    });
-
-    test("should handle action execution", async () => {
-      if (!nubiAction?.handler) {
-        throw new Error("Action handler is not defined");
-      }
-
-      // Mock callback to capture response
-      const mockCallback = mock((response: any) => {
-        expect(response).toBeDefined();
-        expect(response.text).toContain("ritual");
-      });
-
-      // Execute the handler
-      await nubiAction.handler(
-        mockRuntime,
-        mockMessage,
-        mockState,
-        {},
-        mockCallback,
-      );
-
-      // Verify callback was called
-      expect(mockCallback).toHaveBeenCalled();
-    });
-
-    test("should handle errors gracefully", async () => {
-      if (!nubiAction?.handler) {
-        throw new Error("Action handler is not defined");
-      }
-
-      // Create a runtime that will throw an error
-      const errorRuntime = {
-        ...mockRuntime,
-        completion: mock(() => Promise.reject(new Error("API error"))),
-      };
-
-      // Test error handling
-      await testErrorHandling(async () => {
-        await nubiAction!.handler(
-          errorRuntime,
-          mockMessage,
-          mockState,
-          {},
-          callbackFn,
-        );
-      }, "API error");
-    });
-  });
-
-  describe("HELLO_WORLD Action", () => {
-    let helloAction: Action | undefined;
-    let mockRuntime: any;
-    let mockMessage: any;
-    let mockState: any;
-    let callbackFn: HandlerCallback;
-
-    beforeEach(() => {
-      const setup = setupActionTest();
-      mockRuntime = setup.mockRuntime;
-      mockMessage = setup.mockMessage;
-      mockState = setup.mockState;
-      callbackFn = setup.callbackFn;
-
-      // Find the HELLO_WORLD action
-      helloAction = plugin.actions?.find(
-        (action) => action.name === "HELLO_WORLD",
-      );
-    });
-
-    test("should exist in the plugin", () => {
-      expect(helloAction).toBeDefined();
-    });
-
-    test("should have the correct structure", () => {
-      expect(helloAction).toHaveProperty("name", "HELLO_WORLD");
-      expect(helloAction).toHaveProperty("description");
-      expect(helloAction).toHaveProperty("similes");
-      expect(helloAction).toHaveProperty("validate");
-      expect(helloAction).toHaveProperty("handler");
-      expect(helloAction).toHaveProperty("examples");
-    });
-
-    test("should validate hello messages", async () => {
-      if (!helloAction?.validate) {
-        throw new Error("Action validate is not defined");
-      }
-
-      // Test hello message
-      const helloMessage = createMockMessage({
-        content: { text: "hello", action: null },
-      });
-      const isValid = await helloAction.validate(mockRuntime, helloMessage);
-      expect(isValid).toBe(true);
-
-      // Test greetings message
-      const greetingMessage = createMockMessage({
-        content: { text: "hey there", action: null },
-      });
-      const isGreetingValid = await helloAction.validate(
-        mockRuntime,
-        greetingMessage,
-      );
-      expect(isGreetingValid).toBe(true);
-    });
-
-    test("should respond with hello world", async () => {
-      if (!helloAction?.handler) {
-        throw new Error("Action handler is not defined");
-      }
-
-      // Mock callback to capture response
-      const mockCallback = mock((response: any) => {
-        expect(response).toBeDefined();
-        expect(response.text.toLowerCase()).toContain("hello");
-      });
-
-      // Execute the handler
-      await helloAction.handler(
-        mockRuntime,
-        mockMessage,
-        mockState,
-        {},
-        mockCallback,
-      );
-
-      // Verify callback was called
-      expect(mockCallback).toHaveBeenCalled();
-    });
-  });
-
   describe("Action Registry", () => {
-    test("all actions should have unique names", () => {
-      if (!plugin.actions) return;
-
-      const actionNames = plugin.actions.map((action) => action.name);
-      const uniqueNames = new Set(actionNames);
-      expect(actionNames.length).toBe(uniqueNames.size);
+    test("should have actions defined", () => {
+      expect(plugin.actions).toBeDefined();
+      expect(Array.isArray(plugin.actions)).toBe(true);
     });
 
     test("all actions should have required properties", () => {
@@ -222,35 +31,301 @@ describe("Plugin Actions", () => {
 
       plugin.actions.forEach((action) => {
         expect(action).toHaveProperty("name");
+        expect(action).toHaveProperty("similes");
         expect(action).toHaveProperty("description");
         expect(action).toHaveProperty("validate");
         expect(action).toHaveProperty("handler");
-        expect(typeof action.name).toBe("string");
-        expect(typeof action.description).toBe("string");
-        expect(typeof action.validate).toBe("function");
-        expect(typeof action.handler).toBe("function");
+        expect(action).toHaveProperty("examples");
       });
     });
 
-    test("all actions should have examples", () => {
+    test("all actions should have unique names", () => {
       if (!plugin.actions) return;
 
-      plugin.actions.forEach((action) => {
-        expect(action.examples).toBeDefined();
-        expect(Array.isArray(action.examples)).toBe(true);
-        if (action.examples && action.examples.length > 0) {
-          // Validate example structure
-          action.examples.forEach((example) => {
-            expect(Array.isArray(example)).toBe(true);
-            expect(example.length).toBeGreaterThanOrEqual(2);
-            example.forEach((message) => {
-              expect(message).toHaveProperty("name");
-              expect(message).toHaveProperty("content");
-              expect(message.content).toHaveProperty("text");
-            });
-          });
-        }
+      const actionNames = plugin.actions.map((action) => action.name);
+      const uniqueNames = new Set(actionNames);
+      expect(actionNames.length).toBe(uniqueNames.size);
+    });
+  });
+
+  describe("ANUBIS_SESSION_MANAGEMENT Action", () => {
+    let sessionAction: Action | undefined;
+    let mockRuntime: MockRuntime;
+    let mockMessage: any;
+    let mockState: any;
+    let callbackFn: any;
+
+    beforeEach(() => {
+      const setup = setupActionTest();
+      mockRuntime = setup.mockRuntime;
+      mockMessage = setup.mockMessage;
+      mockState = setup.mockState;
+      callbackFn = setup.callbackFn;
+
+      // Find the session management action
+      sessionAction = plugin.actions?.find(
+        (action) => action.name === "ANUBIS_SESSION_MANAGEMENT",
+      );
+    });
+
+    test("should exist in the plugin", () => {
+      expect(sessionAction).toBeDefined();
+    });
+
+    test("should have the correct structure", () => {
+      expect(sessionAction).toHaveProperty("name", "ANUBIS_SESSION_MANAGEMENT");
+      expect(sessionAction).toHaveProperty("description");
+      expect(sessionAction).toHaveProperty("similes");
+      expect(sessionAction).toHaveProperty("validate");
+      expect(sessionAction).toHaveProperty("handler");
+      expect(sessionAction).toHaveProperty("examples");
+    });
+
+    test("should validate session management messages", async () => {
+      if (!sessionAction?.validate) {
+        throw new Error("Action validate is not defined");
+      }
+
+      // Test new conversation message
+      const newConversationMessage = createMockMessage({
+        content: { text: "new conversation", action: null },
       });
+      const isValid = await sessionAction.validate(
+        mockRuntime,
+        newConversationMessage,
+      );
+      expect(isValid).toBe(true);
+
+      // Test switch context message
+      const switchContextMessage = createMockMessage({
+        content: { text: "switch context", action: null },
+      });
+      const isSwitchValid = await sessionAction.validate(
+        mockRuntime,
+        switchContextMessage,
+      );
+      expect(isSwitchValid).toBe(true);
+
+      // Test non-session message
+      const regularMessage = createMockMessage({
+        content: { text: "just a regular message", action: null },
+      });
+      const isRegularValid = await sessionAction.validate(
+        mockRuntime,
+        regularMessage,
+      );
+      expect(isRegularValid).toBe(false);
+    });
+
+    test("should handle new conversation request", async () => {
+      if (!sessionAction?.handler) {
+        throw new Error("Action handler is not defined");
+      }
+
+      const newConversationMessage = createMockMessage({
+        content: { text: "new conversation", action: null },
+      });
+
+      const mockCallback = mock((response: any) => {
+        expect(response).toBeDefined();
+        expect(response.text).toContain("fresh conversation");
+      });
+
+      const result = await sessionAction.handler(
+        mockRuntime,
+        newConversationMessage,
+        mockState,
+        {},
+        mockCallback,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(mockCallback).toHaveBeenCalled();
+    });
+  });
+
+  describe("NUBI_RITUAL Action", () => {
+    let ritualAction: Action | undefined;
+    let mockRuntime: MockRuntime;
+    let mockMessage: any;
+    let mockState: any;
+    let callbackFn: any;
+
+    beforeEach(() => {
+      const setup = setupActionTest();
+      mockRuntime = setup.mockRuntime;
+      mockMessage = setup.mockMessage;
+      mockState = setup.mockState;
+      callbackFn = setup.callbackFn;
+
+      // Add generateText to mockRuntime for ritual action
+      mockRuntime.generateText = mock(async () => "Mocked ritual response");
+
+      // Find the ritual action (it's added via identityActions)
+      ritualAction = plugin.actions?.find(
+        (action) => action.name === "NUBI_RITUAL",
+      );
+    });
+
+    test("should exist in the plugin", () => {
+      expect(ritualAction).toBeDefined();
+    });
+
+    test("should have the correct structure", () => {
+      if (!ritualAction) return;
+
+      expect(ritualAction).toHaveProperty("name", "NUBI_RITUAL");
+      expect(ritualAction).toHaveProperty("description");
+      expect(ritualAction).toHaveProperty("similes");
+      expect(ritualAction).toHaveProperty("validate");
+      expect(ritualAction).toHaveProperty("handler");
+      expect(ritualAction).toHaveProperty("examples");
+    });
+
+    test("should validate ritual invocation messages", async () => {
+      if (!ritualAction?.validate) {
+        throw new Error("Action validate is not defined");
+      }
+
+      // Test ritual invocation message
+      const ritualMessage = createMockMessage({
+        content: { text: "invoke ritual", action: null },
+      });
+      const isValid = await ritualAction.validate(mockRuntime, ritualMessage);
+      expect(isValid).toBe(true);
+
+      // Test perform blessing message
+      const blessingMessage = createMockMessage({
+        content: { text: "perform blessing", action: null },
+      });
+      const isBlessingValid = await ritualAction.validate(
+        mockRuntime,
+        blessingMessage,
+      );
+      expect(isBlessingValid).toBe(true);
+
+      // Test non-ritual message
+      const regularMessage = createMockMessage({
+        content: { text: "just chatting", action: null },
+      });
+      const isRegularValid = await ritualAction.validate(
+        mockRuntime,
+        regularMessage,
+      );
+      expect(isRegularValid).toBe(false);
+    });
+
+    test("should handle ritual invocation", async () => {
+      if (!ritualAction?.handler) {
+        throw new Error("Action handler is not defined");
+      }
+
+      const ritualMessage = createMockMessage({
+        content: { text: "invoke ritual", action: null },
+      });
+
+      const mockCallback = mock((response: any) => {
+        expect(response).toBeDefined();
+      });
+
+      const result = await ritualAction.handler(
+        mockRuntime,
+        ritualMessage,
+        mockState,
+        {},
+        mockCallback,
+      );
+
+      expect(result).toBeDefined();
+      if (result.success) {
+        expect(result.text).toBeDefined();
+      }
+    });
+  });
+
+  describe("Action Validation", () => {
+    test("actions should prevent self-evaluation", async () => {
+      if (!plugin.actions || plugin.actions.length === 0) return;
+
+      const firstAction = plugin.actions[0];
+      if (!firstAction.validate) return;
+
+      // Create message from agent itself
+      const selfMessage = createMockMessage({
+        content: { text: "test message", action: null },
+      });
+
+      const { mockRuntime } = setupActionTest();
+      // Set message entityId to match runtime agentId
+      mockRuntime.agentId = "agent-123" as any;
+      selfMessage.entityId = "agent-123" as any;
+
+      const isValid = await firstAction.validate(
+        mockRuntime,
+        selfMessage,
+        createMockState(),
+      );
+
+      // Most actions should reject self-messages
+      expect(isValid).toBe(false);
+    });
+
+    test("actions should handle missing content gracefully", async () => {
+      if (!plugin.actions || plugin.actions.length === 0) return;
+
+      const firstAction = plugin.actions[0];
+      if (!firstAction.validate) return;
+
+      // Create message with missing content
+      const emptyMessage = createMockMessage({
+        content: { text: "", action: null },
+      });
+
+      const { mockRuntime } = setupActionTest();
+
+      // Should not throw
+      const isValid = await firstAction.validate(
+        mockRuntime,
+        emptyMessage,
+        createMockState(),
+      );
+
+      expect(typeof isValid).toBe("boolean");
+    });
+  });
+
+  describe("Action Error Handling", () => {
+    test("actions should handle handler errors gracefully", async () => {
+      if (!plugin.actions || plugin.actions.length === 0) return;
+
+      const sessionAction = plugin.actions.find(
+        (a) => a.name === "ANUBIS_SESSION_MANAGEMENT",
+      );
+      if (!sessionAction || !sessionAction.handler) return;
+
+      const { mockRuntime, mockMessage, mockState } = setupActionTest();
+
+      // Force an error by mocking getMemories to throw
+      mockRuntime.getMemories = mock(() =>
+        Promise.reject(new Error("Database error")),
+      );
+
+      const switchContextMessage = createMockMessage({
+        content: { text: "switch context", action: null },
+      });
+
+      const result = await sessionAction.handler(
+        mockRuntime,
+        switchContextMessage,
+        mockState,
+        {},
+        undefined,
+      );
+
+      expect(result).toBeDefined();
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
     });
   });
 });

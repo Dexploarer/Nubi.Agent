@@ -162,6 +162,9 @@ describe("Utils Module", () => {
 
     describe("Error History Management", () => {
       it("should maintain error history", async () => {
+        // Clear previous test errors
+        ServiceErrorHandler.clearErrorHistory();
+
         const testError = new Error("History test error");
         const testFn = mock(() => Promise.reject(testError));
 
@@ -183,7 +186,10 @@ describe("Utils Module", () => {
       });
 
       it("should limit error history size", async () => {
-        const maxErrors = 5;
+        // Clear previous test errors
+        ServiceErrorHandler.clearErrorHistory();
+
+        const maxErrors = 100; // Match the MAX_ERROR_HISTORY constant
 
         // Generate more errors than the limit
         for (let i = 0; i < maxErrors + 3; i++) {

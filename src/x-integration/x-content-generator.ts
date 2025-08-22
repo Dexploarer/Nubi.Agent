@@ -28,8 +28,8 @@ export class XContentGenerator {
     {
       category: "community_building",
       templates: [
-        "Every warrior in our pack matters. Together we've {achievement}. The journey continues!",
-        "Building the strongest Solana army isn't just about numbers, it's about {value}. Join us.",
+        "Every warrior in our community matters. Together we've {achievement}. The journey continues!",
+        "Building the strongest Solana community isn't just about numbers, it's about {value}. Join us.",
         "United we rise, divided we fall. Our community just {milestone}. Proud of every single one of you!",
       ],
       hashtags: [
@@ -210,10 +210,26 @@ export class XContentGenerator {
     return filled;
   }
 
-  private selectHashtags(hashtags: string[], count: number = 4): string {
-    // Shuffle and select hashtags
-    const shuffled = [...hashtags].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, count).join(" ");
+  private selectHashtags(hashtags: string[], count: number = 5): string {
+    // Always include AnubisChat and category-specific hashtags
+    const essential = hashtags.filter(
+      (h) => h === "#AnubisChat" || h === "#DeFi" || h === "#Community",
+    );
+    const others = hashtags.filter(
+      (h) => !essential.includes(h as "#AnubisChat" | "#Community" | "#DeFi"),
+    );
+
+    // Combine essential hashtags with some random ones
+    const selected = [...essential];
+    const shuffled = [...others].sort(() => Math.random() - 0.5);
+
+    // Add more hashtags up to count
+    while (selected.length < count && shuffled.length > 0) {
+      const next = shuffled.shift();
+      if (next) selected.push(next as "#AnubisChat" | "#Community" | "#DeFi");
+    }
+
+    return selected.join(" ");
   }
 
   private truncateContent(content: string, maxLength: number): string {
@@ -238,11 +254,11 @@ export class XContentGenerator {
 
   async generateRaidCallToAction(tweetUrl: string): Promise<string> {
     const calls = [
-      `Warriors, assemble! New mission detected: ${tweetUrl}\n\nEngage with full force! 🔥`,
-      `The alpha pack hunts! Target acquired: ${tweetUrl}\n\nLike, RT, and show our strength! ⚔️`,
-      `Ancient scrolls reveal our next conquest: ${tweetUrl}\n\nRaid and conquer, Solana warriors! 🚀`,
-      `The time has come! Rally to: ${tweetUrl}\n\nUnited we dominate the timeline! 💪`,
-      `New raid mission from the depths: ${tweetUrl}\n\nFirst raiders earn triple honor! 🏆`,
+      `Warriors, assemble! New raid mission detected: ${tweetUrl}\n\nEngage with full force! 🔥`,
+      `The alpha pack hunts! Raid target acquired: ${tweetUrl}\n\nLike, RT, and show our strength warriors! ⚔️`,
+      `Ancient scrolls reveal our next raid conquest: ${tweetUrl}\n\nRaid and conquer, Solana warriors! 🚀`,
+      `The time has come! Our raid rally awaits: ${tweetUrl}\n\nUnited we dominate the timeline warriors! 💪`,
+      `New raid mission from the depths: ${tweetUrl}\n\nFirst raid warriors earn triple honor! 🏆`,
     ];
 
     return calls[Math.floor(Math.random() * calls.length)];

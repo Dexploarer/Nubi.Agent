@@ -1,6 +1,9 @@
 import { Character } from "../core";
 import { nubiTemplates } from "./nubi-templates";
+import { nubiMcpConfig } from "./nubi-mcp-config";
 import telegramPlugin from "@elizaos/plugin-telegram";
+import mcpPlugin from "@elizaos/plugin-mcp";
+import { twitterMonitorPlugin } from "../plugins/twitter-monitor-plugin";
 
 /**
  * NUBI Character Definition - Anubis.Chat Companion Token
@@ -426,6 +429,7 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
     "@elizaos/plugin-bootstrap",
     "@elizaos/plugin-knowledge", // Enable knowledge ingestion/retrieval (RAG)
     "@elizaos/plugin-mcp", // Enable MCP for external tool capabilities
+    "twitter-monitor", // Read-only Twitter monitoring plugin
     ...(process.env.OPENAI_API_KEY?.trim() ? ["@elizaos/plugin-openai"] : []),
     ...(process.env.TWITTER_USERNAME?.trim() &&
     process.env.ENABLE_TWITTER_BOT === "true"
@@ -442,5 +446,6 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
   // Settings for natural responses
   settings: {
     secrets: {},
+    ...nubiMcpConfig.settings,
   },
 };

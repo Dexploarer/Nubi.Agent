@@ -148,6 +148,20 @@ export class ServiceErrorHandler {
   }
 
   /**
+   * Get error history (alias for getRecentErrors)
+   */
+  static getErrorHistory(): ServiceError[] {
+    return [...this.errors];
+  }
+
+  /**
+   * Clear error history
+   */
+  static clearErrorHistory(): void {
+    this.errors = [];
+  }
+
+  /**
    * Get error statistics
    */
   static getErrorStats(): Record<string, number> {

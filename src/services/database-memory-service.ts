@@ -6,6 +6,7 @@ import {
   UUID,
   ModelType,
 } from "@elizaos/core";
+import { DatabasePoolerManager, PoolType } from "./database-pooler-manager";
 
 /**
  * Enhanced Database Memory Service
@@ -78,6 +79,7 @@ export class DatabaseMemoryService extends Service {
     "Advanced database-driven memory retrieval and context building";
 
   private agentId: UUID;
+  private poolerManager?: DatabasePoolerManager;
 
   constructor(runtime: IAgentRuntime) {
     super();
@@ -103,6 +105,17 @@ export class DatabaseMemoryService extends Service {
         logger.warn(
           "[DATABASE_MEMORY_SERVICE] No database connection available - running in test mode",
         );
+      }
+
+      // Get the database pooler manager if available
+      try {
+        const service = this.runtime.getService<DatabasePoolerManager>("database-pooler-manager");
+        this.poolerManager = service || undefined;
+        if (this.poolerManager) {
+          logger.info("[DATABASE_MEMORY_SERVICE] Connected to database pooler manager");
+        }
+      } catch (error) {
+        logger.debug("[DATABASE_MEMORY_SERVICE] Database pooler manager not available, using fallback");
       }
     } catch (error) {
       logger.error(

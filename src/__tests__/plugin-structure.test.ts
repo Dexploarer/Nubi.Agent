@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import nubiPlugin from "../nubi-plugin";
+import nubiPlugin from "../plugins/nubi-plugin";
 import * as fs from "fs";
 
 const mockRuntime: any = {

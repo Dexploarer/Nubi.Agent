@@ -39,6 +39,9 @@ export const ritualAction: Action = {
     "join ritual",
     "ritual time",
     "@nubi ritual",
+    "invoke ritual",
+    "perform blessing",
+    "blessing",
   ],
 
   validate: async (
@@ -222,6 +225,22 @@ export const recordAction: Action = {
       logger.error("Record action failed:", error as any);
     }
   },
+
+  examples: [
+    [
+      {
+        name: "User",
+        content: createContent("Record this amazing community milestone!"),
+      },
+      {
+        name: "Nubi",
+        content: createContent(
+          "📜 This moment has been eternally recorded in our chronicles.",
+          "RECORD_MOMENT",
+        ),
+      },
+    ],
+  ],
 };
 
 /**
