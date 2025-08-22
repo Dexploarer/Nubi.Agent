@@ -59,7 +59,10 @@ topic: ${isCrypto ? "crypto" : isAnubisChat ? "platform" : "general"}`;
         },
       };
     } catch (error) {
-      logger.error("Error in context provider:", error);
+      logger.error(
+        "Error in context provider:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         text: "context unavailable",
         values: { error: true },

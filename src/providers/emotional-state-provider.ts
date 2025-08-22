@@ -36,6 +36,8 @@ export const emotionalStateProvider: Provider = {
     message: Memory,
     state?: State,
   ): Promise<any> => {
+    const startTime = Date.now();
+
     try {
       const text = message.content?.text?.toLowerCase() || "";
 
@@ -88,9 +90,15 @@ export const emotionalStateProvider: Provider = {
         // Response modification hints
         responseStyle: getResponseStyle(newState.emotional),
         voiceModification: getVoiceModification(newState.emotional),
+
+        // Performance metrics
+        processingTime: Date.now() - startTime,
       };
     } catch (error) {
-      logger.error("[EMOTIONAL_STATE_PROVIDER] Error:", error);
+      logger.error(
+        "[EMOTIONAL_STATE_PROVIDER] Error:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       // Return neutral emotional state on error
       return {
@@ -98,6 +106,7 @@ export const emotionalStateProvider: Provider = {
         emotionalIntensity: 50,
         shouldShowEmotion: false,
         emotionalMarker: "",
+        processingTime: Date.now() - startTime,
         intensityModifier: 0.5,
         responseStyle: "balanced",
       };
@@ -371,7 +380,10 @@ async function updateEmotionalState(
       runtime.character.settings.emotionalState = state;
     }
   } catch (error) {
-    logger.warn("[EMOTIONAL_STATE] Could not persist state:", error);
+    logger.warn(
+      "[EMOTIONAL_STATE] Could not persist state:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

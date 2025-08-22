@@ -1,12 +1,12 @@
 /**
  * Messaging Module - Message handling and transport management
- * 
+ *
  * This module provides unified message handling across different platforms,
  * transport adapters, and message bus functionality.
  */
 
 // Re-export core types
-export type { IAgentRuntime, Service, Memory, logger } from '../core';
+export type { IAgentRuntime, Service, Memory, logger } from "../core";
 
 // Message types
 export interface Message {
@@ -74,14 +74,14 @@ export interface MessageHandler {
 }
 
 // Service exports
-export { MessageBusService } from './message-bus';
+export { MessageBusService } from "./message-bus";
 
 // Transport implementations - exported from message-bus.ts
-export { 
-  DiscordTransport, 
-  TelegramTransport, 
-  TwitterTransport 
-} from './message-bus';
+export {
+  DiscordTransport,
+  TelegramTransport,
+  TwitterTransport,
+} from "./message-bus";
 
 // Utility functions
 export function createMessage(
@@ -89,7 +89,7 @@ export function createMessage(
   platform: string,
   userId?: string,
   roomId?: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): Message {
   return {
     id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -98,7 +98,7 @@ export function createMessage(
     roomId,
     platform,
     timestamp: Date.now(),
-    metadata: metadata || {}
+    metadata: metadata || {},
   };
 }
 
@@ -114,7 +114,7 @@ export function validateMessage(message: Message): boolean {
 export function createMessageContext(
   roomId: string,
   platform: string,
-  participants: string[] = []
+  participants: string[] = [],
 ): MessageContext {
   return {
     roomId,
@@ -122,7 +122,7 @@ export function createMessageContext(
     participants,
     lastActivity: Date.now(),
     messageCount: 0,
-    metadata: {}
+    metadata: {},
   };
 }
 
@@ -130,13 +130,13 @@ export function createTransportConfig(
   apiKey?: string,
   baseUrl?: string,
   retries: number = 3,
-  timeout: number = 30000
+  timeout: number = 30000,
 ): TransportConfig {
   return {
     apiKey,
     baseUrl,
     retries,
-    timeout
+    timeout,
   };
 }
 
@@ -144,13 +144,13 @@ export function createMessageHandler(
   name: string,
   pattern: RegExp | string,
   handler: (message: Message, context: MessageContext) => Promise<void>,
-  priority: number = 0
+  priority: number = 0,
 ): MessageHandler {
   return {
     name,
     pattern,
     handler,
-    priority
+    priority,
   };
 }
 
@@ -158,12 +158,12 @@ export function createMessageBusConfig(
   transports: Transport[] = [],
   retryAttempts: number = 3,
   timeout: number = 30000,
-  enableLogging: boolean = true
+  enableLogging: boolean = true,
 ): MessageBusConfig {
   return {
     transports,
     retryAttempts,
     timeout,
-    enableLogging
+    enableLogging,
   };
 }

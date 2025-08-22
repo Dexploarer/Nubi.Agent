@@ -67,7 +67,10 @@ export const sessionsRoutes = [
           },
         });
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to create session:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to create session:",
+          error instanceof Error ? error.message : String(error),
+        );
         response.status(500).json({
           success: false,
           error:
@@ -154,7 +157,9 @@ export const sessionsRoutes = [
               } catch (contextError) {
                 logger.debug(
                   "[SESSIONS_API] Enhanced context unavailable:",
-                  contextError,
+                  contextError instanceof Error
+                    ? contextError.message
+                    : String(contextError),
                 );
               }
             }
@@ -265,7 +270,9 @@ export const sessionsRoutes = [
             } catch (generateError) {
               logger.error(
                 "[SESSIONS_API] Text generation failed:",
-                generateError,
+                generateError instanceof Error
+                  ? generateError.message
+                  : String(generateError),
               );
 
               // Fallback with more personality
@@ -279,14 +286,19 @@ export const sessionsRoutes = [
                 {
                   generatedAt: new Date().toISOString(),
                   fallback: true,
-                  error: generateError.message,
+                  error:
+                    generateError instanceof Error
+                      ? generateError.message
+                      : String(generateError),
                 },
               );
             }
           } catch (responseError) {
             logger.error(
               "[SESSIONS_API] Failed to generate agent response:",
-              responseError,
+              responseError instanceof Error
+                ? responseError.message
+                : String(responseError),
             );
             // Continue without agent response
           }
@@ -318,7 +330,10 @@ export const sessionsRoutes = [
             : null,
         });
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to send message:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to send message:",
+          error instanceof Error ? error.message : String(error),
+        );
 
         if (error instanceof Error && error.message.includes("expired")) {
           response.status(410).json({
@@ -395,7 +410,10 @@ export const sessionsRoutes = [
           },
         });
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to get history:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to get history:",
+          error instanceof Error ? error.message : String(error),
+        );
         response.status(500).json({
           success: false,
           error:
@@ -448,7 +466,10 @@ export const sessionsRoutes = [
           },
         });
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to renew session:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to renew session:",
+          error instanceof Error ? error.message : String(error),
+        );
 
         if (error instanceof Error && error.message.includes("not found")) {
           response.status(404).json({
@@ -496,7 +517,10 @@ export const sessionsRoutes = [
           });
         }
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to update heartbeat:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to update heartbeat:",
+          error instanceof Error ? error.message : String(error),
+        );
         response.status(500).json({
           success: false,
           error:
@@ -535,7 +559,10 @@ export const sessionsRoutes = [
           });
         }
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to end session:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to end session:",
+          error instanceof Error ? error.message : String(error),
+        );
         response.status(500).json({
           success: false,
           error:
@@ -599,7 +626,10 @@ export const sessionsRoutes = [
           },
         });
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to list sessions:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to list sessions:",
+          error instanceof Error ? error.message : String(error),
+        );
         response.status(500).json({
           success: false,
           error:
@@ -646,7 +676,10 @@ export const sessionsRoutes = [
           },
         });
       } catch (error) {
-        logger.error("[SESSIONS_API] Failed to get analytics:", error);
+        logger.error(
+          "[SESSIONS_API] Failed to get analytics:",
+          error instanceof Error ? error.message : String(error),
+        );
         response.status(500).json({
           success: false,
           error:

@@ -79,7 +79,7 @@ export class PersonalityEvolutionService extends Service {
     } catch (error) {
       logger.warn(
         "[PERSONALITY_EVOLUTION_SERVICE] Failed to apply personality drift:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -119,7 +119,7 @@ export class PersonalityEvolutionService extends Service {
     } catch (error) {
       logger.error(
         "[PERSONALITY_EVOLUTION_SERVICE] Failed to apply personality changes:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -176,7 +176,7 @@ export class PersonalityEvolutionService extends Service {
     } catch (error) {
       logger.warn(
         "[PERSONALITY_EVOLUTION_SERVICE] Could not persist personality state:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }

@@ -105,7 +105,10 @@ export class DatabaseMemoryService extends Service {
         );
       }
     } catch (error) {
-      logger.error("[DATABASE_MEMORY_SERVICE] Failed to initialize:", error);
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to initialize:",
+        error instanceof Error ? error.message : String(error),
+      );
       // Don't throw in test environment - allow graceful degradation
       if (
         process.env.NODE_ENV === "test" ||
@@ -168,7 +171,10 @@ export class DatabaseMemoryService extends Service {
 
       return context;
     } catch (error) {
-      logger.error("[DATABASE_MEMORY_SERVICE] Failed to build context:", error);
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to build context:",
+        error instanceof Error ? error.message : String(error),
+      );
       return context; // Return partial context
     }
   }
@@ -194,7 +200,7 @@ export class DatabaseMemoryService extends Service {
     } catch (error) {
       logger.error(
         "[DATABASE_MEMORY_SERVICE] Failed to get recent memories:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return [];
     }
@@ -228,7 +234,7 @@ export class DatabaseMemoryService extends Service {
     } catch (error) {
       logger.error(
         "[DATABASE_MEMORY_SERVICE] Failed to get semantic memories:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return [];
     }
@@ -250,7 +256,10 @@ export class DatabaseMemoryService extends Service {
 
       return true;
     } catch (error) {
-      logger.error("[DATABASE_MEMORY_SERVICE] Failed to store memory:", error);
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to store memory:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -264,7 +273,10 @@ export class DatabaseMemoryService extends Service {
       this.runtime.setSetting("personality_traits", traits);
       logger.debug("[DATABASE_MEMORY_SERVICE] Updated personality traits");
     } catch (error) {
-      logger.error("[DATABASE_MEMORY_SERVICE] Failed to update traits:", error);
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to update traits:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 

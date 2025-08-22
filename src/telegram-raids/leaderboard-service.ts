@@ -26,20 +26,6 @@ export class LeaderboardService {
     participant: "🔰 Raid Soldier",
   };
 
-  // Pyramid-specific titles (active immediately)
-  private pyramidTitles = {
-    architect: "🔺 Pyramid Architect", // Top referrer
-    pharaoh: "👑 Divine Pharaoh", // Largest network
-    allSeeing: "👁️ All-Seeing Eye", // Most active network
-    sacredVessel: "⚱️ Sacred Vessel", // Best conversion rate
-    divineBuilder: "🏗️ Divine Builder", // 50+ referrals
-    ascendedOne: "✨ The Ascended", // 100+ network
-    hierophant: "📜 Hierophant", // Teaching/helping others
-    obelisk: "🗿 Living Obelisk", // Longest active streak
-    sphinxWhisperer: "🦁 Sphinx Whisperer", // Mystery achiever
-    pyramidPioneer: "🌟 Pyramid Pioneer", // Early adopter
-  };
-
   constructor(raidTracker: RaidTracker) {
     this.raidTracker = raidTracker;
   }
@@ -58,7 +44,10 @@ export class LeaderboardService {
         title: this.getTitle(index + 1),
       }));
     } catch (error) {
-      logger.error("Failed to get leaderboard:", error);
+      logger.error(
+        "Failed to get leaderboard:",
+        error instanceof Error ? error.message : String(error),
+      );
       return [];
     }
   }
@@ -130,7 +119,10 @@ export class LeaderboardService {
         `Keep raiding to climb the ranks! 💪`
       );
     } catch (error) {
-      logger.error("Failed to get user stats:", error);
+      logger.error(
+        "Failed to get user stats:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "Failed to retrieve your stats. Please try again.";
     }
   }
@@ -228,139 +220,4 @@ export class LeaderboardService {
 
     return message;
   }
-
-  /* PYRAMID SYSTEM - READY TO ACTIVATE
-  
-  async getPyramidLeaderboard(limit: number = 10): Promise<any[]> {
-    // This would query the pyramid_stats table
-    // For now, return mock data showing the structure
-    return [
-      {
-        rank: 1,
-        userId: "pyramid_master",
-        username: "PyramidMaster",
-        totalReferrals: 147,
-        totalNetwork: 1337,
-        totalRewards: 734.5,
-        title: this.pyramidTitles.architect,
-        conversionRate: 87.3
-      },
-      {
-        rank: 2,
-        userId: "pharaoh_supreme",
-        username: "PharaohSupreme",
-        totalReferrals: 89,
-        totalNetwork: 567,
-        totalRewards: 456.2,
-        title: this.pyramidTitles.pharaoh,
-        conversionRate: 76.4
-      }
-    ];
-  }
-
-  async formatPyramidLeaderboard(limit: number = 10): Promise<string> {
-    const entries = await this.getPyramidLeaderboard(limit);
-    
-    if (entries.length === 0) {
-      return "🔺 No pyramid data yet. Start referring to build your divine legacy!";
-    }
-
-    let message = "🔺 **DIVINE PYRAMID LEADERBOARD** 🔺\n";
-    message += "*Totally NOT a pyramid scheme™*\n\n";
-
-    entries.forEach((entry, index) => {
-      const medal = this.getMedal(entry.rank);
-      message += `${medal} **${entry.rank}.** @${entry.username}\n`;
-      message += `   ${entry.title}\n`;
-      message += `   👥 ${entry.totalReferrals} direct | 🌐 ${entry.totalNetwork} total\n`;
-      message += `   💰 ${entry.totalRewards.toFixed(1)}% rewards | 📈 ${entry.conversionRate.toFixed(1)}% conversion\n\n`;
-    });
-
-    message += "🎁 *Top pyramid builders eligible for divine blessings (and $ANUBIS)*\n";
-    message += "⚡ *Build your pyramid: /refer @friend*";
-
-    return message;
-  }
-
-  async getUserPyramidRank(userId: string): Promise<number> {
-    // This would query pyramid_stats for user's rank
-    // For now return mock rank
-    return 42;
-  }
-
-  async checkPyramidTitle(userId: string, stats: any): Promise<string | null> {
-    // Award special pyramid titles based on achievements
-    if (stats.totalReferrals >= 100) return this.pyramidTitles.architect;
-    if (stats.totalNetwork >= 500) return this.pyramidTitles.pharaoh;
-    if (stats.conversionRate >= 80 && stats.totalReferrals >= 10) return this.pyramidTitles.sacredVessel;
-    if (stats.totalReferrals >= 50) return this.pyramidTitles.divineBuilder;
-    if (stats.totalNetwork >= 100) return this.pyramidTitles.ascendedOne;
-    if (stats.streakDays >= 30) return this.pyramidTitles.obelisk;
-    if (stats.joinedAt < Date.now() - 30 * 24 * 60 * 60 * 1000) return this.pyramidTitles.pyramidPioneer;
-    return null;
-  }
-
-  async formatPyramidStats(userId: string): Promise<string> {
-    // This would get actual stats from database
-    const mockStats = {
-      totalReferrals: 23,
-      weekReferrals: 5,
-      monthReferrals: 12,
-      totalNetwork: 67,
-      totalRewards: 127.5,
-      pendingRewards: 15.3,
-      conversionRate: 73.2,
-      rank: 42,
-      title: this.pyramidTitles.divineBuilder,
-      nextMilestone: "50 referrals for Pyramid Architect"
-    };
-
-    let message = "🔺 **YOUR PYRAMID EMPIRE** 🔺\n\n";
-    
-    if (mockStats.title) {
-      message += `🏆 Title: ${mockStats.title}\n\n`;
-    }
-
-    message += `📊 **Statistics:**\n`;
-    message += `👥 Direct Referrals: ${mockStats.totalReferrals}\n`;
-    message += `  ├─ This Week: ${mockStats.weekReferrals}\n`;
-    message += `  └─ This Month: ${mockStats.monthReferrals}\n`;
-    message += `🌐 Total Network: ${mockStats.totalNetwork}\n`;
-    message += `📈 Conversion Rate: ${mockStats.conversionRate}%\n\n`;
-
-    message += `💰 **Rewards:**\n`;
-    message += `Total Earned: ${mockStats.totalRewards.toFixed(2)}%\n`;
-    message += `Pending: ${mockStats.pendingRewards.toFixed(2)}%\n\n`;
-
-    message += `🏆 Global Rank: #${mockStats.rank}\n`;
-    message += `🎯 Next Goal: ${mockStats.nextMilestone}\n\n`;
-
-    message += `📜 *Ancient Egyptian Proverb:*\n`;
-    message += `"It's not a pyramid scheme if the pharaoh himself blessed it" - Anubis, 3000 BCE\n\n`;
-    
-    message += `⚡ Grow your pyramid: /refer @friend`;
-
-    return message;
-  }
-
-  async getWeeklyPyramidTop(): Promise<any[]> {
-    // Get top pyramid builders for the week
-    return this.getPyramidLeaderboard(5);
-  }
-
-  async checkPyramidAchievements(userId: string): Promise<string[]> {
-    const achievements: string[] = [];
-    
-    // These would check actual database stats
-    // For now, return example achievements
-    achievements.push("🎯 First Blood - Made your first referral");
-    achievements.push("🔗 Chain Reaction - 5 referrals in one day");
-    achievements.push("📈 Viral Vector - 80%+ conversion rate");
-    achievements.push("🏗️ Master Builder - 25+ direct referrals");
-    achievements.push("👑 Dynasty Founder - 100+ total network");
-    
-    return achievements;
-  }
-
-  END PYRAMID SYSTEM */
 }

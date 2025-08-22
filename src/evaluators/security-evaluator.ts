@@ -115,7 +115,10 @@ export const securityEvaluator: Evaluator = {
         },
       };
     } catch (error) {
-      logger.error("[SECURITY_EVALUATOR] Error:", error);
+      logger.error(
+        "[SECURITY_EVALUATOR] Error:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       // On error, allow message through to prevent breaking the bot
       // but log the security failure

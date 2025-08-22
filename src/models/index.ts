@@ -1,11 +1,16 @@
 /**
  * Model configurations for ElizaOS NUBI Agent
- * 
+ *
  * Provides standardized model configurations for different use cases
  * with proper typing and provider specifications
  */
 
-import type { ModelConfig } from "@elizaos/core";
+// Define ModelConfig interface locally since it's not exported from @elizaos/core
+export interface ModelConfig {
+  name: string;
+  provider: string;
+  config: Record<string, unknown>;
+}
 
 // Define ModelProvider type if not available from core
 type ModelProvider = "openai" | "anthropic" | "google" | "azure";
@@ -96,21 +101,23 @@ export const modelUtils = {
   /**
    * Get model by use case
    */
-  getModelForUseCase: (useCase: 'conversation' | 'analysis' | 'creative' | 'embedding'): NubiModelConfig => {
+  getModelForUseCase: (
+    useCase: "conversation" | "analysis" | "creative" | "embedding",
+  ): NubiModelConfig => {
     switch (useCase) {
-      case 'conversation':
+      case "conversation":
         return TEXT_SMALL;
-      case 'analysis':
+      case "analysis":
         return TEXT_ANALYTICAL;
-      case 'creative':
+      case "creative":
         return TEXT_CREATIVE;
-      case 'embedding':
+      case "embedding":
         return TEXT_EMBEDDING;
       default:
         return TEXT_SMALL;
     }
   },
-  
+
   /**
    * Get model by token budget
    */
@@ -119,7 +126,7 @@ export const modelUtils = {
     if (maxTokens <= 4096) return TEXT_LARGE;
     return TEXT_LARGE; // Default to large for higher token counts
   },
-  
+
   /**
    * Validate model configuration
    */
@@ -130,7 +137,7 @@ export const modelUtils = {
       config.config?.temperature !== undefined &&
       config.config?.maxTokens > 0
     );
-  }
+  },
 };
 
 // Export models for plugin compatibility

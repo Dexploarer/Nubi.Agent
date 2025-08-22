@@ -21,11 +21,11 @@ import {
 import { ServiceType } from "@elizaos/core";
 
 // Import services
-import { PersonalityService } from "../services/personality-service";
-import { EnhancedRealtimeService } from "../services/enhanced-realtime-service";
-import { SecurityFilterService } from "../services/security-filter";
+import { PersonalityEvolutionService } from "../services/personality-evolution-service";
+import SecurityFilter from "../services/security-filter";
 import { EmotionalStateService } from "../services/emotional-state-service";
 import { SessionsService } from "../services/sessions-service";
+import { DatabaseMemoryService } from "../services/database-memory-service";
 
 describe("Services", () => {
   describe("PersonalityService", () => {

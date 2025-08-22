@@ -97,7 +97,10 @@ export class UserInitiatedRaidFlow {
 
       logger.info("User-initiated raid flow configuration loaded");
     } catch (error) {
-      logger.error("Failed to load user-initiated config:", error);
+      logger.error(
+        "Failed to load user-initiated config:",
+        error instanceof Error ? error.message : String(error),
+      );
       // Set default config
       this.config = {
         userInitiated: {
@@ -134,7 +137,10 @@ export class UserInitiatedRaidFlow {
 
       logger.info("User-Initiated Raid Flow initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize User-Initiated Raid Flow:", error);
+      logger.error(
+        "Failed to initialize User-Initiated Raid Flow:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -176,7 +182,10 @@ export class UserInitiatedRaidFlow {
         }
       }
     } catch (error) {
-      logger.error("Error processing incoming message:", error);
+      logger.error(
+        "Error processing incoming message:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -235,7 +244,10 @@ export class UserInitiatedRaidFlow {
 
       logger.info(`User-initiated raid created: ${raidId} by @${username}`);
     } catch (error) {
-      logger.error("Error handling user-initiated raid:", error);
+      logger.error(
+        "Error handling user-initiated raid:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -658,7 +670,10 @@ React with ⚔️ to join this sacred mission!
         });
       }
     } catch (error) {
-      logger.error("Failed to send message:", error);
+      logger.error(
+        "Failed to send message:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 

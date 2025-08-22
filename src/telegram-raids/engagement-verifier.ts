@@ -60,7 +60,10 @@ export class EngagementVerifier {
 
       logger.info("Engagement Verifier initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize Engagement Verifier:", error);
+      logger.error(
+        "Failed to initialize Engagement Verifier:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -117,7 +120,10 @@ export class EngagementVerifier {
         points: points.total,
       };
     } catch (error) {
-      logger.error("Failed to verify engagement:", error);
+      logger.error(
+        "Failed to verify engagement:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         verified: false,
         points: 0,

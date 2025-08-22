@@ -25,6 +25,8 @@ export const knowledgeRagProvider: Provider = {
     message: Memory,
     state?: State,
   ): Promise<any> => {
+    const startTime = Date.now();
+
     try {
       // Extract message text
       const messageText =
@@ -59,7 +61,10 @@ export const knowledgeRagProvider: Provider = {
           threshold: 0.7, // Minimum similarity threshold
         })
         .catch((error: any) => {
-          logger.debug("[KNOWLEDGE_RAG] Search failed:", error);
+          logger.debug(
+            "[KNOWLEDGE_RAG] Search failed:",
+            error instanceof Error ? error.message : String(error),
+          );
           return null;
         });
 
@@ -94,9 +99,11 @@ export const knowledgeRagProvider: Provider = {
       } catch (embedError) {
         logger.debug(
           "[KNOWLEDGE_RAG] Embedding generation failed:",
-          embedError,
+          embedError instanceof Error ? embedError.message : String(embedError),
         );
       }
+
+      const processingTime = Date.now() - startTime;
 
       return {
         text: contextText ? `relevant_knowledge:\n${contextText}` : "",
@@ -111,10 +118,17 @@ export const knowledgeRagProvider: Provider = {
           results: knowledgeSnippets,
           messageEmbedding,
           query: messageText.substring(0, 100),
+          performance: {
+            processingTime,
+            searchTime: processingTime,
+          },
         },
       };
     } catch (error) {
-      logger.error("[KNOWLEDGE_RAG_PROVIDER] Error:", error);
+      logger.error(
+        "[KNOWLEDGE_RAG_PROVIDER] Error:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         text: "",
         values: { ragEnabled: false, error: true },

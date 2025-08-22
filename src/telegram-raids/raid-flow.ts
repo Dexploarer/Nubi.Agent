@@ -89,7 +89,10 @@ export class AnubisRaidFlow {
 
       logger.info("Raid flow configuration loaded");
     } catch (error) {
-      logger.error("Failed to load raid flow config:", error);
+      logger.error(
+        "Failed to load raid flow config:",
+        error instanceof Error ? error.message : String(error),
+      );
       this.config = {
         enabled: false,
         postInterval: 4,
@@ -125,7 +128,10 @@ export class AnubisRaidFlow {
 
       this.isRunning = true;
     } catch (error) {
-      logger.error("Failed to initialize raid flow:", error);
+      logger.error(
+        "Failed to initialize raid flow:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -155,7 +161,10 @@ export class AnubisRaidFlow {
         channelId,
       );
     } catch (error) {
-      logger.error("Error handling incoming message:", error);
+      logger.error(
+        "Error handling incoming message:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -195,7 +204,10 @@ export class AnubisRaidFlow {
       this.activeRaidCount++;
       logger.info("Raid cycle completed successfully");
     } catch (error) {
-      logger.error("Raid cycle failed:", error);
+      logger.error(
+        "Raid cycle failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       // Continue running despite errors
     }
   }
@@ -224,7 +236,10 @@ export class AnubisRaidFlow {
         // and update raid participants accordingly
         logger.debug(`Checking engagement for raid ${raidId}`);
       } catch (error) {
-        logger.error("Error monitoring engagement:", error);
+        logger.error(
+          "Error monitoring engagement:",
+          error instanceof Error ? error.message : String(error),
+        );
       }
     }, 60000); // Every minute
   }
@@ -547,7 +562,10 @@ The divine legion coordinates as one! 🔥`;
 
       return `✅ **${engagementType.toUpperCase()} VERIFIED!** ⚡\n\nYou earned **${verification.points} divine points** for your ${engagementType}!\n\n*The cosmic algorithms have registered your devotion.*`;
     } catch (error) {
-      logger.error("Error verifying engagement:", error);
+      logger.error(
+        "Error verifying engagement:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Verification service temporarily unavailable. Please try again later.";
     }
   }
@@ -589,7 +607,10 @@ The divine legion coordinates as one! 🔥`;
       await this.executeRaidCycle();
       return "Manual raid cycle executed successfully!";
     } catch (error) {
-      logger.error("Manual post failed:", error);
+      logger.error(
+        "Manual post failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "Failed to execute manual raid cycle.";
     }
   }

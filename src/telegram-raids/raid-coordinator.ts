@@ -169,7 +169,10 @@ export class RaidCoordinator {
 
       logger.info("Raid Coordinator initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize Raid Coordinator:", error);
+      logger.error(
+        "Failed to initialize Raid Coordinator:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -251,7 +254,10 @@ ${announcement}`;
         return { message_id: Date.now().toString() };
       }
     } catch (error) {
-      logger.error("Failed to send Telegram message:", error);
+      logger.error(
+        "Failed to send Telegram message:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }

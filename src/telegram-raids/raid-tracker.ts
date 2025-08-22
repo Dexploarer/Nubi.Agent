@@ -241,94 +241,6 @@ export class RaidTracker {
         expires_at INTEGER,
         metadata TEXT DEFAULT '{}'
       )`,
-
-      /* PYRAMID SYSTEM - READY TO ACTIVATE
-      // Pyramid structure tracking
-      `CREATE TABLE IF NOT EXISTS pyramid_structure (
-        user_id TEXT PRIMARY KEY,
-        referrer_id TEXT,
-        level INTEGER DEFAULT 0,
-        referrals TEXT DEFAULT '[]',
-        total_descendants INTEGER DEFAULT 0,
-        joined_at INTEGER,
-        last_active INTEGER,
-        conversion_rate REAL DEFAULT 0.0,
-        total_rewards REAL DEFAULT 0.0,
-        monthly_rewards REAL DEFAULT 0.0,
-        status TEXT DEFAULT 'active',
-        title TEXT,
-        metadata TEXT DEFAULT '{}',
-        FOREIGN KEY (referrer_id) REFERENCES pyramid_structure(user_id)
-      )`,
-
-      // Referral rewards tracking
-      `CREATE TABLE IF NOT EXISTS referral_rewards (
-        id TEXT PRIMARY KEY,
-        from_user_id TEXT NOT NULL,
-        to_user_id TEXT NOT NULL,
-        amount REAL NOT NULL,
-        level INTEGER NOT NULL,
-        timestamp INTEGER NOT NULL,
-        type TEXT DEFAULT 'instant',
-        status TEXT DEFAULT 'pending',
-        transaction_hash TEXT,
-        metadata TEXT DEFAULT '{}',
-        FOREIGN KEY (from_user_id) REFERENCES pyramid_structure(user_id),
-        FOREIGN KEY (to_user_id) REFERENCES pyramid_structure(user_id)
-      )`,
-
-      // Pyramid achievements
-      `CREATE TABLE IF NOT EXISTS pyramid_achievements (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        achievement TEXT NOT NULL,
-        unlocked_at INTEGER NOT NULL,
-        rarity TEXT DEFAULT 'common',
-        reward REAL DEFAULT 0,
-        metadata TEXT DEFAULT '{}',
-        FOREIGN KEY (user_id) REFERENCES pyramid_structure(user_id),
-        UNIQUE(user_id, achievement)
-      )`,
-
-      // Referral links tracking
-      `CREATE TABLE IF NOT EXISTS referral_links (
-        code TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        uses INTEGER DEFAULT 0,
-        max_uses INTEGER DEFAULT -1,
-        expires_at INTEGER,
-        platform TEXT,
-        metadata TEXT DEFAULT '{}',
-        FOREIGN KEY (user_id) REFERENCES pyramid_structure(user_id)
-      )`,
-
-      // Pyramid statistics (for leaderboard)
-      `CREATE TABLE IF NOT EXISTS pyramid_stats (
-        user_id TEXT PRIMARY KEY,
-        week_referrals INTEGER DEFAULT 0,
-        month_referrals INTEGER DEFAULT 0,
-        total_referrals INTEGER DEFAULT 0,
-        week_rewards REAL DEFAULT 0.0,
-        month_rewards REAL DEFAULT 0.0,
-        total_rewards REAL DEFAULT 0.0,
-        best_week INTEGER DEFAULT 0,
-        best_month INTEGER DEFAULT 0,
-        streak_days INTEGER DEFAULT 0,
-        last_updated INTEGER,
-        FOREIGN KEY (user_id) REFERENCES pyramid_structure(user_id)
-      )`,
-
-      `CREATE INDEX IF NOT EXISTS idx_pyramid_referrer ON pyramid_structure(referrer_id)`,
-      `CREATE INDEX IF NOT EXISTS idx_pyramid_level ON pyramid_structure(level)`,
-      `CREATE INDEX IF NOT EXISTS idx_pyramid_status ON pyramid_structure(status)`,
-      `CREATE INDEX IF NOT EXISTS idx_rewards_user ON referral_rewards(to_user_id)`,
-      `CREATE INDEX IF NOT EXISTS idx_rewards_status ON referral_rewards(status)`,
-      `CREATE INDEX IF NOT EXISTS idx_achievements_user ON pyramid_achievements(user_id)`,
-      `CREATE INDEX IF NOT EXISTS idx_links_user ON referral_links(user_id)`,
-      `CREATE INDEX IF NOT EXISTS idx_stats_referrals ON pyramid_stats(total_referrals DESC)`,
-      `CREATE INDEX IF NOT EXISTS idx_stats_rewards ON pyramid_stats(total_rewards DESC)`,
-      END PYRAMID SYSTEM */
     ];
 
     for (const query of queries) {
@@ -437,7 +349,10 @@ export class RaidTracker {
       );
       return true;
     } catch (error) {
-      logger.error("Failed to join raid:", error.message);
+      logger.error(
+        "Failed to join raid:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -487,7 +402,10 @@ export class RaidTracker {
         `Recorded action ${action} for user ${userId} in raid ${raidId}: ${points * multiplier} points`,
       );
     } catch (error) {
-      logger.error("Failed to record action:", error.message);
+      logger.error(
+        "Failed to record action:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -528,7 +446,10 @@ export class RaidTracker {
         );
       }
     } catch (error) {
-      logger.error("Failed to update leaderboard:", error.message);
+      logger.error(
+        "Failed to update leaderboard:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 

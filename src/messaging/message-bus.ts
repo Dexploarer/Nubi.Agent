@@ -1,10 +1,4 @@
-import {
-  IAgentRuntime,
-  Service,
-  ServiceType,
-  Memory,
-  logger,
-} from "../core";
+import { IAgentRuntime, Service, ServiceType, Memory, logger } from "../core";
 
 /**
  * Message interface for unified transport handling
@@ -90,7 +84,10 @@ export class DiscordTransport implements Transport {
       logger.info(`[Discord] Sending message to ${target}: ${message.text}`);
       return true;
     } catch (error) {
-      logger.error("[Discord] Send failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[Discord] Send failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -122,7 +119,10 @@ export class TelegramTransport implements Transport {
       logger.info(`[Telegram] Sending message to ${target}: ${message.text}`);
       return true;
     } catch (error) {
-      logger.error("[Telegram] Send failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[Telegram] Send failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -158,7 +158,10 @@ export class TwitterTransport implements Transport {
       logger.info(`[Twitter] Posting tweet: ${message.text}`);
       return true;
     } catch (error) {
-      logger.error("[Twitter] Send failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[Twitter] Send failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -187,7 +190,10 @@ export class HTTPTransport implements Transport {
       logger.info(`[HTTP] Sending response: ${message.text}`);
       return true;
     } catch (error) {
-      logger.error("[HTTP] Send failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[HTTP] Send failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -385,7 +391,10 @@ export class MessageBusService extends Service {
           const success = await transport.send(content);
           return { transportName, success };
         } catch (error) {
-          logger.error(`Failed to send to ${transportName}:`, error);
+          logger.error(
+            `Failed to send to ${transportName}:`,
+            error instanceof Error ? error.message : String(error),
+          );
           return { transportName, success: false };
         }
       },

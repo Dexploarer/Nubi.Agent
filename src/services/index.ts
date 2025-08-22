@@ -1,17 +1,28 @@
 /**
- * Services Module - Core service implementations
- * 
- * This module provides all service implementations including memory,
- * community management, personality evolution, and other core services.
+ * Services Module - Core service implementations for NUBI Agent
+ *
+ * This module provides only the services that are actually used and registered
+ * in the NUBI plugin. Unused services have been removed to reduce complexity.
+ *
+ * ARCHITECTURE NOTE:
+ * - Only services registered in nubi-plugin.ts are exported here
+ * - Services follow ElizaOS Service interface from @elizaos/core
+ * - Services use dependency injection via runtime.getService()
+ * - Background services handle long-running tasks and integrations
  */
 
-// Re-export core types
-export type { IAgentRuntime, Memory } from '../core';
+// Import core types and values
+import type { IAgentRuntime, Memory } from "../core";
+import { Service, logger } from "../core";
 
-// Re-export core values
-export { Service, logger } from '../core';
+// Re-export for convenience
+export type { IAgentRuntime, Memory };
+export { Service, logger };
 
-// Service types
+// ============================================================================
+// SERVICE INTERFACES
+// ============================================================================
+
 export interface ServiceRegistry {
   [key: string]: Service;
 }
@@ -70,28 +81,38 @@ export interface RelationshipStatus {
   metadata: Record<string, unknown>;
 }
 
-// Service implementations
-export { DatabaseMemoryService } from './database-memory-service';
-export { CommunityMemoryService } from './community-memory-service';
-export { PersonalityEvolutionService } from './personality-evolution-service';
-export { EmotionalStateService } from './emotional-state-service';
-export { CommunityManagementService } from './community-management-service';
-export { EnhancedResponseGenerator } from './enhanced-response-generator';
-export { SessionsService } from './sessions-service';
-export { ComposeStateService } from './compose-state-service';
-export { SocketIOEventsService } from './socket-io-events-service';
-export { EnhancedRealtimeService } from './enhanced-realtime-service';
-export { MessagingAnalyticsService } from './messaging-analytics-service';
-export { ElizaOSMessageProcessor } from './elizaos-message-processor';
-export { CrossPlatformIdentityService } from './cross-platform-identity-service';
-export { SecurityFilter } from './security-filter';
-export { RaidSocketService } from './raid-socket-service';
-export { RaidPromptOrchestrator } from './raid-prompt-orchestrator';
-export { PersonalityService } from './personality-service';
-export { ElizaOSRaidService } from './elizaos-raid-service';
-export { SocketIOAnalyticsService } from './socket-io-analytics-enhanced';
+// ============================================================================
+// ACTIVE SERVICES - All services registered in nubi-plugin.ts
+// ============================================================================
 
-// Service manager implementation
+// Security Services (highest priority)
+export { default as SecurityFilter } from "./security-filter";
+
+// AI and Response Generation Services
+export { EnhancedResponseGenerator } from "./enhanced-response-generator";
+
+// Session and Memory Management Services
+export { SessionsService } from "./sessions-service";
+export { DatabaseMemoryService } from "./database-memory-service";
+
+// Personality & Emotional Services
+export { PersonalityEvolutionService } from "./personality-evolution-service";
+export { EmotionalStateService } from "./emotional-state-service";
+
+// Community and Identity Services
+export { CommunityManagementService } from "./community-management-service";
+export { CrossPlatformIdentityService } from "./cross-platform-identity-service";
+
+// ============================================================================
+// SERVICE MANAGER IMPLEMENTATION
+// ============================================================================
+
+/**
+ * Service Manager Implementation
+ *
+ * Provides centralized service registration and lifecycle management.
+ * Used for dependency injection and service discovery.
+ */
 export class ServiceManagerImpl implements ServiceManager {
   private services: ServiceRegistry = {};
 
@@ -105,30 +126,83 @@ export class ServiceManagerImpl implements ServiceManager {
 
   getAll(serviceType: string): Service[] {
     return Object.values(this.services).filter(
-      service => service.constructor.name === serviceType
+      (service) => service.constructor.name === serviceType,
     );
   }
 
   async start(serviceType: string): Promise<void> {
     const services = this.getAll(serviceType);
-    await Promise.all(services.map(service => service.start()));
+    // Services are already started when constructed, so nothing to do here
+    logger.info(`[SERVICE_MANAGER] Services of type ${serviceType} are ready`);
   }
 
   async stop(serviceType: string): Promise<void> {
     const services = this.getAll(serviceType);
-    await Promise.all(services.map(service => service.stop()));
+    await Promise.all(services.map((service) => service.stop()));
   }
 }
 
-// Utility functions
+// ============================================================================
+// UTILITY FUNCTIONS
+// ============================================================================
+
+/**
+ * Create a new service manager instance
+ */
 export function createServiceManager(): ServiceManager {
   return new ServiceManagerImpl();
 }
 
+/**
+ * Validate that a service implements the required interface
+ */
 export function validateService(service: Service): boolean {
   return !!(
     service &&
-    typeof service.start === 'function' &&
-    typeof service.stop === 'function'
+    typeof service.stop === "function" &&
+    service.capabilityDescription
   );
 }
+
+/**
+ * Get service by type with proper error handling
+ */
+export function getServiceSafely<T extends Service>(
+  runtime: IAgentRuntime,
+  serviceType: string,
+): T | null {
+  try {
+    return runtime.getService<T>(serviceType);
+  } catch (error) {
+    logger.warn(
+      `[SERVICES] Failed to get service ${serviceType}:`,
+      error instanceof Error ? error.message : String(error),
+    );
+    return null;
+  }
+}
+
+/**
+ * Service categories for organization
+ */
+export const SERVICE_CATEGORIES = {
+  SECURITY: ["security-filter"],
+  AI: ["enhanced-response-generator"],
+  SESSIONS: ["sessions", "database-memory"],
+  PERSONALITY: ["personality-evolution", "emotional-state"],
+  COMMUNITY: ["community-management", "cross-platform-identity"],
+} as const;
+
+/**
+ * List of all active services registered in nubi-plugin.ts
+ */
+export const ACTIVE_SERVICES = [
+  "SecurityFilter",
+  "EnhancedResponseGenerator",
+  "SessionsService",
+  "DatabaseMemoryService",
+  "PersonalityEvolutionService",
+  "EmotionalStateService",
+  "CommunityManagementService",
+  "CrossPlatformIdentityService",
+] as const;

@@ -78,7 +78,10 @@ export function loadEnvironmentConfig(): EnvironmentConfig {
     validateConfig(config);
     return config;
   } catch (error) {
-    logger.error("Failed to load environment configuration:", error);
+    logger.error(
+      "Failed to load environment configuration:",
+      error instanceof Error ? error.message : String(error),
+    );
     throw error;
   }
 }

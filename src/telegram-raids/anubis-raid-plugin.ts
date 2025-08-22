@@ -35,7 +35,10 @@ export class AnubisRaidService extends Service {
       await this.raidFlow.initialize();
       logger.info("Anubis Raid Service initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize Anubis Raid Service:", error);
+      logger.error(
+        "Failed to initialize Anubis Raid Service:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -87,7 +90,10 @@ export class AnubisRaidService extends Service {
 
       return "";
     } catch (error) {
-      logger.error("Error handling Telegram message:", error);
+      logger.error(
+        "Error handling Telegram message:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "An error occurred processing your request.";
     }
   }
@@ -148,7 +154,9 @@ const anubisRaidPlugin: Plugin = {
             success: false,
             text: "Failed to start manual raid",
             values: { raidStarted: false },
-            data: { error: error.message },
+            data: {
+              error: error instanceof Error ? error.message : String(error),
+            },
           };
         }
       },

@@ -69,7 +69,10 @@ export const dynamicModelParametersProvider: Provider = {
         },
       };
     } catch (error) {
-      logger.error("[DYNAMIC_PARAMETERS] Error calculating parameters:", error);
+      logger.error(
+        "[DYNAMIC_PARAMETERS] Error calculating parameters:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       // Fallback to defaults
       return {

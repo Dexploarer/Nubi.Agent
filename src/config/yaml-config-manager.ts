@@ -118,7 +118,7 @@ class YAMLConfigManager {
 
       const fileContents = readFileSync(configFile, "utf8");
       const loadedConfig = yaml.load(fileContents) as AnubisConfig;
-      
+
       // Validate the loaded config structure
       if (this.validateConfigStructure(loadedConfig)) {
         this.config = loadedConfig;
@@ -130,7 +130,10 @@ class YAMLConfigManager {
         this.createDefaultConfig();
       }
     } catch (error) {
-      logger.error("Failed to load YAML configuration:", error);
+      logger.error(
+        "Failed to load YAML configuration:",
+        error instanceof Error ? error.message : String(error),
+      );
       this.createDefaultConfig();
     }
   }
@@ -343,9 +346,9 @@ class YAMLConfigManager {
 
   public getConfig(): AnubisConfig {
     const now = Date.now();
-    
+
     // Return cached config if still valid
-    if (this.configCache && (now - this.lastLoadTime) < this.CACHE_TTL) {
+    if (this.configCache && now - this.lastLoadTime < this.CACHE_TTL) {
       return this.configCache;
     }
 
@@ -353,11 +356,11 @@ class YAMLConfigManager {
     if (!this.config) {
       this.loadConfig();
     }
-    
+
     // Update cache
     this.configCache = this.config!;
     this.lastLoadTime = now;
-    
+
     return this.config!;
   }
 
@@ -394,7 +397,10 @@ class YAMLConfigManager {
       writeFileSync(configFile, yamlStr, "utf8");
       logger.info("✅ YAML configuration saved successfully");
     } catch (error) {
-      logger.error("Failed to save YAML configuration:", error);
+      logger.error(
+        "Failed to save YAML configuration:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -449,7 +455,10 @@ class YAMLConfigManager {
       try {
         callback();
       } catch (error) {
-        logger.error(`Watcher callback error for event ${event}:`, error);
+        logger.error(
+          `Watcher callback error for event ${event}:`,
+          error instanceof Error ? error.message : String(error),
+        );
       }
     });
   }

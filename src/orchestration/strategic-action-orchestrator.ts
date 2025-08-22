@@ -355,7 +355,10 @@ export class StrategyActionOrchestratorService extends Service {
       };
     } catch (error) {
       this.activeExecutions.delete(executionId);
-      logger.error(`❌ Workflow failed: ${template.name}`, error);
+      logger.error(
+        `❌ Workflow failed: ${template.name}`,
+        error instanceof Error ? error.message : String(error),
+      );
 
       return {
         success: false,
@@ -471,7 +474,10 @@ export class StrategyActionOrchestratorService extends Service {
           );
           await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1s before retry
         } else {
-          logger.error(`❌ Step failed permanently: ${step.name}`, error);
+          logger.error(
+            `❌ Step failed permanently: ${step.name}`,
+            error instanceof Error ? error.message : String(error),
+          );
           throw error;
         }
       }

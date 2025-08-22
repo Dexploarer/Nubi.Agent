@@ -83,7 +83,7 @@ export class EmotionalStateService extends Service {
     } catch (error) {
       logger.warn(
         "[EMOTIONAL_STATE_SERVICE] Failed to process emotional decay:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -142,7 +142,7 @@ export class EmotionalStateService extends Service {
     } catch (error) {
       logger.warn(
         "[EMOTIONAL_STATE_SERVICE] Could not persist emotional state:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }

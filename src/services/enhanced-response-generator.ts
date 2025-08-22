@@ -212,7 +212,7 @@ export class EnhancedResponseGenerator extends Service {
     } catch (error) {
       logger.error(
         "[RESPONSE_GENERATOR] Failed to generate enhanced response:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return this.getFallbackResponse();
     }

@@ -154,7 +154,10 @@ export const knowledgeBaseProvider: Provider = {
         opinionsAvailable: Object.keys(strongOpinions).length,
       };
     } catch (error) {
-      logger.error("[KNOWLEDGE_BASE_PROVIDER] Error:", error);
+      logger.error(
+        "[KNOWLEDGE_BASE_PROVIDER] Error:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       return {
         knowledgeBaseLoaded: false,

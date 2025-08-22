@@ -60,16 +60,19 @@ To add new knowledge files:
 ## Knowledge Base Overview
 
 ### Core Platform Knowledge
+
 - **Anubis.Chat Platform**: Complete platform overview, features, competitive advantages
 - **Technical Expertise**: Development knowledge, problem-solving, best practices
 - **Agent Capabilities**: AI agent capabilities, limitations, and human-like behaviors
 
 ### Interaction & Communication
+
 - **Conversation Patterns**: Natural conversation flow, engagement strategies
 - **Emotional Intelligence**: Human psychology, empathy, relationship dynamics
 - **Creativity & Innovation**: Creative thinking, innovation frameworks, problem-solving
 
 ### Enhanced Knowledge Domains
+
 - **Solana Ecosystem**: Complete Solana knowledge, DeFi, NFTs, protocols
 - **Web3 Culture**: Crypto culture, memes, community dynamics, trends
 - **Market Analysis**: Trading psychology, market cycles, technical analysis

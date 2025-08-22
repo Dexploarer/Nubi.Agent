@@ -67,7 +67,10 @@ export const communityTrackingEvaluator: Evaluator = {
         },
       };
     } catch (error) {
-      logger.error("[COMMUNITY_TRACKING] Error:", error);
+      logger.error(
+        "[COMMUNITY_TRACKING] Error:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error)),

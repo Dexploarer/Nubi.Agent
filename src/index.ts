@@ -15,6 +15,10 @@ import * as middleware from "./middleware";
 import * as models from "./models";
 import * as observability from "./observability";
 
+// Import routes and schemas
+import * as routes from "./routes";
+import * as schemas from "./schemas";
+
 // Remove explicit telegram plugin import to avoid duplicate registration
 // The character's plugins array handles telegram via `@elizaos/plugin-telegram`
 // import { ProjectStarterTestSuite } from "./__tests__/e2e/project-starter.e2e";
@@ -80,13 +84,18 @@ const initCharacter = ({ runtime }: { runtime: IAgentRuntime }) => {
 
     logger.info("🎯 NUBI Agent ready for deployment");
   } catch (error) {
-    logger.error("❌ Character initialization failed:", error);
+    logger.error(
+      "❌ Character initialization failed:",
+      error instanceof Error ? error.message : String(error),
+    );
     throw error;
   }
 };
 
 // Create modular application instance
-const app = createNubiApplication(createAppConfig('NUBI', '1.0.0', 'development'));
+const app = createNubiApplication(
+  createAppConfig("NUBI", "1.0.0", "development"),
+);
 
 export const projectAgent: ProjectAgent = {
   character: nubiCharacter,
@@ -99,18 +108,23 @@ export const projectAgent: ProjectAgent = {
   plugins: [
     clickhouseAnalyticsPlugin, // Analytics and observability
   ],
-//   tests: [ProjectStarterTestSuite],
+  //   tests: [ProjectStarterTestSuite],
 };
 
 const project: Project = {
   agents: [projectAgent],
 };
 
-// Export from modular structure
-export { nubiCharacter as character } from "./character";
+// Export character from modular structure
 export { nubiCharacter } from "./character";
 
 // Export middleware, models, and observability modules
 export { middleware, models, observability };
+
+// Export routes and schemas modules
+export { routes, schemas };
+
+// Export Telegram raiding system
+export { default as telegramRaids } from "./telegram-raids";
 
 export default project;

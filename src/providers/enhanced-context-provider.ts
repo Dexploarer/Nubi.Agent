@@ -28,6 +28,8 @@ export const enhancedContextProvider: Provider = {
     message: Memory,
     state: State,
   ): Promise<ProviderResult> => {
+    const startTime = Date.now();
+
     try {
       // Get database memory service
       const memoryService =
@@ -86,21 +88,33 @@ export const enhancedContextProvider: Provider = {
         timestamp: Date.now(),
       };
 
+      const processingTime = Date.now() - startTime;
+
       logger.debug(
         "[ENHANCED_CONTEXT] Built rich context: " +
           `memories=${context.recentMemories.length}, ` +
           `patterns=${context.patterns.length}, ` +
           `relationships=${context.relationships.length}, ` +
-          `emotional=${context.emotionalState?.current_state}`,
+          `emotional=${context.emotionalState?.current_state}, ` +
+          `time=${processingTime}ms`,
       );
 
       return {
         text: contextText,
         values: contextValues,
-        data: contextData,
+        data: {
+          ...contextData,
+          performance: {
+            processingTime,
+            contextQuality: contextData.contextQuality,
+          },
+        },
       };
     } catch (error) {
-      logger.error("[ENHANCED_CONTEXT] Error building context:", error);
+      logger.error(
+        "[ENHANCED_CONTEXT] Error building context:",
+        error instanceof Error ? error.message : String(error),
+      );
       return getBasicContext(runtime, message);
     }
   },
@@ -428,7 +442,10 @@ topics: ${analysis.topics.join(", ")}`,
       },
     };
   } catch (error) {
-    logger.error("[ENHANCED_CONTEXT] Failed to get basic context:", error);
+    logger.error(
+      "[ENHANCED_CONTEXT] Failed to get basic context:",
+      error instanceof Error ? error.message : String(error),
+    );
     return {
       text: "context unavailable",
       values: { error: true },

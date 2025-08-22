@@ -12,14 +12,14 @@ export {
   identityActions,
   identityContextProvider,
   identityProviders,
-} from './identity-linking-actions';
+} from "./identity-linking-actions";
 
 // Ritual actions
 export {
   ritualAction,
   recordAction,
   ritualActions,
-} from './elizaos-ritual-action';
+} from "./elizaos-ritual-action";
 
 // Re-export types for convenience
-export type { Action, ActionResult, HandlerCallback } from '@elizaos/core';
+export type { Action, ActionResult, HandlerCallback } from "@elizaos/core";

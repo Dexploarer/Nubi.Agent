@@ -29,45 +29,38 @@ import {
 import { UserIdentityService } from "../identity";
 
 // ElizaOS Sessions API Routes
-import sessionsRoutes from "../routes/sessions-routes";
+import { sessionsRoutes } from "../routes";
 
 // New ElizaOS-compliant evaluators and providers
 import { personalityEvolutionEvaluator } from "../evaluators/personality-evolution";
-import { emotionalStateProvider } from "../providers/emotional-state-provider";
-import { knowledgeBaseProvider } from "../providers/knowledge-base-provider";
-import knowledgeRagProvider from "../providers/knowledge-rag-provider";
-import enhancedContextProvider from "../providers/enhanced-context-provider";
-import { dynamicModelParametersProvider } from "../providers/dynamic-model-parameters-provider";
+import {
+  emotionalStateProvider,
+  knowledgeBaseProvider,
+  knowledgeRagProvider,
+  enhancedContextProvider,
+  dynamicModelParametersProvider,
+} from "../providers";
 import { antiDetectionPostProcessor } from "../evaluators/anti-detection-post-processor";
 import { communityTrackingEvaluator } from "../evaluators/community-tracking-evaluator";
 
 // Import database schemas for auto-migration
-import { allSchemas } from "../schemas/elizaos-schemas";
+import { allSchemas } from "../schemas";
 import securityEvaluator from "../evaluators/security-evaluator";
 
 // Import actions from centralized index
-import {
-  identityActions,
-  ritualActions,
-  identityProviders,
-} from "../actions";
+import { identityActions, ritualActions, identityProviders } from "../actions";
 
 // Import action middleware for proper preprocessing
 import { withActionMiddleware } from "../middleware";
 
-// New ElizaOS Services
+// Active ElizaOS Services - All services registered in the plugin
 import { PersonalityEvolutionService } from "../services";
 import { EmotionalStateService } from "../services";
 import { CommunityManagementService } from "../services";
-import { DatabaseMemoryService } from "../services";
 import { EnhancedResponseGenerator } from "../services";
 import { SessionsService } from "../services";
-import { ComposeStateService } from "../services";
-import { SocketIOEventsService } from "../services";
-import { EnhancedRealtimeService } from "../services";
-import { MessagingAnalyticsService } from "../services";
-import { ElizaOSMessageProcessor } from "../services";
-// Database service removed - using ElizaOS built-in database adapters
+import { CrossPlatformIdentityService } from "../services";
+import { DatabaseMemoryService } from "../services";
 
 // Enhanced Telegram Raids functionality
 import { EnhancedTelegramRaidsService } from "../telegram-raids/elizaos-enhanced-telegram-raids";
@@ -127,19 +120,21 @@ const sessionManagementAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
-    options: Record<string, unknown>,
-    callback: HandlerCallback,
+    state?: State,
+    options?: Record<string, unknown>,
+    callback?: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
       const text = message.content.text || "";
 
       if (text.includes("new conversation")) {
         // Use ElizaOS built-in session management
-        await callback({
-          text: "Started a fresh conversation context! Previous context preserved but we're starting clean.",
-          action: "ANUBIS_SESSION_MANAGEMENT",
-        });
+        if (callback) {
+          await callback({
+            text: "Started a fresh conversation context! Previous context preserved but we're starting clean.",
+            action: "ANUBIS_SESSION_MANAGEMENT",
+          });
+        }
 
         return {
           success: true,
@@ -162,10 +157,12 @@ const sessionManagementAction: Action = {
           .filter(Boolean)
           .join("... ");
 
-        await callback({
-          text: `Switching context... I remember we were discussing: ${contextSummary}`,
-          action: "ANUBIS_SESSION_MANAGEMENT",
-        });
+        if (callback) {
+          await callback({
+            text: `Switching context... I remember we were discussing: ${contextSummary}`,
+            action: "ANUBIS_SESSION_MANAGEMENT",
+          });
+        }
 
         return {
           success: true,
@@ -179,7 +176,10 @@ const sessionManagementAction: Action = {
         text: "Unknown session management request",
       };
     } catch (error) {
-      logger.error("Session management failed:", error);
+      logger.error(
+        "Session management failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
         text: "Session management error",
@@ -239,8 +239,8 @@ const sessionStateEvaluator: Evaluator = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
-    options: any,
+    state?: State,
+    options?: any,
     callback?: HandlerCallback,
   ): Promise<any> => {
     try {
@@ -281,8 +281,14 @@ const sessionStateEvaluator: Evaluator = {
         },
       };
     } catch (error) {
-      logger.error("Session state evaluator failed:", error);
-      return { success: false, error: error.message };
+      logger.error(
+        "Session state evaluator failed:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
     }
   },
 };
@@ -339,10 +345,10 @@ const nubiPlugin: Plugin = {
   actions: [
     // Wrap actions with middleware for proper @mention preprocessing and routing
     withActionMiddleware(sessionManagementAction),
-    
+
     // Identity linking actions
     ...identityActions.map(withActionMiddleware),
-    
+
     // Ritual actions
     ...ritualActions.map(withActionMiddleware),
 
@@ -507,13 +513,17 @@ const nubiPlugin: Plugin = {
   },
 
   services: [
-    // Core NUBI Services (7 focused services following ElizaOS recommendations)
+    // Core NUBI Services (10 focused services following ElizaOS recommendations)
 
     // Security (first priority)
     SecurityFilter, // Prompt injection and spam protection
 
     // AI and response generation
     EnhancedResponseGenerator, // AI-powered responses with context awareness
+
+    // Session and memory management
+    SessionsService, // Session management and persistence
+    DatabaseMemoryService, // Enhanced context retrieval with semantic search
 
     // Personality and emotional systems
     EmotionalStateService, // NUBI emotional state management
@@ -522,11 +532,10 @@ const nubiPlugin: Plugin = {
     // Community and identity
     CommunityManagementService, // NUBI community features
     UserIdentityService, // Cross-platform identity linking
+    CrossPlatformIdentityService, // User identity linking across platforms
 
     // Enhanced Telegram functionality
     EnhancedTelegramRaidsService, // NUBI raids coordination
-    //         new EnhancedTelegramRaidsService(this.runtime),
-    ,
   ],
 
   // Enhanced functionality integrated directly into NUBI plugin
@@ -586,7 +595,10 @@ const nubiPlugin: Plugin = {
           `  - Response templates: ${Object.keys(yamlConfig.templates || {}).length}`,
         );
       } catch (yamlError) {
-        logger.warn("⚠️ YAML configuration failed to load:", yamlError);
+        logger.warn(
+          "⚠️ YAML configuration failed to load:",
+          yamlError instanceof Error ? yamlError.message : String(yamlError),
+        );
         logger.info("Continuing with default configuration...");
 
         // Store empty config manager as fallback
@@ -609,7 +621,10 @@ const nubiPlugin: Plugin = {
       logger.info(`  - Providers: ${nubiPlugin.providers?.length || 0}`);
       logger.info(`  - Evaluators: ${nubiPlugin.evaluators?.length || 0}`);
     } catch (error) {
-      logger.error("❌ Anubis Plugin initialization failed:", error);
+      logger.error(
+        "❌ Anubis Plugin initialization failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   },

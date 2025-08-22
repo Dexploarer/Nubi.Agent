@@ -194,10 +194,12 @@ export const personalityEvolutionEvaluator: Evaluator = {
         },
       };
     } catch (error) {
-      logger.error("[PERSONALITY_EVOLUTION] Error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      logger.error("[PERSONALITY_EVOLUTION] Error:", errorMessage);
       return {
         success: false,
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: errorMessage,
       };
     }
   },
@@ -273,7 +275,7 @@ async function evolvePersonality(
   } catch (error) {
     logger.warn(
       "[PERSONALITY_EVOLUTION] Could not persist personality changes:",
-      error,
+      error instanceof Error ? error.message : String(error),
     );
   }
 

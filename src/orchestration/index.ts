@@ -1,12 +1,15 @@
 /**
  * Orchestration Module - Strategic action orchestration and flow management
- * 
+ *
  * This module provides strategic action orchestration, flow management,
  * and coordination between different services and components.
  */
 
 // Re-export core types
-export type { IAgentRuntime, Service, Memory, State, Action, logger } from '../core';
+export type { IAgentRuntime, Service, Memory, State, Action } from "../core";
+
+// Import logger as a value
+import { logger } from "../core";
 
 // Orchestration types
 export interface OrchestrationConfig {
@@ -22,7 +25,7 @@ export interface ActionFlow {
   name: string;
   steps: ActionStep[];
   currentStep: number;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
   metadata: Record<string, unknown>;
 }
 
@@ -32,7 +35,7 @@ export interface ActionStep {
   action: string;
   dependencies: string[];
   config: Record<string, unknown>;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: "pending" | "running" | "completed" | "failed";
   result?: unknown;
   error?: string;
 }
@@ -66,26 +69,30 @@ export interface StrategyConfig {
 }
 
 // Service exports
-export { StrategyActionOrchestratorService as StrategicActionOrchestrator } from './strategic-action-orchestrator';
-export { PluginConfigurationManagerService } from './plugin-configuration-manager';
+export { StrategyActionOrchestratorService as StrategicActionOrchestrator } from "./strategic-action-orchestrator";
+export { PluginConfigurationManagerService } from "./plugin-configuration-manager";
 
 // Orchestration manager implementation
 export class OrchestrationManagerImpl implements OrchestrationManager {
   private flows: Map<string, ActionFlow> = new Map();
-  private flowStats: Map<string, { startTime: number; endTime?: number }> = new Map();
+  private flowStats: Map<string, { startTime: number; endTime?: number }> =
+    new Map();
 
   async startFlow(flow: ActionFlow): Promise<void> {
     try {
       if (!validateActionFlow(flow)) {
         throw new Error(`Invalid flow configuration: ${flow.name}`);
       }
-      
+
       this.flows.set(flow.id, flow);
       this.flowStats.set(flow.id, { startTime: Date.now() });
-      
+
       logger.info(`🚀 Started flow: ${flow.name} (${flow.id})`);
     } catch (error) {
-      logger.error(`Failed to start flow ${flow.name}:`, error);
+      logger.error(
+        `Failed to start flow ${flow.name}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -94,21 +101,24 @@ export class OrchestrationManagerImpl implements OrchestrationManager {
     try {
       const flow = this.flows.get(flowId);
       if (flow) {
-        flow.status = 'failed';
+        flow.status = "failed";
         this.flows.set(flowId, flow);
-        
+
         const stats = this.flowStats.get(flowId);
         if (stats) {
           stats.endTime = Date.now();
           this.flowStats.set(flowId, stats);
         }
-        
+
         logger.info(`🛑 Stopped flow: ${flow.name} (${flowId})`);
       } else {
         logger.warn(`Flow not found: ${flowId}`);
       }
     } catch (error) {
-      logger.error(`Failed to stop flow ${flowId}:`, error);
+      logger.error(
+        `Failed to stop flow ${flowId}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -129,31 +139,46 @@ export class OrchestrationManagerImpl implements OrchestrationManager {
       this.flows.set(flow.id, flow);
       logger.debug(`Updated flow: ${flow.name} (${flow.id})`);
     } catch (error) {
-      logger.error(`Failed to update flow ${flow.id}:`, error);
+      logger.error(
+        `Failed to update flow ${flow.id}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
 
-  getFlowStats(flowId: string): { startTime: number; endTime?: number; duration?: number } | null {
+  getFlowStats(
+    flowId: string,
+  ): { startTime: number; endTime?: number; duration?: number } | null {
     const stats = this.flowStats.get(flowId);
     if (!stats) return null;
-    
+
     return {
       ...stats,
-      duration: stats.endTime ? stats.endTime - stats.startTime : Date.now() - stats.startTime
+      duration: stats.endTime
+        ? stats.endTime - stats.startTime
+        : Date.now() - stats.startTime,
     };
   }
 
-  getAllFlowStats(): Record<string, { startTime: number; endTime?: number; duration?: number }> {
-    const result: Record<string, { startTime: number; endTime?: number; duration?: number }> = {};
-    
+  getAllFlowStats(): Record<
+    string,
+    { startTime: number; endTime?: number; duration?: number }
+  > {
+    const result: Record<
+      string,
+      { startTime: number; endTime?: number; duration?: number }
+    > = {};
+
     for (const [flowId, stats] of this.flowStats.entries()) {
       result[flowId] = {
         ...stats,
-        duration: stats.endTime ? stats.endTime - stats.startTime : Date.now() - stats.startTime
+        duration: stats.endTime
+          ? stats.endTime - stats.startTime
+          : Date.now() - stats.startTime,
       };
     }
-    
+
     return result;
   }
 }
@@ -165,15 +190,15 @@ export function createOrchestrationManager(): OrchestrationManager {
 
 export function createActionFlow(
   name: string,
-  steps: ActionStep[]
+  steps: ActionStep[],
 ): ActionFlow {
   return {
     id: `flow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     name,
     steps,
     currentStep: 0,
-    status: 'pending',
-    metadata: {}
+    status: "pending",
+    metadata: {},
   };
 }
 
@@ -181,7 +206,7 @@ export function createActionStep(
   name: string,
   action: string,
   dependencies: string[] = [],
-  config: Record<string, unknown> = {}
+  config: Record<string, unknown> = {},
 ): ActionStep {
   return {
     id: `step_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -189,7 +214,7 @@ export function createActionStep(
     action,
     dependencies,
     config,
-    status: 'pending'
+    status: "pending",
   };
 }
 
@@ -197,9 +222,9 @@ export function createStrategicContext(
   userId: string,
   roomId: string,
   platform: string,
-  currentState: string = 'idle',
+  currentState: string = "idle",
   goals: string[] = [],
-  constraints: string[] = []
+  constraints: string[] = [],
 ): StrategicContext {
   return {
     userId,
@@ -208,7 +233,7 @@ export function createStrategicContext(
     currentState,
     goals,
     constraints,
-    metadata: {}
+    metadata: {},
   };
 }
 
@@ -216,7 +241,7 @@ export function createStrategyConfig(
   name: string,
   description: string,
   triggers: string[] = [],
-  actions: string[] = []
+  actions: string[] = [],
 ): StrategyConfig {
   return {
     name,
@@ -225,7 +250,7 @@ export function createStrategyConfig(
     priority: 1,
     triggers,
     actions,
-    config: {}
+    config: {},
   };
 }
 
@@ -235,8 +260,8 @@ export function validateActionFlow(flow: ActionFlow): boolean {
     flow.name &&
     Array.isArray(flow.steps) &&
     flow.steps.length > 0 &&
-    typeof flow.currentStep === 'number' &&
-    ['pending', 'running', 'completed', 'failed'].includes(flow.status)
+    typeof flow.currentStep === "number" &&
+    ["pending", "running", "completed", "failed"].includes(flow.status)
   );
 }
 
@@ -246,6 +271,6 @@ export function validateActionStep(step: ActionStep): boolean {
     step.name &&
     step.action &&
     Array.isArray(step.dependencies) &&
-    ['pending', 'running', 'completed', 'failed'].includes(step.status)
+    ["pending", "running", "completed", "failed"].includes(step.status)
   );
 }

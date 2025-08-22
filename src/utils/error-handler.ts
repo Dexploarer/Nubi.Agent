@@ -106,7 +106,9 @@ export class ServiceErrorHandler {
         } catch (rollbackError) {
           logger.error(
             `[${serviceName}] Rollback failed for ${methodName}:`,
-            rollbackError,
+            rollbackError instanceof Error
+              ? rollbackError.message
+              : String(rollbackError),
           );
         }
       }

@@ -1,8 +1,14 @@
 /**
  * Observability exports for ElizaOS NUBI Agent
- * 
+ *
  * Provides comprehensive metrics, monitoring, and observability capabilities
  */
+
+import {
+  metricsIncrementMessageReceived,
+  metricsIncrementErrors,
+  metricsGetText,
+} from "./metrics";
 
 export {
   metricsIncrementMessageReceived,
@@ -31,7 +37,7 @@ export const observabilityUtils = {
       getElapsed: () => Date.now() - startTime,
     };
   },
-  
+
   /**
    * Track memory usage
    */
@@ -44,14 +50,14 @@ export const observabilityUtils = {
       external: Math.round(usage.external / 1024 / 1024), // MB
     };
   },
-  
+
   /**
    * Create a health check response
    */
   createHealthCheck: () => {
     const memoryUsage = observabilityUtils.getMemoryUsage();
     const uptime = process.uptime();
-    
+
     return {
       status: "healthy",
       timestamp: new Date().toISOString(),
@@ -60,17 +66,19 @@ export const observabilityUtils = {
       version: process.env.npm_package_version || "1.0.0",
     };
   },
-  
+
   /**
    * Log structured metrics
    */
   logMetrics: (metrics: Record<string, any>) => {
-    console.log(JSON.stringify({
-      timestamp: new Date().toISOString(),
-      level: "info",
-      type: "metrics",
-      ...metrics,
-    }));
+    console.log(
+      JSON.stringify({
+        timestamp: new Date().toISOString(),
+        level: "info",
+        type: "metrics",
+        ...metrics,
+      }),
+    );
   },
 };
 
@@ -81,7 +89,11 @@ export const nubiMetrics = {
   /**
    * Track message processing
    */
-  trackMessageProcessing: (platform: string, success: boolean, duration: number) => {
+  trackMessageProcessing: (
+    platform: string,
+    success: boolean,
+    duration: number,
+  ) => {
     observabilityUtils.logMetrics({
       event: "message_processed",
       platform,
@@ -89,11 +101,15 @@ export const nubiMetrics = {
       duration_ms: duration,
     });
   },
-  
+
   /**
    * Track action execution
    */
-  trackActionExecution: (actionName: string, success: boolean, duration: number) => {
+  trackActionExecution: (
+    actionName: string,
+    success: boolean,
+    duration: number,
+  ) => {
     observabilityUtils.logMetrics({
       event: "action_executed",
       action: actionName,
@@ -101,7 +117,7 @@ export const nubiMetrics = {
       duration_ms: duration,
     });
   },
-  
+
   /**
    * Track model usage
    */
@@ -113,11 +129,15 @@ export const nubiMetrics = {
       cost_usd: cost,
     });
   },
-  
+
   /**
    * Track error occurrence
    */
-  trackError: (errorType: string, errorMessage: string, context?: Record<string, any>) => {
+  trackError: (
+    errorType: string,
+    errorMessage: string,
+    context?: Record<string, any>,
+  ) => {
     observabilityUtils.logMetrics({
       event: "error_occurred",
       error_type: errorType,

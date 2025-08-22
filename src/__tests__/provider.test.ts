@@ -14,7 +14,7 @@ import {
   mockExternalApi,
 } from "./test-utils";
 import type { Provider } from "@elizaos/core";
-import plugin from "../plugin";
+import plugin from "../plugins/nubi-plugin";
 
 describe("Plugin Providers", () => {
   describe("Provider Registry", () => {

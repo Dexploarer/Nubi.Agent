@@ -1,10 +1,4 @@
-import {
-  IAgentRuntime,
-  Service,
-  ServiceType,
-  Plugin,
-  logger,
-} from "../core";
+import { IAgentRuntime, Service, ServiceType, Plugin, logger } from "../core";
 
 /**
  * Plugin configuration interface
@@ -470,7 +464,10 @@ export class PluginConfigurationManagerService extends Service {
       logger.info(`✅ Applied template: ${template.name}`);
       return true;
     } catch (error) {
-      logger.error(`❌ Failed to apply template: ${templateId}`, error);
+      logger.error(
+        `❌ Failed to apply template: ${templateId}`,
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }

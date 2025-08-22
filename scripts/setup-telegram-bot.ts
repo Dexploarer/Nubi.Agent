@@ -57,12 +57,7 @@ const REGULAR_COMMANDS: BotCommand[] = [
   { command: 'links', description: 'All official links and socials' },
 ];
 
-const PYRAMID_COMMANDS: BotCommand[] = [
-  { command: 'pyramid', description: '🔺 Show your pyramid structure' },
-  { command: 'refer', description: '🔺 Generate referral link' },
-  { command: 'pyramidleaders', description: '🔺 Top pyramid builders' },
-  { command: 'pyramidstats', description: '🔺 Global pyramid statistics' },
-];
+
 
 const ADMIN_COMMANDS: BotCommand[] = [
   { command: 'ban', description: '[ADMIN] Ban a user from raids' },
@@ -304,33 +299,25 @@ async function setupTelegramBot() {
   // 5. Set Default Commands (visible everywhere as fallback)
   console.log('\n📋 STEP 5: Setting Default Commands...');
   const defaultCommands = [...REGULAR_COMMANDS];
-  if (process.env.PYRAMID_SYSTEM_ENABLED === 'true') {
-    defaultCommands.push(...PYRAMID_COMMANDS);
-  }
+
   success = await setMyCommands(defaultCommands) && success;
 
   // 6. Set Private Chat Commands
   console.log('\n📋 STEP 6: Setting Private Chat Commands...');
   const privateChatCommands = [...PRIVATE_CHAT_COMMANDS];
-  if (process.env.PYRAMID_SYSTEM_ENABLED === 'true') {
-    privateChatCommands.push(...PYRAMID_COMMANDS);
-  }
+
   success = await setMyCommands(privateChatCommands, { type: 'all_private_chats' }) && success;
 
   // 7. Set Group Chat Commands (for regular members)
   console.log('\n📋 STEP 7: Setting Group Chat Commands...');
   const groupCommands = [...REGULAR_COMMANDS];
-  if (process.env.PYRAMID_SYSTEM_ENABLED === 'true') {
-    groupCommands.push(...PYRAMID_COMMANDS);
-  }
+
   success = await setMyCommands(groupCommands, { type: 'all_group_chats' }) && success;
 
   // 8. Set Administrator Commands (visible only to group admins)
   console.log('\n📋 STEP 8: Setting Administrator Commands...');
   const adminCommands = [...REGULAR_COMMANDS, ...ADMIN_COMMANDS];
-  if (process.env.PYRAMID_SYSTEM_ENABLED === 'true') {
-    adminCommands.push(...PYRAMID_COMMANDS);
-  }
+
   success = await setMyCommands(adminCommands, { type: 'all_chat_administrators' }) && success;
 
   // 9. Set Menu Button
@@ -372,7 +359,7 @@ Status: ${success ? '✅ SUCCESS' : '❌ PARTIAL FAILURE'}
 Bot Information:
 - Name: NUBI - The Symbiosis of Anubis
 - Token: ${BOT_TOKEN.substring(0, 10)}...
-- Pyramid System: ${process.env.PYRAMID_SYSTEM_ENABLED === 'true' ? 'ENABLED' : 'DISABLED'}
+
 
 Command Scopes Configured:
 ✅ Default Commands: ${REGULAR_COMMANDS.length} commands

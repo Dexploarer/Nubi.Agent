@@ -90,7 +90,9 @@ class ClickHouseAnalytics {
       );
 
       if (!response.ok) {
-        console.error(`ClickHouse insert failed: ${response.status} - ${response.statusText}`);
+        console.error(
+          `ClickHouse insert failed: ${response.status} - ${response.statusText}`,
+        );
         // Re-queue events for retry with exponential backoff
         this.requeueEvents(events);
       } else {
@@ -106,11 +108,13 @@ class ClickHouseAnalytics {
   private requeueEvents(events: AnalyticsEvent[]) {
     // Add events back to the front of the queue for retry
     this.eventQueue.unshift(...events);
-    
+
     // If queue is getting too large, drop oldest events
     if (this.eventQueue.length > this.config.batchSize! * 10) {
       const dropped = this.eventQueue.splice(this.config.batchSize! * 5);
-      console.warn(`Dropped ${dropped.length} old events due to queue overflow`);
+      console.warn(
+        `Dropped ${dropped.length} old events due to queue overflow`,
+      );
     }
   }
 

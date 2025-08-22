@@ -63,7 +63,10 @@ export class ChatLockManager {
 
       logger.info("Chat Lock Manager initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize Chat Lock Manager:", error);
+      logger.error(
+        "Failed to initialize Chat Lock Manager:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -119,7 +122,10 @@ export class ChatLockManager {
 
       return true;
     } catch (error) {
-      logger.error("Failed to set raid targets:", error);
+      logger.error(
+        "Failed to set raid targets:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -177,7 +183,10 @@ export class ChatLockManager {
       logger.info(`Chat ${channelId} locked for raid ${raidId}`);
       return true;
     } catch (error) {
-      logger.error("Failed to lock chat:", error);
+      logger.error(
+        "Failed to lock chat:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -210,7 +219,10 @@ export class ChatLockManager {
       logger.info(`Chat ${channelId} unlocked by ${unlockedByUserId}`);
       return true;
     } catch (error) {
-      logger.error("Failed to unlock chat:", error);
+      logger.error(
+        "Failed to unlock chat:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -232,7 +244,10 @@ export class ChatLockManager {
         });
       }
     } catch (error) {
-      logger.error("Failed to apply Telegram lock:", error);
+      logger.error(
+        "Failed to apply Telegram lock:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -252,7 +267,10 @@ export class ChatLockManager {
         });
       }
     } catch (error) {
-      logger.error("Failed to remove Telegram lock:", error);
+      logger.error(
+        "Failed to remove Telegram lock:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -389,7 +407,10 @@ The divine legion moves as one! 🔥`;
         });
       }
     } catch (error) {
-      logger.error("Failed to send lock/unlock notification:", error);
+      logger.error(
+        "Failed to send lock/unlock notification:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 

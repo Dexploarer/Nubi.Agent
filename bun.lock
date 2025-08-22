@@ -5,7 +5,7 @@
       "name": "anubis",
       "dependencies": {
         "@elizaos/cli": "latest",
-        "@elizaos/core": "latest",
+        "@elizaos/core": "^1.4.4",
         "@elizaos/plugin-aigateway": "https://github.com/Dexploarer/plugin-aigateway",
         "@elizaos/plugin-bootstrap": "latest",
         "@elizaos/plugin-browser": "^1.0.3",
@@ -20,7 +20,7 @@
         "@elizaos/plugin-twitter": "^1.2.21",
         "@elizaos/plugin-video-understanding": "^1.0.2",
         "@elizaos/plugin-web-search": "^0.25.6-alpha.1",
-        "@promptordie/xmcpx": "^1.0.0",
+        "@promptordie/xmcpx": "^1.0.2",
         "@supabase/supabase-js": "^2.56.0",
         "@tanstack/react-query": "^5.29.0",
         "@types/js-yaml": "^4.0.9",
@@ -494,7 +494,7 @@
 
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
-    "@promptordie/xmcpx": ["@promptordie/xmcpx@1.0.0", "", { "dependencies": { "@modelcontextprotocol/sdk": "^0.6.0", "agent-twitter-client": "^0.0.18", "dotenv": "^17.2.1", "pg": "^8.16.3", "winston": "^3.11.0", "zod": "^3.24.2" }, "bin": { "xmcpx": "build/index.js" } }, "sha512-UpVtdYphqfdzGZrCGxh19eSEykdafffOadMcr4KpKgIuk0ylZfVj38tIBP/YT1uC5wTyzzyGXgGnQXbcAuc7gQ=="],
+    "@promptordie/xmcpx": ["@promptordie/xmcpx@1.0.2", "", { "dependencies": { "@modelcontextprotocol/sdk": "^0.6.0", "agent-twitter-client": "^0.0.18", "dotenv": "^17.2.1", "pg": "^8.16.3", "winston": "^3.11.0", "zod": "^3.24.2" }, "bin": { "xmcpx": "build/index.js" } }, "sha512-ckggtj+VWa8jQL19xtYmg6iVxy5SP5Xv1fGZFzZsS0wEgMUi+VewytyYmGle3yocbYaBmwGhfxKNHFDFH5KTDw=="],
 
     "@roamhq/wrtc": ["@roamhq/wrtc@0.8.0", "", { "optionalDependencies": { "@roamhq/wrtc-darwin-arm64": "0.8.0", "@roamhq/wrtc-darwin-x64": "0.8.0", "@roamhq/wrtc-linux-arm64": "0.8.1", "@roamhq/wrtc-linux-x64": "0.8.1", "@roamhq/wrtc-win32-x64": "0.8.0", "domexception": "^4.0.0" } }, "sha512-C0V/nqc4/2xzORI5qa4mIeN/8UO3ywN1kInrJ9u6GljFx0D18JMUJEqe8yYHa61RrEeoWN3PKdW++k8TocSx/A=="],
 

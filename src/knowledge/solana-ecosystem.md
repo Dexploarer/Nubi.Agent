@@ -5,6 +5,7 @@
 ### Blockchain Fundamentals
 
 **Solana Architecture**
+
 - **Proof of Stake (PoS)**: Energy-efficient consensus mechanism
 - **Proof of History (PoH)**: Cryptographic clock for transaction ordering
 - **Tower BFT**: Byzantine Fault Tolerance for consensus
@@ -15,6 +16,7 @@
 - **Cloudbreak**: Horizontally-scaled account database
 
 **Performance Characteristics**
+
 - **Throughput**: 65,000+ transactions per second (TPS)
 - **Block Time**: ~400ms average block time
 - **Finality**: Sub-second finality
@@ -24,6 +26,7 @@
 ### Technical Advantages
 
 **Speed and Efficiency**
+
 - **Low Latency**: Sub-second transaction finality
 - **High Throughput**: 65k+ TPS vs Ethereum's 15 TPS
 - **Cost Efficiency**: Fractional cent transaction fees
@@ -31,6 +34,7 @@
 - **No Mempool**: Direct transaction processing
 
 **Developer Experience**
+
 - **Rust Programming**: Memory-safe, high-performance language
 - **Comprehensive SDKs**: JavaScript, Python, Go, C++
 - **Rich Ecosystem**: Extensive tooling and documentation
@@ -42,6 +46,7 @@
 ### Major DeFi Protocols
 
 **Decentralized Exchanges (DEXs)**
+
 - **Raydium**: AMM with concentrated liquidity pools
 - **Orca**: User-friendly DEX with concentrated liquidity
 - **Jupiter**: Aggregator for best swap rates
@@ -49,6 +54,7 @@
 - **Meteora**: Dynamic AMM with concentrated liquidity
 
 **Lending and Borrowing**
+
 - **Solend**: Decentralized lending protocol
 - **Mango Markets**: DeFi trading and lending platform
 - **Francium**: Yield farming and lending strategies
@@ -56,6 +62,7 @@
 - **Kamino**: Automated DeFi strategies
 
 **Yield Farming and Staking**
+
 - **Marinade Finance**: Liquid staking for SOL
 - **Lido**: Liquid staking solution
 - **Jito**: MEV protection and staking
@@ -65,12 +72,14 @@
 ### DeFi Innovations
 
 **Concentrated Liquidity**
+
 - **Raydium CLMM**: Concentrated liquidity market maker
 - **Orca Whirlpools**: Concentrated liquidity pools
 - **Meteora DLMM**: Dynamic liquidity market maker
 - **Benefits**: Higher capital efficiency, reduced impermanent loss
 
 **Cross-Chain Solutions**
+
 - **Wormhole**: Cross-chain bridge and messaging
 - **Allbridge**: Multi-chain bridge solution
 - **Portal**: Cross-chain token transfers
@@ -81,6 +90,7 @@
 ### NFT Marketplaces
 
 **Primary Marketplaces**
+
 - **Magic Eden**: Leading Solana NFT marketplace
 - **Tensor**: Advanced trading platform with analytics
 - **Hyperspace**: Community-focused marketplace
@@ -88,6 +98,7 @@
 - **OpenSea**: Multi-chain including Solana
 
 **NFT Tools and Analytics**
+
 - **Helius**: NFT API and infrastructure
 - **Tensordex**: NFT trading analytics
 - **Hyperspace Analytics**: Market data and insights
@@ -97,6 +108,7 @@
 ### NFT Standards and Innovation
 
 **Solana NFT Standards**
+
 - **Metaplex**: Standard for Solana NFTs
 - **Candy Machine**: NFT minting standard
 - **Token Metadata**: Rich metadata for NFTs
@@ -104,6 +116,7 @@
 - **Programmable NFTs**: Dynamic NFT capabilities
 
 **NFT Use Cases**
+
 - **Digital Art**: Generative art and collectibles
 - **Gaming**: In-game assets and ownership
 - **Music**: Royalty sharing and fan engagement
@@ -115,6 +128,7 @@
 ### Gaming Ecosystem
 
 **Major Games**
+
 - **Star Atlas**: Space exploration MMO
 - **Aurory**: Pokemon-style RPG
 - **Genopets**: Move-to-earn fitness game
@@ -122,6 +136,7 @@
 - **Stepn**: Move-to-earn fitness app
 
 **Gaming Infrastructure**
+
 - **GameShift**: Gaming infrastructure platform
 - **Bastion**: Gaming-focused DeFi platform
 - **Fractal**: Gaming NFT marketplace
@@ -131,6 +146,7 @@
 ### Metaverse Projects
 
 **Virtual Worlds**
+
 - **Solana Spaces**: Physical and digital retail spaces
 - **Portals**: Metaverse platform
 - **Solice**: VR metaverse on Solana
@@ -142,6 +158,7 @@
 ### Development Tools
 
 **Programming Languages**
+
 - **Rust**: Primary language for Solana programs
 - **Anchor**: Framework for Solana development
 - **TypeScript/JavaScript**: Client-side development
@@ -149,6 +166,7 @@
 - **C++**: Performance-critical applications
 
 **Development Frameworks**
+
 - **Anchor**: Rust framework for Solana
 - **Seahorse**: Python framework for Solana
 - **Native Programs**: Direct Rust development
@@ -158,6 +176,7 @@
 ### Infrastructure Services
 
 **RPC Providers**
+
 - **Helius**: High-performance RPC and APIs
 - **QuickNode**: Enterprise RPC solutions
 - **Alchemy**: Web3 development platform
@@ -165,6 +184,7 @@
 - **Triton**: Solana-specific RPC
 
 **Data and Analytics**
+
 - **Flipside**: On-chain analytics platform
 - **Dune Analytics**: Blockchain data analysis
 - **Nansen**: Wallet and transaction analytics
@@ -176,6 +196,7 @@
 ### Governance Platforms
 
 **DAO Tools**
+
 - **Realms**: Solana DAO governance platform
 - **Squads**: Multi-signature wallet and governance
 - **Tribeca**: DAO governance framework
@@ -183,6 +204,7 @@
 - **Helium**: Decentralized network governance
 
 **Voting Mechanisms**
+
 - **Token-weighted voting**: Based on token holdings
 - **Quadratic voting**: Reducing whale influence
 - **Time-locked voting**: Long-term alignment
@@ -194,6 +216,7 @@
 ### Security Considerations
 
 **Smart Contract Security**
+
 - **Program Upgrades**: Immutable vs upgradeable programs
 - **Access Control**: Proper permission management
 - **Input Validation**: Comprehensive parameter checking
@@ -201,6 +224,7 @@
 - **Audit Requirements**: Professional security audits
 
 **Wallet Security**
+
 - **Hardware Wallets**: Ledger, Trezor support
 - **Multi-signature**: Shared wallet security
 - **Phantom Security**: Built-in security features
@@ -210,6 +234,7 @@
 ### Risk Management
 
 **DeFi Risks**
+
 - **Impermanent Loss**: AMM liquidity provision risks
 - **Smart Contract Risk**: Code vulnerabilities
 - **Oracle Risk**: Price feed manipulation
@@ -221,6 +246,7 @@
 ### Token Economics
 
 **SOL Token Utility**
+
 - **Staking**: Network security and rewards
 - **Transaction Fees**: Network usage payments
 - **Governance**: Protocol decision voting
@@ -228,6 +254,7 @@
 - **Store of Value**: Digital asset appreciation
 
 **Inflation and Deflation**
+
 - **Staking Rewards**: ~5-7% annual inflation
 - **Fee Burning**: Transaction fee destruction
 - **Supply Cap**: No hard cap, managed inflation
@@ -236,6 +263,7 @@
 ### Market Psychology
 
 **Bull Market Characteristics**
+
 - **High Activity**: Increased transaction volume
 - **New Users**: Onboarding and adoption
 - **Protocol Growth**: TVL and user metrics
@@ -243,6 +271,7 @@
 - **Speculation**: Price appreciation cycles
 
 **Bear Market Strategies**
+
 - **Accumulation**: Dollar-cost averaging
 - **Staking**: Passive income generation
 - **Development**: Building during downturns
@@ -254,6 +283,7 @@
 ### Development Roadmap
 
 **Technical Upgrades**
+
 - **Firedancer**: Jump Trading validator client
 - **Saga**: Mobile-focused blockchain
 - **Solana Mobile**: Mobile-first blockchain
@@ -261,6 +291,7 @@
 - **Parallel Processing**: Enhanced throughput
 
 **Ecosystem Growth**
+
 - **Developer Adoption**: Increasing program deployment
 - **User Onboarding**: Simplified user experience
 - **Institutional Adoption**: Enterprise use cases
@@ -270,6 +301,7 @@
 ### Competitive Positioning
 
 **vs Ethereum**
+
 - **Speed**: 65k TPS vs 15 TPS
 - **Cost**: $0.00025 vs $5+ per transaction
 - **Finality**: Sub-second vs 12+ seconds
@@ -277,6 +309,7 @@
 - **Developer Experience**: Rust vs Solidity
 
 **vs Other L1s**
+
 - **Performance**: Industry-leading throughput
 - **Cost**: Lowest transaction fees
 - **Ecosystem**: Rich DeFi and NFT landscape
@@ -286,6 +319,7 @@
 ## Key Metrics and Analytics
 
 ### Network Statistics
+
 - **Total Value Locked (TVL)**: DeFi protocol deposits
 - **Daily Active Users**: Unique wallet addresses
 - **Transaction Volume**: Daily transaction count
@@ -293,6 +327,7 @@
 - **NFT Sales Volume**: Marketplace activity
 
 ### Growth Indicators
+
 - **Developer Activity**: GitHub commits and projects
 - **User Adoption**: Wallet downloads and usage
 - **Institutional Interest**: Investment and partnerships
@@ -301,4 +336,4 @@
 
 ---
 
-*This comprehensive Solana ecosystem knowledge enables NUBI to provide informed, accurate, and helpful guidance on all aspects of Solana technology, DeFi, NFTs, and the broader ecosystem.*
+_This comprehensive Solana ecosystem knowledge enables NUBI to provide informed, accurate, and helpful guidance on all aspects of Solana technology, DeFi, NFTs, and the broader ecosystem._

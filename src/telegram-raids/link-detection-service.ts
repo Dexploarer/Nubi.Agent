@@ -88,7 +88,10 @@ export class LinkDetectionService {
         extractedAt: new Date(),
       };
     } catch (error) {
-      logger.error("Failed to validate tweet URL:", error);
+      logger.error(
+        "Failed to validate tweet URL:",
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
@@ -105,7 +108,10 @@ export class LinkDetectionService {
 
       return response.url;
     } catch (error) {
-      logger.error("Failed to follow redirect:", error);
+      logger.error(
+        "Failed to follow redirect:",
+        error instanceof Error ? error.message : String(error),
+      );
       return shortUrl; // Return original if redirect fails
     }
   }
@@ -144,7 +150,10 @@ export class LinkDetectionService {
         }
       }
     } catch (error) {
-      logger.error("Error processing message for X links:", error);
+      logger.error(
+        "Error processing message for X links:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
 
     return detectedLinks;
@@ -204,7 +213,10 @@ export class LinkDetectionService {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } catch (error) {
-        logger.error("Error in batch validation:", error);
+        logger.error(
+          "Error in batch validation:",
+          error instanceof Error ? error.message : String(error),
+        );
       }
     }
 

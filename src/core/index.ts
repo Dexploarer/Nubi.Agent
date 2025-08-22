@@ -1,9 +1,9 @@
 /**
  * Core Module - Central exports for all core functionality
- * 
+ *
  * This module provides the foundational types, interfaces, and utilities
  * used throughout the NUBI application.
- * 
+ *
  * ARCHITECTURE NOTE:
  * This module intentionally contains only ElizaOS re-exports and basic utilities.
  * Business logic has been properly separated into dedicated modules:
@@ -11,7 +11,7 @@
  * - Services: src/services/
  * - Plugins: src/plugins/
  * - Identity: src/identity/
- * 
+ *
  * This follows ElizaOS best practices for clean separation of concerns.
  */
 
@@ -30,10 +30,14 @@ export type {
   Evaluator,
   Provider,
   ActionResult,
-} from '@elizaos/core';
+  ServiceError,
+} from "@elizaos/core";
 
-// Re-export ElizaOS core values
-export { Service, logger } from '@elizaos/core';
+// Re-export ElizaOS core classes and values
+export { logger, Service, DatabaseAdapter } from "@elizaos/core";
+
+// Re-export EventHandler as type only (since it's an interface)
+export type { EventHandler } from "@elizaos/core";
 
 // Core application types
 export interface BaseEntity {
@@ -59,10 +63,10 @@ export class NubiError extends Error {
   constructor(
     message: string,
     public code: string,
-    public context?: Record<string, unknown>
+    public context?: Record<string, unknown>,
   ) {
     super(message);
-    this.name = 'NubiError';
+    this.name = "NubiError";
   }
 }
 
@@ -73,4 +77,5 @@ export type DeepPartial<T> = {
 
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
-export type OptionalFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type OptionalFields<T, K extends keyof T> = Omit<T, K> &
+  Partial<Pick<T, K>>;

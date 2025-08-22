@@ -1,24 +1,24 @@
 /**
  * NUBI Application - Main entry point and module coordination
- * 
+ *
  * This module provides the main application interface, coordinates all modules,
  * and manages the application lifecycle with proper type safety.
  */
 
 // Import all module exports
-export * from '../core';
-export * from '../identity';
-export * from '../messaging';
-export * from '../character';
-export * from '../services';
-export * from '../plugins';
-export * from '../orchestration';
+export * from "../core";
+export * from "../identity";
+export * from "../messaging";
+export * from "../character";
+export * from "../services";
+export * from "../plugins";
+export * from "../orchestration";
 
 // Application types
 export interface AppConfig {
   name: string;
   version: string;
-  environment: 'development' | 'production' | 'test';
+  environment: "development" | "production" | "test";
   modules: ModuleConfig[];
   services: ServiceConfig[];
   plugins: PluginConfig[];
@@ -52,7 +52,7 @@ export interface AppLifecycle {
 }
 
 export interface AppStatus {
-  status: 'initializing' | 'running' | 'stopped' | 'error';
+  status: "initializing" | "running" | "stopped" | "error";
   modules: ModuleStatus[];
   services: ServiceStatus[];
   plugins: PluginStatus[];
@@ -65,21 +65,21 @@ export interface AppStatus {
 
 export interface ModuleStatus {
   name: string;
-  status: 'enabled' | 'disabled' | 'error';
+  status: "enabled" | "disabled" | "error";
   dependencies: string[];
   lastUpdate: Date;
 }
 
 export interface ServiceStatus {
   name: string;
-  status: 'running' | 'stopped' | 'error';
+  status: "running" | "stopped" | "error";
   uptime: number;
   lastUpdate: Date;
 }
 
 export interface PluginStatus {
   name: string;
-  status: 'enabled' | 'disabled' | 'error';
+  status: "enabled" | "disabled" | "error";
   version: string;
   lastUpdate: Date;
 }
@@ -93,12 +93,12 @@ export class NubiApplication implements AppLifecycle {
   constructor(config: AppConfig) {
     this.config = config;
     this.status = {
-      status: 'initializing',
+      status: "initializing",
       modules: [],
       services: [],
       plugins: [],
       uptime: 0,
-      memory: { used: 0, total: 0 }
+      memory: { used: 0, total: 0 },
     };
   }
 
@@ -106,35 +106,35 @@ export class NubiApplication implements AppLifecycle {
     try {
       // Initialize all modules
       await this.initializeModules();
-      
+
       // Initialize all services
       await this.initializeServices();
-      
+
       // Initialize all plugins
       await this.initializePlugins();
-      
-      this.status.status = 'stopped';
+
+      this.status.status = "stopped";
     } catch (error) {
-      this.status.status = 'error';
+      this.status.status = "error";
       throw error;
     }
   }
 
   async start(): Promise<void> {
     try {
-      this.status.status = 'running';
+      this.status.status = "running";
       this.startTime = Date.now();
-      
+
       // Start all services
       await this.startServices();
-      
+
       // Start all plugins
       await this.startPlugins();
-      
+
       // Update status
       this.updateStatus();
     } catch (error) {
-      this.status.status = 'error';
+      this.status.status = "error";
       throw error;
     }
   }
@@ -143,13 +143,13 @@ export class NubiApplication implements AppLifecycle {
     try {
       // Stop all plugins
       await this.stopPlugins();
-      
+
       // Stop all services
       await this.stopServices();
-      
-      this.status.status = 'stopped';
+
+      this.status.status = "stopped";
     } catch (error) {
-      this.status.status = 'error';
+      this.status.status = "error";
       throw error;
     }
   }
@@ -165,9 +165,9 @@ export class NubiApplication implements AppLifecycle {
       if (moduleConfig.enabled) {
         this.status.modules.push({
           name: moduleConfig.name,
-          status: 'enabled',
+          status: "enabled",
           dependencies: moduleConfig.dependencies,
-          lastUpdate: new Date()
+          lastUpdate: new Date(),
         });
       }
     }
@@ -179,9 +179,9 @@ export class NubiApplication implements AppLifecycle {
       if (serviceConfig.enabled) {
         this.status.services.push({
           name: serviceConfig.name,
-          status: 'stopped',
+          status: "stopped",
           uptime: 0,
-          lastUpdate: new Date()
+          lastUpdate: new Date(),
         });
       }
     }
@@ -193,9 +193,9 @@ export class NubiApplication implements AppLifecycle {
       if (pluginConfig.enabled) {
         this.status.plugins.push({
           name: pluginConfig.name,
-          status: 'disabled',
-          version: '1.0.0',
-          lastUpdate: new Date()
+          status: "disabled",
+          version: "1.0.0",
+          lastUpdate: new Date(),
         });
       }
     }
@@ -204,7 +204,7 @@ export class NubiApplication implements AppLifecycle {
   private async startServices(): Promise<void> {
     // Start all enabled services
     for (const service of this.status.services) {
-      service.status = 'running';
+      service.status = "running";
       service.lastUpdate = new Date();
     }
   }
@@ -212,7 +212,7 @@ export class NubiApplication implements AppLifecycle {
   private async startPlugins(): Promise<void> {
     // Start all enabled plugins
     for (const plugin of this.status.plugins) {
-      plugin.status = 'enabled';
+      plugin.status = "enabled";
       plugin.lastUpdate = new Date();
     }
   }
@@ -220,7 +220,7 @@ export class NubiApplication implements AppLifecycle {
   private async stopServices(): Promise<void> {
     // Stop all services
     for (const service of this.status.services) {
-      service.status = 'stopped';
+      service.status = "stopped";
       service.lastUpdate = new Date();
     }
   }
@@ -228,7 +228,7 @@ export class NubiApplication implements AppLifecycle {
   private async stopPlugins(): Promise<void> {
     // Stop all plugins
     for (const plugin of this.status.plugins) {
-      plugin.status = 'disabled';
+      plugin.status = "disabled";
       plugin.lastUpdate = new Date();
     }
   }
@@ -237,21 +237,21 @@ export class NubiApplication implements AppLifecycle {
     if (this.startTime > 0) {
       this.status.uptime = Date.now() - this.startTime;
     }
-    
+
     // Update memory usage
     const memUsage = process.memoryUsage();
     this.status.memory = {
       used: memUsage.heapUsed,
-      total: memUsage.heapTotal
+      total: memUsage.heapTotal,
     };
   }
 }
 
 // Utility functions
 export function createAppConfig(
-  name: string = 'NUBI',
-  version: string = '1.0.0',
-  environment: 'development' | 'production' | 'test' = 'development'
+  name: string = "NUBI",
+  version: string = "1.0.0",
+  environment: "development" | "production" | "test" = "development",
 ): AppConfig {
   return {
     name,
@@ -259,7 +259,7 @@ export function createAppConfig(
     environment,
     modules: [],
     services: [],
-    plugins: []
+    plugins: [],
   };
 }
 

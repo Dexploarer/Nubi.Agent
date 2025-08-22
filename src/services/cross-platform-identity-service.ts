@@ -118,7 +118,10 @@ export class CrossPlatformIdentityService extends Service {
       await this.dbClient.connect();
       logger.info("[IDENTITY_SERVICE] Connected to PostgreSQL");
     } catch (error) {
-      logger.error("[IDENTITY_SERVICE] Failed to initialize:", error);
+      logger.error(
+        "[IDENTITY_SERVICE] Failed to initialize:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -237,7 +240,10 @@ export class CrossPlatformIdentityService extends Service {
         `⏱️ Code expires in 15 minutes`
       );
     } catch (error) {
-      logger.error("[IDENTITY_SERVICE] Link command failed:", error);
+      logger.error(
+        "[IDENTITY_SERVICE] Link command failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return `❌ Failed to create link request. Please try again later.`;
     }
   }
@@ -275,7 +281,10 @@ export class CrossPlatformIdentityService extends Service {
 
       return `✅ Successfully unlinked your ${targetPlatform} account`;
     } catch (error: any) {
-      logger.error("[IDENTITY_SERVICE] Unlink command failed:", error);
+      logger.error(
+        "[IDENTITY_SERVICE] Unlink command failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return `❌ Failed to unlink account. Please try again later.`;
     }
   }
@@ -328,7 +337,10 @@ export class CrossPlatformIdentityService extends Service {
 
       return response_text;
     } catch (error) {
-      logger.error("[IDENTITY_SERVICE] MyAccounts command failed:", error);
+      logger.error(
+        "[IDENTITY_SERVICE] MyAccounts command failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return `❌ Failed to fetch accounts. Please try again later.`;
     }
   }
@@ -355,13 +367,19 @@ export class CrossPlatformIdentityService extends Service {
           display_name: this.extractDisplayName(message),
         },
       }).catch((error) => {
-        logger.debug("[IDENTITY_SERVICE] Background analysis failed:", error);
+        logger.debug(
+          "[IDENTITY_SERVICE] Background analysis failed:",
+          error instanceof Error ? error.message : String(error),
+        );
       });
 
       // Update message counts
       await this.updateMessageCount(platform, userId);
     } catch (error) {
-      logger.debug("[IDENTITY_SERVICE] Message analysis failed:", error);
+      logger.debug(
+        "[IDENTITY_SERVICE] Message analysis failed:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -408,7 +426,10 @@ export class CrossPlatformIdentityService extends Service {
         return true;
       }
     } catch (error) {
-      logger.debug("[IDENTITY_SERVICE] Verification check failed:", error);
+      logger.debug(
+        "[IDENTITY_SERVICE] Verification check failed:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
 
     return false;
@@ -439,7 +460,7 @@ export class CrossPlatformIdentityService extends Service {
     } catch (error) {
       logger.error(
         "[IDENTITY_SERVICE] Failed to store verification code:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -587,7 +608,7 @@ export class CrossPlatformIdentityService extends Service {
     } catch (error) {
       logger.error(
         "[IDENTITY_SERVICE] Failed to get cross-platform context:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return {
         primaryPlatform: platform,

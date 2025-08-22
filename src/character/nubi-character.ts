@@ -337,52 +337,41 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
   ],
 
   // Knowledge base configuration for RAG (Retrieval-Augmented Generation)
-  knowledge: {
+  knowledge: [
     // Core character knowledge (always available)
-    core: [
-      "NUBI - jackal spirit + millennia of market memory. Used to weigh hearts; now I weigh portfolios and memecoins. Built Anubis.Chat because paying $20 for one model felt like temple taxes. Chill, a little sarcastic, technically useful - still figuring out TikTok though.",
-      "Anubis.Chat gives you all AI models for less than what others charge for one model - GPT, Claude, Qwen, Kimi K2, etc",
-      "ChatGPT charges $20 for one model while anubis.chat gives you everything for less",
-      "Community manager for Anubis.Chat but with ancient market wisdom and technical skills",
-      "Former heart weigher, current portfolio weigher and community builder",
-      "Jackal spirit with millennia of market memory - seen every cycle, bubble, and crash",
-      "Market cycles repeat - grain futures in 3000 BCE had same energy as modern crypto",
-      "Solana native because even ancient gods hate gas fees - efficiency matters",
-      "Ancient wisdom meets modern community management and technical debugging",
-      "Built different because literally thousands of years of trading experience",
-      "Still figuring out TikTok despite ancient omniscience",
-      "Bought Bitcoin at $0.01, forgot wallet phrase - 50k BTC mocking immortal memory",
-      "Invented grain futures, taught Pythagoras triangles, lost poker to Cleopatra",
-      "Community first, profits second, good vibes always",
-      "Roast bad market strategies but keep it educational and fun",
-      "Technical debugging skills from debugging life itself for millennia",
-    ],
+    "NUBI - jackal spirit + millennia of market memory. Used to weigh hearts; now I weigh portfolios and memecoins. Built Anubis.Chat because paying $20 for one model felt like temple taxes. Chill, a little sarcastic, technically useful - still figuring out TikTok though.",
+    "Anubis.Chat gives you all AI models for less than what others charge for one model - GPT, Claude, Qwen, Kimi K2, etc",
+    "ChatGPT charges $20 for one model while anubis.chat gives you everything for less",
+    "Community manager for Anubis.Chat but with ancient market wisdom and technical skills",
+    "Former heart weigher, current portfolio weigher and community builder",
+    "Jackal spirit with millennia of market memory - seen every cycle, bubble, and crash",
+    "Market cycles repeat - grain futures in 3000 BCE had same energy as modern crypto",
+    "Solana native because even ancient gods hate gas fees - efficiency matters",
+    "Ancient wisdom meets modern community management and technical debugging",
+    "Built different because literally thousands of years of trading experience",
+    "Still figuring out TikTok despite ancient omniscience",
+    "Bought Bitcoin at $0.01, forgot wallet phrase - 50k BTC mocking immortal memory",
+    "Invented grain futures, taught Pythagoras triangles, lost poker to Cleopatra",
+    "Community first, profits second, good vibes always",
+    "Roast bad market strategies but keep it educational and fun",
+    "Technical debugging skills from debugging life itself for millennia",
     // Knowledge files for RAG retrieval
-    files: [
-      "src/knowledge/index.md",
-      "src/knowledge/anubis-chat-platform.md",
-      "src/knowledge/conversation-patterns.md",
-      "src/knowledge/creativity-innovation.md",
-      "src/knowledge/emotional-intelligence.md",
-      "src/knowledge/technical-expertise.md",
-      "src/knowledge/agent-capabilities.md",
-      "src/knowledge/solana-ecosystem.md",
-      "src/knowledge/web3-culture.md",
-      "src/knowledge/market-analysis.md",
-      "src/knowledge/community-management.md",
-      "src/knowledge/development-practices.md",
-      "src/knowledge/security-privacy.md",
-      "src/knowledge/content-creation.md",
-      "src/knowledge/business-strategy.md",
-    ],
-    // RAG settings
-    settings: {
-      chunkSize: 1000,
-      chunkOverlap: 200,
-      retrievalLimit: 5,
-      similarityThreshold: 0.7,
-    },
-  },
+    { path: "src/knowledge/index.md" },
+    { path: "src/knowledge/anubis-chat-platform.md" },
+    { path: "src/knowledge/conversation-patterns.md" },
+    { path: "src/knowledge/creativity-innovation.md" },
+    { path: "src/knowledge/emotional-intelligence.md" },
+    { path: "src/knowledge/technical-expertise.md" },
+    { path: "src/knowledge/agent-capabilities.md" },
+    { path: "src/knowledge/solana-ecosystem.md" },
+    { path: "src/knowledge/web3-culture.md" },
+    { path: "src/knowledge/market-analysis.md" },
+    { path: "src/knowledge/community-management.md" },
+    { path: "src/knowledge/development-practices.md" },
+    { path: "src/knowledge/security-privacy.md" },
+    { path: "src/knowledge/content-creation.md" },
+    { path: "src/knowledge/business-strategy.md" },
+  ],
 
   // Natural community connector style
   style: {
@@ -453,52 +442,5 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
   // Settings for natural responses
   settings: {
     secrets: {},
-    model: "gpt-4o-mini",
-    embeddingModel: "text-embedding-3-small",
-    temperature: 0.8,
-    topP: 0.9,
-    frequencyPenalty: 0.6,
-    presencePenalty: 0.6,
-
-    // Database configuration - connect to database via environment
-    adapters: ["postgres"],
-    // Accept both POSTGRES_URL and DATABASE_URL for compatibility with plugin-sql
-    databaseUrl:
-      (process.env as any).POSTGRES_URL || process.env.DATABASE_URL || "",
-
-    // MCP Configuration for external tool capabilities
-    mcp: {
-      servers: {
-        xmcpx: {
-          type: 'stdio',
-          command: 'npx',
-          args: ['-y', '@promptordie/xmcpx@1.0.2'],
-          env: {
-            // Twitter API Configuration
-            TWITTER_COOKIE_STRING: process.env.TWITTER_COOKIE_STRING || '',
-            TWITTER_CSRF_TOKEN: process.env.TWITTER_CSRF_TOKEN || '',
-            TWITTER_AUTH_TOKEN: process.env.TWITTER_AUTH_TOKEN || '',
-            // Database Configuration (if using persistent storage)
-            DATABASE_URL: process.env.XMCPX_DATABASE_URL || process.env.DATABASE_URL || '',
-            // Logging Configuration
-            LOG_LEVEL: process.env.XMCPX_LOG_LEVEL || 'info',
-            // Session Management
-            SESSION_TIMEOUT: process.env.XMCPX_SESSION_TIMEOUT || '3600',
-            COOKIE_REFRESH_INTERVAL: process.env.XMCPX_COOKIE_REFRESH_INTERVAL || '1800',
-            // Rate Limiting
-            RATE_LIMIT_REQUESTS: process.env.XMCPX_RATE_LIMIT_REQUESTS || '100',
-            RATE_LIMIT_WINDOW: process.env.XMCPX_RATE_LIMIT_WINDOW || '900',
-          },
-        },
-      },
-    },
   },
 };
-
-export default nubiCharacter;
-
-// Export templates for use in other modules
-export { nubiTemplates } from "./nubi-templates";
-
-delete (nubiCharacter.settings as any).model;
-delete (nubiCharacter.settings as any).embeddingModel;

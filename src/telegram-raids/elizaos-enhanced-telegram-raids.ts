@@ -11,6 +11,10 @@ import {
   logger,
 } from "@elizaos/core";
 
+// MCP Server integration for X/Twitter posting
+import { spawn } from "child_process";
+import * as path from "path";
+
 /**
  * Enhanced Telegram Raids Plugin
  *
@@ -81,6 +85,7 @@ export class EnhancedTelegramRaidsService extends Service {
   private activeSessions = new Map<string, RaidSession>();
   private globalStats: RaidStats;
   private userStats = new Map<string, RaidParticipant>();
+  private mcpServer: any = null;
 
   constructor(runtime: IAgentRuntime) {
     super();
@@ -101,6 +106,54 @@ export class EnhancedTelegramRaidsService extends Service {
     const service = new EnhancedTelegramRaidsService(runtime);
     await service.initialize();
     return service;
+  }
+
+  /**
+   * Initialize MCP server connection for X/Twitter posting
+   */
+  private async initializeMCPServer(): Promise<void> {
+    try {
+      // Start MCP server process
+      this.mcpServer = spawn("bun", ["run", "xmcpx"], {
+        cwd: path.join(process.cwd(), "xmcpx"),
+        stdio: ["pipe", "pipe", "pipe"],
+        env: { ...process.env, NODE_ENV: "production" },
+      });
+
+      // Wait for MCP server to be ready
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("MCP server startup timeout"));
+        }, 10000);
+
+        this.mcpServer.stdout.on("data", (data: Buffer) => {
+          if (
+            data.toString().includes("MCP server ready") ||
+            data.toString().includes("authenticated")
+          ) {
+            clearTimeout(timeout);
+            resolve(true);
+          }
+        });
+
+        this.mcpServer.stderr.on("data", (data: Buffer) => {
+          if (data.toString().includes("Error")) {
+            clearTimeout(timeout);
+            reject(new Error(`MCP server error: ${data.toString()}`));
+          }
+        });
+      });
+
+      logger.info(
+        "[ENHANCED_TELEGRAM_RAIDS] MCP server initialized successfully",
+      );
+    } catch (error) {
+      logger.error(
+        "[ENHANCED_TELEGRAM_RAIDS] Failed to initialize MCP server:",
+        error instanceof Error ? error.message : String(error),
+      );
+      // Continue without MCP server - fallback to other posting methods
+    }
   }
 
   private loadConfig(): RaidConfig {
@@ -125,17 +178,28 @@ export class EnhancedTelegramRaidsService extends Service {
       "[ENHANCED_TELEGRAM_RAIDS] Initializing enhanced raids service...",
     );
 
-    // Load existing stats and user data
-    await this.loadPersistentData();
+    try {
+      // Initialize MCP server for X/Twitter posting
+      await this.initializeMCPServer();
 
-    // Start auto-raid timer if enabled
-    if (this.raidConfig.enabled && this.raidConfig.autoRaid) {
-      this.startAutoRaidTimer();
+      // Load existing stats and user data
+      await this.loadPersistentData();
+
+      // Start auto-raid timer if enabled
+      if (this.raidConfig.enabled && this.raidConfig.autoRaid) {
+        this.startAutoRaidTimer();
+      }
+
+      logger.info(
+        "[ENHANCED_TELEGRAM_RAIDS] Enhanced raids service initialized successfully",
+      );
+    } catch (error) {
+      logger.error(
+        "[ENHANCED_TELEGRAM_RAIDS] Failed to initialize enhanced raids service:",
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
     }
-
-    logger.info(
-      "[ENHANCED_TELEGRAM_RAIDS] Enhanced raids service initialized successfully",
-    );
   }
 
   private async loadPersistentData(): Promise<void> {
@@ -149,7 +213,7 @@ export class EnhancedTelegramRaidsService extends Service {
     } catch (error) {
       logger.warn(
         "[ENHANCED_TELEGRAM_RAIDS] Could not load persistent data:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -168,29 +232,113 @@ export class EnhancedTelegramRaidsService extends Service {
     );
   }
 
+  /**
+   * Generate raid content for X/Twitter
+   */
+  private generateRaidContent(): string {
+    const topics = [
+      "Solana ecosystem developments",
+      "DeFi innovations and opportunities",
+      "Community building in Web3",
+      "NFT culture and creativity",
+      "Blockchain technology insights",
+      "Anubis community updates",
+      "Web3 gaming and metaverse",
+      "Cross-chain interoperability",
+    ];
+
+    const randomTopic = topics[Math.floor(Math.random() * topics.length)];
+    const hashtags =
+      "\n\n#AnubisChat #Anubis #anubisai #OpenSource #Solana #Web3";
+
+    const content = `🚀 ${randomTopic} - Join the Anubis community as we explore the future of Web3! 
+
+What's your take on this? Drop your thoughts below! 👇${hashtags}`;
+
+    return content.substring(0, 280); // Ensure within Twitter limit
+  }
+
+  /**
+   * Post to X/Twitter using MCP server
+   */
+  private async postToXUsingMCP(content: string): Promise<string | null> {
+    if (!this.mcpServer) {
+      logger.warn(
+        "[ENHANCED_TELEGRAM_RAIDS] MCP server not available for X posting",
+      );
+      return null;
+    }
+
+    try {
+      // Send tweet command to MCP server
+      const tweetCommand = {
+        method: "tools/call",
+        params: {
+          name: "send_tweet",
+          arguments: {
+            text: content,
+          },
+        },
+      };
+
+      this.mcpServer.stdin.write(JSON.stringify(tweetCommand) + "\n");
+
+      // Wait for response
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("MCP tweet timeout"));
+        }, 30000);
+
+        this.mcpServer.stdout.once("data", (data: Buffer) => {
+          clearTimeout(timeout);
+          try {
+            const response = JSON.parse(data.toString());
+            if (response.result && response.result.content) {
+              const tweetUrl = response.result.content[0].text;
+              logger.info(
+                `[ENHANCED_TELEGRAM_RAIDS] Posted to X via MCP: ${tweetUrl}`,
+              );
+              resolve(tweetUrl);
+            } else {
+              reject(new Error("Invalid MCP response"));
+            }
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+    } catch (error) {
+      logger.error(
+        "[ENHANCED_TELEGRAM_RAIDS] Failed to post to X via MCP:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return null;
+    }
+  }
+
   private async initiateAutoRaid(): Promise<void> {
     try {
-      // Generate X post content using our X content generator
-      const xService = this.runtime.getService("x_content_generator");
-      if (!xService) {
-        logger.warn(
-          "[ENHANCED_TELEGRAM_RAIDS] X service not available for auto-raid",
-        );
-        return;
-      }
+      // Generate raid content
+      const raidContent = this.generateRaidContent();
 
-      // Create and post to X
-      const postContent = await (xService as any).generateRaidContent();
-      const postResult = await (xService as any).createPost(postContent);
+      // Post to X using MCP server
+      const tweetUrl = await this.postToXUsingMCP(raidContent);
 
-      if (postResult.success) {
+      if (tweetUrl) {
         // Start Telegram raid session
-        await this.startRaidSession(postResult.url, true);
+        await this.startRaidSession(tweetUrl, true);
+        logger.info(
+          `[ENHANCED_TELEGRAM_RAIDS] Auto-raid initiated with X post: ${tweetUrl}`,
+        );
+      } else {
+        logger.warn(
+          "[ENHANCED_TELEGRAM_RAIDS] Failed to post to X for auto-raid",
+        );
       }
     } catch (error) {
       logger.error(
         "[ENHANCED_TELEGRAM_RAIDS] Auto-raid initiation failed:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -248,7 +396,7 @@ export class EnhancedTelegramRaidsService extends Service {
     } catch (error) {
       logger.error(
         "[ENHANCED_TELEGRAM_RAIDS] Failed to start raid session:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return "❌ Failed to start raid session. Please try again.";
     }
@@ -333,7 +481,10 @@ Session ID: \`${session.id}\`
 
 Now go engage with the post and earn more points! 🚀`;
     } catch (error) {
-      logger.error("[ENHANCED_TELEGRAM_RAIDS] Failed to join raid:", error);
+      logger.error(
+        "[ENHANCED_TELEGRAM_RAIDS] Failed to join raid:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to join raid. Please try again.";
     }
   }
@@ -348,7 +499,7 @@ Now go engage with the post and earn more points! 🚀`;
     } catch (error) {
       logger.error(
         "[ENHANCED_TELEGRAM_RAIDS] Failed to get raid stats:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return "❌ Failed to retrieve raid statistics.";
     }
@@ -529,8 +680,15 @@ ${
     await this.savePersistentData();
 
     // Complete any active sessions
-    for (const [sessionId] of this.activeSessions) {
+    for (const sessionId of this.activeSessions.keys()) {
       this.completeRaidSession(sessionId);
+    }
+
+    // Cleanup MCP server
+    if (this.mcpServer) {
+      this.mcpServer.kill();
+      this.mcpServer = null;
+      logger.info("[ENHANCED_TELEGRAM_RAIDS] MCP server stopped");
     }
 
     logger.info("[ENHANCED_TELEGRAM_RAIDS] Enhanced raids service stopped");
@@ -546,7 +704,7 @@ ${
     } catch (error) {
       logger.warn(
         "[ENHANCED_TELEGRAM_RAIDS] Could not save persistent data:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -596,7 +754,10 @@ const raidActions: Action[] = [
 
         return { success: true, text: result };
       } catch (error) {
-        logger.error("Failed to start raid:", error);
+        logger.error(
+          "Failed to start raid:",
+          error instanceof Error ? error.message : String(error),
+        );
         return { success: false, text: "❌ Failed to start raid session" };
       }
     },
@@ -648,7 +809,10 @@ const raidActions: Action[] = [
 
         return { success: true, text: result };
       } catch (error) {
-        logger.error("Failed to join raid:", error);
+        logger.error(
+          "Failed to join raid:",
+          error instanceof Error ? error.message : String(error),
+        );
         return { success: false, text: "❌ Failed to join raid" };
       }
     },
@@ -697,7 +861,10 @@ const raidActions: Action[] = [
 
         return { success: true, text: result };
       } catch (error) {
-        logger.error("Failed to get raid stats:", error);
+        logger.error(
+          "Failed to get raid stats:",
+          error instanceof Error ? error.message : String(error),
+        );
         return {
           success: false,
           text: "❌ Failed to retrieve raid statistics",

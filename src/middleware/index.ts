@@ -1,19 +1,29 @@
 /**
  * Middleware exports for ElizaOS NUBI Agent
- * 
+ *
  * Provides preprocessing and routing middleware for cross-platform message handling
  */
 
-export {
+import {
   withActionMiddleware,
   createPlatformAction,
 } from "./action-middleware";
 
-// Re-export types
-export type { PlatformMention } from "./action-middleware";
-
 // Re-export the default for convenience
 export { default as actionMiddleware } from "./action-middleware";
+
+// Re-export functions
+export { withActionMiddleware, createPlatformAction };
+
+/**
+ * Platform mention interface for type safety
+ */
+export interface PlatformMention {
+  platform: "discord" | "telegram" | "twitter" | "unknown";
+  username: string;
+  userId?: string;
+  raw: string;
+}
 
 /**
  * Middleware utilities for platform-specific message processing
@@ -24,30 +34,30 @@ export const middlewareUtils = {
    */
   detectPlatform: (message: any): string => {
     const metadata = message?.metadata || {};
-    
+
     if (metadata.platform) return metadata.platform;
     if (metadata.source) return metadata.source;
-    
+
     // Check for platform-specific fields
     if (message.discordId || message.guildId) return "discord";
     if (message.telegramChatId || message.telegram_chat_id) return "telegram";
     if (message.tweetId || message.twitter_id) return "twitter";
-    
+
     // Check content patterns
     const text = message.content?.text || "";
     if (text.includes("<@") && text.includes(">")) return "discord";
     if (text.includes("_bot")) return "telegram";
-    
+
     return "unknown";
   },
-  
+
   /**
    * Normalize agent mentions across platforms
    */
   normalizeAgentMentions: (text: string, agentName: string): string => {
     const agentAliases = [
       "nubi",
-      "anubis", 
+      "anubis",
       "anubischat",
       "nubibot",
       "jackal",
@@ -56,27 +66,27 @@ export const middlewareUtils = {
       "nubiai",
       "anubisai",
     ];
-    
+
     let normalizedText = text;
-    
+
     // Replace Discord mentions
     const discordRegex = /<@!?(\d+)>/g;
     normalizedText = normalizedText.replace(discordRegex, (match, userId) => {
       return `@${agentName}`;
     });
-    
+
     // Replace Telegram/Twitter mentions
     const mentionRegex = /@([a-zA-Z0-9_]{1,32}(?:_bot)?)/g;
     normalizedText = normalizedText.replace(mentionRegex, (match, username) => {
       const lowerUsername = username.toLowerCase();
-      if (agentAliases.some(alias => lowerUsername.includes(alias))) {
+      if (agentAliases.some((alias) => lowerUsername.includes(alias))) {
         return `@${agentName}`;
       }
       return match; // Keep other mentions unchanged
     });
-    
+
     return normalizedText;
-  }
+  },
 };
 
 export default {

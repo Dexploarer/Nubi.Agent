@@ -1,12 +1,12 @@
 /**
  * Identity Module - User identity management and cross-platform linking
- * 
+ *
  * This module handles user identity resolution, cross-platform linking,
  * and user profile management across different platforms.
  */
 
 // Re-export core types
-export type { IAgentRuntime, Service, Memory, logger, UUID } from '../core';
+export type { IAgentRuntime, Service, Memory, logger, UUID } from "../core";
 
 // Identity types
 export interface UserIdentity {
@@ -51,7 +51,7 @@ export interface UserPreferences {
 }
 
 // Platform-specific types
-export type Platform = 'discord' | 'telegram' | 'twitter' | 'web' | 'unknown';
+export type Platform = "discord" | "telegram" | "twitter" | "web" | "unknown";
 
 export interface PlatformConfig {
   platform: Platform;
@@ -81,14 +81,14 @@ export interface PotentialLink {
 }
 
 // Service exports
-export { UserIdentityService } from './user-identity-service';
+export { UserIdentityService } from "./user-identity-service";
 
 // Utility functions
 export function createUserIdentity(
   platform: Platform,
   platformId: string,
   username: string,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
 ): UserIdentity {
   return {
     id: `${platform}:${platformId}`,
@@ -99,7 +99,7 @@ export function createUserIdentity(
     metadata: metadata || {},
     createdAt: new Date(),
     updatedAt: new Date(),
-    lastSeen: new Date()
+    lastSeen: new Date(),
   };
 }
 
@@ -117,7 +117,7 @@ export function createIdentityLink(
   sourceId: string,
   targetId: string,
   confidence: number,
-  evidence: string[] = []
+  evidence: string[] = [],
 ): IdentityLink {
   return {
     id: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -125,14 +125,14 @@ export function createIdentityLink(
     targetId,
     confidence,
     evidence,
-    createdAt: new Date()
+    createdAt: new Date(),
   };
 }
 
 export function createUserProfile(
   internalId: string,
   preferredName: string,
-  platforms: Record<string, UserIdentity> = {}
+  platforms: Record<string, UserIdentity> = {},
 ): UserProfile {
   return {
     id: `profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -140,13 +140,13 @@ export function createUserProfile(
     preferredName,
     platforms,
     preferences: {
-      language: 'en',
-      timezone: 'UTC',
+      language: "en",
+      timezone: "UTC",
       notificationSettings: {},
-      privacySettings: {}
+      privacySettings: {},
     },
     metadata: {},
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 }

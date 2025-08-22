@@ -1,12 +1,32 @@
 /**
  * Plugins Module - Plugin system and implementations
- * 
+ *
  * This module provides the plugin system, plugin management, and
  * all plugin implementations for the NUBI application.
  */
 
 // Re-export core types
-export type { Plugin, Action, Evaluator, Provider, IAgentRuntime, Memory, State, logger } from '../core';
+export type {
+  Plugin,
+  Action,
+  Evaluator,
+  Provider,
+  IAgentRuntime,
+  Memory,
+  State,
+} from "../core";
+
+// Import logger as a value
+import { Action, Evaluator, logger, Provider } from "../core";
+
+// Extend Plugin interface to include missing properties
+export interface ExtendedPlugin extends Plugin {
+  actions?: Action[];
+  evaluators?: Evaluator[];
+  providers?: Provider[];
+  services?: any[];
+  enabled?: boolean;
+}
 
 // Plugin types
 export interface PluginConfig {
@@ -19,16 +39,16 @@ export interface PluginConfig {
 }
 
 export interface PluginManager {
-  register(plugin: Plugin): void;
-  get(name: string): Plugin | null;
-  getAll(): Plugin[];
+  register(plugin: ExtendedPlugin): void;
+  get(name: string): ExtendedPlugin | null;
+  getAll(): ExtendedPlugin[];
   enable(name: string): void;
   disable(name: string): void;
-  validate(plugin: Plugin): boolean;
+  validate(plugin: ExtendedPlugin): boolean;
 }
 
 export interface PluginRegistry {
-  [key: string]: Plugin;
+  [key: string]: ExtendedPlugin;
 }
 
 // Action types
@@ -71,38 +91,43 @@ export interface ProviderRegistry {
 }
 
 // Plugin implementations
-export { default as nubiPlugin } from './nubi-plugin';
-export { clickhouseAnalyticsPlugin } from './clickhouse-analytics';
-export { nubiProviders } from './nubi-providers';
+export { default as nubiPlugin } from "./nubi-plugin";
+export { clickhouseAnalyticsPlugin } from "./clickhouse-analytics";
+export { nubiProviders } from "./nubi-providers";
 
 // Plugin manager implementation
 export class PluginManagerImpl implements PluginManager {
   private plugins: PluginRegistry = {};
-  private pluginStats: Map<string, { loadTime: number; enabled: boolean }> = new Map();
+  private pluginStats: Map<string, { loadTime: number; enabled: boolean }> =
+    new Map();
 
-  register(plugin: Plugin): void {
+  register(plugin: ExtendedPlugin): void {
     try {
       if (this.validate(plugin)) {
         this.plugins[plugin.name] = plugin;
-        this.pluginStats.set(plugin.name, { 
-          loadTime: Date.now(), 
-          enabled: true 
+        this.pluginStats.set(plugin.name, {
+          loadTime: Date.now(),
+          enabled: true,
         });
+
         logger.info(`✅ Registered plugin: ${plugin.name}`);
       } else {
         logger.error(`❌ Failed to validate plugin: ${plugin.name}`);
       }
     } catch (error) {
-      logger.error(`Failed to register plugin ${plugin.name}:`, error);
+      logger.error(
+        `Failed to register plugin ${plugin.name}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
 
-  get(name: string): Plugin | null {
+  get(name: string): ExtendedPlugin | null {
     return this.plugins[name] || null;
   }
 
-  getAll(): Plugin[] {
+  getAll(): ExtendedPlugin[] {
     return Object.values(this.plugins);
   }
 
@@ -110,17 +135,21 @@ export class PluginManagerImpl implements PluginManager {
     try {
       const plugin = this.plugins[name];
       if (plugin) {
-        const stats = this.pluginStats.get(name);
-        if (stats) {
-          stats.enabled = true;
-          this.pluginStats.set(name, stats);
-        }
+        plugin.enabled = true;
+        this.pluginStats.set(name, {
+          ...this.pluginStats.get(name)!,
+          enabled: true,
+        });
+
         logger.info(`✅ Enabled plugin: ${name}`);
       } else {
         logger.warn(`Plugin not found: ${name}`);
       }
     } catch (error) {
-      logger.error(`Failed to enable plugin ${name}:`, error);
+      logger.error(
+        `Failed to enable plugin ${name}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -129,30 +158,34 @@ export class PluginManagerImpl implements PluginManager {
     try {
       const plugin = this.plugins[name];
       if (plugin) {
-        const stats = this.pluginStats.get(name);
-        if (stats) {
-          stats.enabled = false;
-          this.pluginStats.set(name, stats);
-        }
+        plugin.enabled = false;
+        this.pluginStats.set(name, {
+          ...this.pluginStats.get(name)!,
+          enabled: false,
+        });
+
         logger.info(`🛑 Disabled plugin: ${name}`);
       } else {
         logger.warn(`Plugin not found: ${name}`);
       }
     } catch (error) {
-      logger.error(`Failed to disable plugin ${name}:`, error);
+      logger.error(
+        `Failed to disable plugin ${name}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
 
-  validate(plugin: Plugin): boolean {
+  validate(plugin: ExtendedPlugin): boolean {
     return !!(
       plugin &&
       plugin.name &&
       plugin.description &&
-      Array.isArray(plugin.actions) &&
-      Array.isArray(plugin.evaluators) &&
-      Array.isArray(plugin.providers) &&
-      Array.isArray(plugin.services)
+      (!plugin.actions || Array.isArray(plugin.actions)) &&
+      (!plugin.evaluators || Array.isArray(plugin.evaluators)) &&
+      (!plugin.providers || Array.isArray(plugin.providers)) &&
+      (!plugin.services || Array.isArray(plugin.services))
     );
   }
 
@@ -162,11 +195,11 @@ export class PluginManagerImpl implements PluginManager {
 
   getAllPluginStats(): Record<string, { loadTime: number; enabled: boolean }> {
     const result: Record<string, { loadTime: number; enabled: boolean }> = {};
-    
+
     for (const [name, stats] of this.pluginStats.entries()) {
       result[name] = stats;
     }
-    
+
     return result;
   }
 }
@@ -176,15 +209,15 @@ export function createPluginManager(): PluginManager {
   return new PluginManagerImpl();
 }
 
-export function validatePlugin(plugin: Plugin): boolean {
+export function validatePlugin(plugin: ExtendedPlugin): boolean {
   return !!(
     plugin &&
     plugin.name &&
     plugin.description &&
-    Array.isArray(plugin.actions) &&
-    Array.isArray(plugin.evaluators) &&
-    Array.isArray(plugin.providers) &&
-    Array.isArray(plugin.services)
+    (!plugin.actions || Array.isArray(plugin.actions)) &&
+    (!plugin.evaluators || Array.isArray(plugin.evaluators)) &&
+    (!plugin.providers || Array.isArray(plugin.providers)) &&
+    (!plugin.services || Array.isArray(plugin.services))
   );
 }
 
@@ -192,7 +225,7 @@ export function createPluginConfig(
   name: string,
   version: string,
   description: string,
-  dependencies: string[] = []
+  dependencies: string[] = [],
 ): PluginConfig {
   return {
     name,
@@ -200,48 +233,48 @@ export function createPluginConfig(
     description,
     enabled: true,
     dependencies,
-    config: {}
+    config: {},
   };
 }
 
 export function createActionConfig(
   name: string,
   description: string,
-  priority: number = 1
+  priority: number = 1,
 ): ActionConfig {
   return {
     name,
     description,
     enabled: true,
     priority,
-    config: {}
+    config: {},
   };
 }
 
 export function createEvaluatorConfig(
   name: string,
   description: string,
-  priority: number = 1
+  priority: number = 1,
 ): EvaluatorConfig {
   return {
     name,
     description,
     enabled: true,
     priority,
-    config: {}
+    config: {},
   };
 }
 
 export function createProviderConfig(
   name: string,
   description: string,
-  priority: number = 1
+  priority: number = 1,
 ): ProviderConfig {
   return {
     name,
     description,
     enabled: true,
     priority,
-    config: {}
+    config: {},
   };
 }

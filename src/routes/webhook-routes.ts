@@ -49,7 +49,10 @@ export function createWebhookRoutes(runtime: IAgentRuntime): Router {
 
       res.status(200).json({ ok: true });
     } catch (error) {
-      logger.error("[WEBHOOK] Telegram webhook error:", error);
+      logger.error(
+        "[WEBHOOK] Telegram webhook error:",
+        error instanceof Error ? error.message : String(error),
+      );
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -93,7 +96,10 @@ export function createWebhookRoutes(runtime: IAgentRuntime): Router {
 
       res.status(200).json({ ok: true, processed: true });
     } catch (error) {
-      logger.error("[WEBHOOK] MCP webhook error:", error);
+      logger.error(
+        "[WEBHOOK] MCP webhook error:",
+        error instanceof Error ? error.message : String(error),
+      );
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -131,7 +137,10 @@ export function createWebhookRoutes(runtime: IAgentRuntime): Router {
         data: status,
       });
     } catch (error) {
-      logger.error("[WEBHOOK] Raid status error:", error);
+      logger.error(
+        "[WEBHOOK] Raid status error:",
+        error instanceof Error ? error.message : String(error),
+      );
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -166,7 +175,10 @@ export function createWebhookRoutes(runtime: IAgentRuntime): Router {
         message: "Engagement submitted for verification",
       });
     } catch (error) {
-      logger.error("[WEBHOOK] Engagement submission error:", error);
+      logger.error(
+        "[WEBHOOK] Engagement submission error:",
+        error instanceof Error ? error.message : String(error),
+      );
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -199,7 +211,10 @@ export function createWebhookRoutes(runtime: IAgentRuntime): Router {
         data: leaderboard,
       });
     } catch (error) {
-      logger.error("[WEBHOOK] Leaderboard error:", error);
+      logger.error(
+        "[WEBHOOK] Leaderboard error:",
+        error instanceof Error ? error.message : String(error),
+      );
       res.status(500).json({ error: "Internal server error" });
     }
   });

@@ -65,7 +65,10 @@ export class RaidModerationService {
 
       logger.info("Raid Moderation Service initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize Raid Moderation Service:", error);
+      logger.error(
+        "Failed to initialize Raid Moderation Service:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -233,7 +236,10 @@ export class RaidModerationService {
       );
       return `✅ User @${targetIdentifier} has been permanently banned from raids.`;
     } catch (error) {
-      logger.error("Failed to ban raider:", error);
+      logger.error(
+        "Failed to ban raider:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to ban user. Please try again.";
     }
   }
@@ -289,7 +295,10 @@ export class RaidModerationService {
       );
       return `✅ User @${targetIdentifier} has been unbanned and may rejoin raids.`;
     } catch (error) {
-      logger.error("Failed to unban raider:", error);
+      logger.error(
+        "Failed to unban raider:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to unban user. Please try again.";
     }
   }
@@ -335,7 +344,10 @@ export class RaidModerationService {
       );
       return `✅ Warning issued to @${targetIdentifier}.`;
     } catch (error) {
-      logger.error("Failed to warn raider:", error);
+      logger.error(
+        "Failed to warn raider:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to issue warning. Please try again.";
     }
   }
@@ -393,7 +405,10 @@ export class RaidModerationService {
 
       return message;
     } catch (error) {
-      logger.error("Failed to get raider status:", error);
+      logger.error(
+        "Failed to get raider status:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to retrieve raider status. Please try again.";
     }
   }
@@ -446,7 +461,10 @@ export class RaidModerationService {
 
       return `✅ Raid ${channelRaid.id.substring(0, 8)}... has been reset.`;
     } catch (error) {
-      logger.error("Failed to reset raid:", error);
+      logger.error(
+        "Failed to reset raid:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to reset raid. Please try again.";
     }
   }
@@ -484,7 +502,10 @@ export class RaidModerationService {
 
       return `✅ Chat has been force unlocked by divine decree.`;
     } catch (error) {
-      logger.error("Failed to force unlock:", error);
+      logger.error(
+        "Failed to force unlock:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to force unlock chat. Please try again.";
     }
   }
@@ -531,7 +552,10 @@ export class RaidModerationService {
 
       return `✅ Points cleared for @${targetIdentifier}.`;
     } catch (error) {
-      logger.error("Failed to clear points:", error);
+      logger.error(
+        "Failed to clear points:",
+        error instanceof Error ? error.message : String(error),
+      );
       return "❌ Failed to clear points. Please try again.";
     }
   }
@@ -647,7 +671,10 @@ export class RaidModerationService {
         });
       }
     } catch (error) {
-      logger.error("Failed to send moderation notification:", error);
+      logger.error(
+        "Failed to send moderation notification:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 

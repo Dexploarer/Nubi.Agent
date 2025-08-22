@@ -53,29 +53,39 @@ bun run check-all
 1. **ElizaOS Integration**
    - Built on ElizaOS framework with full plugin architecture
    - Uses ElizaOS logger (`import { logger } from "@elizaos/core"`) throughout codebase
-   - Character definition in `src/nubi-character.ts`
-   - Main plugin configuration in `src/nubi-plugin.ts`
+   - Character definition in `src/character/nubi-character.ts`
+   - Main plugin configuration in `src/plugins/nubi-plugin.ts`
 
-2. **Database Layer**
+2. **Modular Architecture** (`MODULAR_ARCHITECTURE.md`)
+   - **Core** (`src/core/`): ElizaOS re-exports and base utilities
+   - **Identity** (`src/identity/`): Cross-platform user identity management
+   - **Messaging** (`src/messaging/`): Message bus and transport management
+   - **Character** (`src/character/`): NUBI personality and configuration
+   - **Services** (`src/services/`): Core service implementations
+   - **Plugins** (`src/plugins/`): Plugin system and implementations
+   - **Orchestration** (`src/orchestration/`): Strategic action orchestration
+   - **App** (`src/app/`): Application lifecycle and coordination
+
+3. **Database Layer**
    - Centralized `DatabaseConnectionManager` with connection pooling (max 20 connections)
    - Services use connection manager instead of individual database clients
    - Parallel query execution for performance optimization
    - Vector embeddings support with multiple dimensions
 
-3. **Service Architecture**
+4. **Service Architecture**
    - **DatabaseMemoryService**: Enhanced context retrieval with semantic search
    - **EnhancedResponseGenerator**: Contextually aware response generation
    - **MessageBusService**: Multi-transport communication (Discord, Telegram, X/Twitter, HTTP)
    - **CrossPlatformIdentityService**: User identity linking across platforms
    - All services extend ElizaOS `Service` class
 
-4. **Telegram Raid System**
+5. **Telegram Raid System**
    - Complete raid coordination system in `src/telegram-raids/`
    - Engagement verification, leaderboards, moderation
    - Rate limiting and anti-abuse measures
    - Integration with X/Twitter for social media raids
 
-5. **Performance Optimizations**
+6. **Performance Optimizations**
    - Database queries executed in parallel using `Promise.all()`
    - Connection pooling with centralized database manager
    - Async operation optimization throughout services
@@ -101,18 +111,18 @@ bun run check-all
 
 ## Response Generation System
 
-NUBI uses a sophisticated multi-layered response system documented in `NUBI_RESPONSE_ARCHITECTURE.md`:
+NUBI uses a sophisticated multi-layered response system:
 
-- **Personality Evolution**: Dynamic trait adjustment (8 dimensions)
+- **Personality Evolution**: Dynamic trait adjustment (10 dimensions in config)
 - **Emotional State Processing**: Context-aware emotional responses
-- **Anti-Detection Mechanisms**: Human-like variation patterns
+- **Anti-Detection Mechanisms**: Human-like variation patterns (typo rate, contradiction rate, etc.)
 - **Context Providers**: Database-driven contextual awareness
 - **Memory Systems**: Semantic, conversational, and personality memory
 
 ## Configuration Files
 
-- `config/anubis-config.yaml`: Main agent configuration
-- `config/anubis-raid-config.yaml`: Telegram raid settings
+- `configs/nubi-config.yaml`: Main agent configuration with personality traits
+- `configs/raid-config.yaml`: Telegram raid settings
 - `supabase/config.toml`: Supabase edge functions configuration
 - Database migrations in `supabase/migrations/`
 
@@ -125,7 +135,7 @@ NUBI uses a sophisticated multi-layered response system documented in `NUBI_RESP
 
 ### Testing Considerations
 - Database tests may fail without proper PostgreSQL connection
-- Mock services appropriately in tests
+- Mock services appropriately in tests using `MockRuntime` from `src/__tests__/test-utils.ts`
 - Use `bun test` framework, not Jest
 
 ### Performance Patterns
@@ -148,8 +158,12 @@ NUBI uses a sophisticated multi-layered response system documented in `NUBI_RESP
 
 ## Environment Variables
 
-Key environment variables (see `DATABASE.md` for complete reference):
+Key environment variables:
 - `POSTGRES_URL`: Production PostgreSQL connection
 - `PGLITE_DATA_DIR`: Development database location (default: `./.eliza/.elizadb`)
 - `NODE_ENV`: Environment mode
-- Various API keys for Discord, Telegram, Twitter integrations
+- `OPENAI_API_KEY`: Required for AI responses
+- `TELEGRAM_BOT_TOKEN`: For Telegram integration
+- `DISCORD_API_TOKEN`: For Discord integration
+- `TWITTER_API_KEY`: For Twitter/X integration
+- `CLICKHOUSE_HOST`: For analytics (optional)

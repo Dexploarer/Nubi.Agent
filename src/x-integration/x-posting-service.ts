@@ -25,7 +25,10 @@ export class XPostingService {
       }
       logger.info("X Posting Service initialized successfully");
     } catch (error) {
-      logger.error("Failed to initialize X Posting Service:", error);
+      logger.error(
+        "Failed to initialize X Posting Service:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -84,7 +87,10 @@ export class XPostingService {
         timestamp: Date.now(),
       };
     } catch (error) {
-      logger.error("Failed to post to X:", error);
+      logger.error(
+        "Failed to post to X:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -103,7 +109,10 @@ export class XPostingService {
 
       return result;
     } catch (error) {
-      logger.error("Failed to generate and post:", error);
+      logger.error(
+        "Failed to generate and post:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }

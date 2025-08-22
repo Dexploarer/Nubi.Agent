@@ -95,7 +95,10 @@ export class SessionsService extends Service {
         );
       }
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to initialize:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to initialize:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -150,7 +153,10 @@ export class SessionsService extends Service {
       );
       return session;
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to create session:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to create session:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -220,7 +226,10 @@ export class SessionsService extends Service {
       );
       return message;
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to send session message:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to send session message:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -244,7 +253,10 @@ export class SessionsService extends Service {
 
       return result.rows.map((row) => this.formatSessionMessage(row));
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to get session history:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to get session history:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -270,7 +282,10 @@ export class SessionsService extends Service {
       logger.info(`[SESSIONS_SERVICE] Renewed session ${sessionId}`);
       return session;
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to renew session:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to renew session:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -287,7 +302,10 @@ export class SessionsService extends Service {
 
       return result.rows[0]?.success || false;
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to update heartbeat:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to update heartbeat:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -310,7 +328,10 @@ export class SessionsService extends Service {
       }
       return success;
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to end session:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to end session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -331,7 +352,10 @@ export class SessionsService extends Service {
 
       return this.formatSessionInfo(result.rows[0]);
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to get session:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to get session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
@@ -372,7 +396,10 @@ export class SessionsService extends Service {
       const result = await this.dbClient!.query(query, params);
       return result.rows.map((row) => this.formatSessionInfo(row));
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to list sessions:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to list sessions:",
+        error instanceof Error ? error.message : String(error),
+      );
       return [];
     }
   }
@@ -410,7 +437,10 @@ export class SessionsService extends Service {
         },
       };
     } catch (error) {
-      logger.error("[SESSIONS_SERVICE] Failed to get analytics:", error);
+      logger.error(
+        "[SESSIONS_SERVICE] Failed to get analytics:",
+        error instanceof Error ? error.message : String(error),
+      );
       return { dailyStats: [], summary: {} };
     }
   }

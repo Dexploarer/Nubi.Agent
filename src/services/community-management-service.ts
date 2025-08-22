@@ -115,7 +115,7 @@ export class CommunityManagementService extends Service {
     } catch (error) {
       logger.warn(
         "[COMMUNITY_MANAGEMENT_SERVICE] Failed to track user interaction:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }
@@ -152,7 +152,7 @@ export class CommunityManagementService extends Service {
     } catch (error) {
       logger.warn(
         "[COMMUNITY_MANAGEMENT_SERVICE] Failed to update community metrics:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
   }

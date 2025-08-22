@@ -1,7 +1,7 @@
 import { eq, and, desc, sql } from "drizzle-orm";
 import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { UUID, logger } from "@elizaos/core";
-import { user_records } from "../schemas/elizaos-schemas";
+import { user_records } from "../schemas";
 
 export interface UserRecord {
   id: UUID;
@@ -81,7 +81,10 @@ export class UserRecordsRepository {
         return this.mapToUserRecord(created);
       }
     } catch (error) {
-      logger.error("[UserRecordsRepository] Upsert failed:", error);
+      logger.error(
+        "[UserRecordsRepository] Upsert failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }

@@ -15,7 +15,7 @@ import {
  * Runs AFTER ElizaOS generates responses to apply humanization patterns.
  *
  * Original location: anti-detection-system.ts (610 lines)
- * 
+ *
  * OPTIMIZATIONS:
  * - LRU cache for conversation memories with automatic cleanup
  * - Reduced memory footprint with bounded collections
@@ -111,7 +111,9 @@ class ConversationMemoryManager {
 
     if (oldestRoomId) {
       this.memories.delete(oldestRoomId);
-      logger.debug(`[ANTI_DETECTION] Evicted LRU memory for room: ${oldestRoomId}`);
+      logger.debug(
+        `[ANTI_DETECTION] Evicted LRU memory for room: ${oldestRoomId}`,
+      );
     }
   }
 
@@ -126,7 +128,9 @@ class ConversationMemoryManager {
     }
 
     this.lastCleanup = now;
-    logger.debug(`[ANTI_DETECTION] Cleaned up ${this.memories.size} conversation memories`);
+    logger.debug(
+      `[ANTI_DETECTION] Cleaned up ${this.memories.size} conversation memories`,
+    );
   }
 }
 
@@ -144,7 +148,8 @@ const REGEX_PATTERNS = {
     tion: /tion$/g,
   },
   formality: {
-    contractions: /\b(Do not|Cannot|Will not|It is|That is|I am|You are|We are|They are)\b/g,
+    contractions:
+      /\b(Do not|Cannot|Will not|It is|That is|I am|You are|We are|They are)\b/g,
     casual: /\./g,
     excited: /!/g,
   },
@@ -189,9 +194,7 @@ export const antiDetectionPostProcessor: Evaluator = {
       }
 
       // Get conversation memory for context
-      const conversationMemory = memoryManager.get(
-        message.roomId || "default",
-      );
+      const conversationMemory = memoryManager.get(message.roomId || "default");
 
       // Get response patterns from YAML config
       const yamlConfig = (runtime as any).yamlConfigManager?.getConfig();
@@ -230,10 +233,7 @@ export const antiDetectionPostProcessor: Evaluator = {
       ];
 
       // Determine how many patterns to apply (1-3)
-      const patternsToApply = Math.min(
-        3,
-        Math.floor(Math.random() * 3) + 1,
-      );
+      const patternsToApply = Math.min(3, Math.floor(Math.random() * 3) + 1);
 
       let processedText = text;
       const appliedPatterns: string[] = [];
@@ -295,7 +295,10 @@ export const antiDetectionPostProcessor: Evaluator = {
         },
       };
     } catch (error) {
-      logger.error("[ANTI_DETECTION_POST_PROCESSOR] Error:", error);
+      logger.error(
+        "[ANTI_DETECTION_POST_PROCESSOR] Error:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
         error: error instanceof Error ? error : new Error(String(error)),
@@ -427,12 +430,18 @@ function varyFormality(text: string, context: any): string {
     // Make more casual
     text = text.replace(REGEX_PATTERNS.formality.contractions, (match) => {
       switch (match) {
-        case "Do not": return "Don't";
-        case "Cannot": return "Can't";
-        case "Will not": return "Won't";
-        case "It is": return "It's";
-        case "That is": return "That's";
-        default: return match;
+        case "Do not":
+          return "Don't";
+        case "Cannot":
+          return "Can't";
+        case "Will not":
+          return "Won't";
+        case "It is":
+          return "It's";
+        case "That is":
+          return "That's";
+        default:
+          return match;
       }
     });
   } else if (formality < 0.3 && Math.random() < 0.3) {

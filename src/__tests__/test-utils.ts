@@ -49,11 +49,11 @@ import {
  */
 export class MockRuntime implements Partial<IAgentRuntime> {
   agentId: UUID = "00000000-0000-0000-0000-000000000000";
-    character: Character = {
-        name: "TestAgent",
-        id: "test-agent",
-        // Use a simple string to avoid depending on specific enum exports
-        modelProvider: "openai" as any,
+  character: Character = {
+    name: "TestAgent",
+    id: "test-agent",
+    // Use a simple string to avoid depending on specific enum exports
+    modelProvider: "openai" as any,
     plugins: [],
     clients: [],
     settings: {
