@@ -113,7 +113,7 @@ export interface TwitterTimelineEntry {
   category: "mention" | "trending" | "relevant" | "followup";
 }
 
-export interface TwitterMonitorConfig {
+export interface TwitterMonitorConfig extends Record<string, unknown> {
   enabled: boolean;
   bearerToken: string;
   // Cookie-based authentication (same as MCP)
@@ -173,6 +173,57 @@ export interface TwitterSearchResult {
   timestamp: Date;
 }
 
+export interface TwitterList {
+  id: string;
+  name: string;
+  description?: string;
+  memberCount: number;
+  subscriberCount: number;
+  ownerId: string;
+  ownerUsername: string;
+  isPrivate: boolean;
+  createdAt: Date;
+}
+
+export interface TwitterListTweets {
+  listId: string;
+  tweets: TwitterMention[];
+  lastUpdated: Date;
+  totalTweets: number;
+}
+
+export interface RaidMetrics {
+  tweetId: string;
+  hashtags: string[];
+  engagementData: {
+    likes: number;
+    retweets: number;
+    replies: number;
+    quotes: number;
+    totalEngagements: number;
+  };
+  timeline: {
+    timestamp: Date;
+    engagementSnapshot: EngagementMetrics;
+  }[];
+  participants: {
+    userId: string;
+    username: string;
+    engagementType: 'like' | 'retweet' | 'reply' | 'quote';
+    timestamp: Date;
+  }[];
+  raidScore: number;
+  velocity: number; // engagements per minute
+  peakTime: Date;
+}
+
+export interface TwitterListTweets {
+  listId: string;
+  tweets: TwitterMention[];
+  lastUpdated: Date;
+  totalTweets: number;
+}
+
 export interface TwitterAnalytics {
   period: {
     start: Date;
@@ -188,6 +239,13 @@ export interface TwitterAnalytics {
       positive: number;
       negative: number;
       neutral: number;
+    };
+    // Raid analytics
+    raidMetrics?: {
+      totalRaids: number;
+      successfulRaids: number;
+      averageRaidScore: number;
+      topRaidTweets: RaidMetrics[];
     };
   };
 }

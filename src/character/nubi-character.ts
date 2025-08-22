@@ -1,9 +1,6 @@
 import { Character } from "../core";
 import { nubiTemplates } from "./nubi-templates";
 import { nubiMcpConfig } from "./nubi-mcp-config";
-import telegramPlugin from "@elizaos/plugin-telegram";
-import mcpPlugin from "@elizaos/plugin-mcp";
-import { twitterMonitorPlugin } from "../plugins/twitter-monitor-plugin";
 
 /**
  * NUBI Character Definition - Anubis.Chat Companion Token

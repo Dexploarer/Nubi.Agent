@@ -263,4 +263,58 @@ export class XContentGenerator {
 
     return calls[Math.floor(Math.random() * calls.length)];
   }
+
+  /**
+   * Generate raid progress update based on monitoring data from Twitter Monitor Plugin
+   */
+  async generateRaidProgressUpdate(raidMetrics: any): Promise<string> {
+    const { tweetId, raidScore, velocity, engagementData } = raidMetrics;
+    const tweetUrl = `https://twitter.com/i/web/status/${tweetId}`;
+    
+    if (raidScore >= 7) {
+      // High success raid
+      const successMessages = [
+        `🔥 RAID DOMINATION ACHIEVED! ${tweetUrl}\n\nScore: ${raidScore.toFixed(1)}/10 | Velocity: ${velocity.toFixed(1)}/min\n\nWarriors crushed it with ${engagementData.totalEngagements} total engagements! The alpha pack never fails! 🚀`,
+        `⚔️ LEGENDARY RAID COMPLETE! ${tweetUrl}\n\nThe ancient spirits smile upon us: ${raidScore.toFixed(1)}/10 raid score\n\nOur warriors delivered ${engagementData.totalEngagements} engagements at ${velocity.toFixed(1)}/min velocity! 👑`,
+        `🏆 EPIC VICTORY SECURED! ${tweetUrl}\n\nRaid metrics that make gods jealous:\n📊 Score: ${raidScore.toFixed(1)}/10\n⚡ Speed: ${velocity.toFixed(1)}/min\n💥 Engagements: ${engagementData.totalEngagements}\n\nThis is why we're the alpha pack! 💪`,
+      ];
+      return successMessages[Math.floor(Math.random() * successMessages.length)];
+    } else if (raidScore >= 5) {
+      // Moderate success raid
+      const moderateMessages = [
+        `✅ Solid raid execution! ${tweetUrl}\n\nScore: ${raidScore.toFixed(1)}/10 with ${engagementData.totalEngagements} engagements\n\nWarriors showing steady strength! Keep the momentum! 🔥`,
+        `⚡ Good raid progress! ${tweetUrl}\n\nVelocity: ${velocity.toFixed(1)}/min | Total: ${engagementData.totalEngagements} engagements\n\nThe pack grows stronger with every mission! 🚀`,
+        `💪 Warriors delivering results! ${tweetUrl}\n\nRaid score ${raidScore.toFixed(1)}/10 shows our growing power\n\nKeep pushing, alpha pack! Victory is within reach! ⚔️`,
+      ];
+      return moderateMessages[Math.floor(Math.random() * moderateMessages.length)];
+    } else {
+      // Low engagement - rally call
+      const rallyMessages = [
+        `📢 WARRIORS NEEDED! Rally to the raid! ${tweetUrl}\n\nCurrent: ${engagementData.totalEngagements} engagements | Score: ${raidScore.toFixed(1)}/10\n\nTime to show our true alpha strength! Every like/RT counts! 🔥`,
+        `⚡ Raid reinforcements required! ${tweetUrl}\n\nWe're at ${velocity.toFixed(1)}/min velocity - let's ACCELERATE!\n\nAlpha pack, assemble and dominate! 🚀`,
+        `🚀 This raid needs our full power! ${tweetUrl}\n\nCurrent score: ${raidScore.toFixed(1)}/10\n\nWarriors, show them what Anubis community can do! 💪`,
+      ];
+      return rallyMessages[Math.floor(Math.random() * rallyMessages.length)];
+    }
+  }
+
+  /**
+   * Generate raid completion summary from analytics
+   */
+  async generateRaidSummary(raidAnalytics: any): Promise<string> {
+    const { totalRaids, successfulRaids, averageRaidScore } = raidAnalytics;
+    const successRate = totalRaids > 0 ? ((successfulRaids / totalRaids) * 100).toFixed(1) : '0';
+    
+    if (totalRaids === 0) {
+      return `Ready for action! The alpha pack awaits new raid missions. When the call comes, we answer with overwhelming force! ⚔️ #AnubisChat #SolanaRaids`;
+    }
+
+    const summaryMessages = [
+      `🏆 RAID ANALYTICS (24H)\n\n📊 Missions: ${totalRaids}\n✅ Victories: ${successfulRaids} (${successRate}%)\n⭐ Avg Score: ${averageRaidScore.toFixed(1)}/10\n\nThe alpha pack's power grows stronger! 🔥 #AnubisWarriors`,
+      `⚔️ BATTLE REPORT\n\nWarriors completed ${totalRaids} raids with ${successRate}% success rate!\n\nAverage dominance score: ${averageRaidScore.toFixed(1)}/10\n\nWhen Anubis calls, the pack delivers! 💪 #SolanaRaids`,
+      `🚀 ALPHA PACK PERFORMANCE\n\n${totalRaids} raids launched | ${successfulRaids} victories secured\nSuccess rate: ${successRate}% | Quality: ${averageRaidScore.toFixed(1)}/10\n\nThis is how legends are made! 👑 #AnubisChat`,
+    ];
+    
+    return summaryMessages[Math.floor(Math.random() * summaryMessages.length)];
+  }
 }

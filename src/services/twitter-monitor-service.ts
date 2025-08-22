@@ -21,6 +21,8 @@ import {
   TwitterMonitorEventType,
   EngagementMetrics,
   TrendingTopic,
+  TwitterListTweets,
+  RaidMetrics,
 } from "./twitter-data-types";
 
 export class TwitterMonitorService extends Service {
@@ -90,10 +92,36 @@ export class TwitterMonitorService extends Service {
       monitoredHashtags: (
         process.env.TWITTER_MONITORED_HASHTAGS || "#AnubisChat,#Solana,#DeFi"
       ).split(","),
+      // List monitoring configuration
+      monitoredLists: (
+        process.env.TWITTER_MONITORED_LISTS || ""
+      ).split(",").filter(Boolean),
+      listUpdateInterval: parseInt(process.env.TWITTER_LIST_UPDATE_INTERVAL || "15"),
+      // Raid monitoring configuration
+      raidMonitoring: {
+        enabled: process.env.TWITTER_RAID_MONITORING_ENABLED === "true",
+        trackHashtags: (
+          process.env.TWITTER_RAID_HASHTAGS || "#AnubisChat,#SolanaRaid"
+        ).split(","),
+        trackUsers: (
+          process.env.TWITTER_RAID_USERS || "UnderworldAgent"
+        ).split(","),
+        engagementThresholds: {
+          likes: parseInt(process.env.TWITTER_RAID_LIKE_THRESHOLD || "10"),
+          retweets: parseInt(process.env.TWITTER_RAID_RT_THRESHOLD || "5"),
+          replies: parseInt(process.env.TWITTER_RAID_REPLY_THRESHOLD || "3"),
+        },
+        timeWindows: {
+          short: parseInt(process.env.TWITTER_RAID_SHORT_WINDOW || "15"), // 15 min
+          medium: parseInt(process.env.TWITTER_RAID_MEDIUM_WINDOW || "60"), // 1 hour
+          long: parseInt(process.env.TWITTER_RAID_LONG_WINDOW || "240"), // 4 hours
+        },
+      },
       rateLimits: {
         tweetsPerWindow: 300, // Twitter API v2 limit
         usersPerWindow: 300,
         searchesPerWindow: 300,
+        listsPerWindow: 75, // Twitter API v2 limit for lists
         windowMinutes: 15,
       },
       filters: {
@@ -146,7 +174,7 @@ export class TwitterMonitorService extends Service {
 
       logger.info("[TWITTER_MONITOR] Monitoring started successfully");
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Failed to start monitoring:", error);
+      logger.error("[TWITTER_MONITOR] Failed to start monitoring:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -192,7 +220,7 @@ export class TwitterMonitorService extends Service {
         );
       }
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Failed to setup stream rules:", error);
+      logger.error("[TWITTER_MONITOR] Failed to setup stream rules:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -232,7 +260,7 @@ export class TwitterMonitorService extends Service {
       // Process stream data
       this.processStreamData(reader);
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Stream connection failed:", error);
+      logger.error("[TWITTER_MONITOR] Stream connection failed:", error instanceof Error ? error.message : String(error));
 
       // Emit connection error event
       this.emitEvent("connection_error", { error, timestamp: Date.now() });
@@ -273,7 +301,7 @@ export class TwitterMonitorService extends Service {
         }
       }
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Stream processing error:", error);
+      logger.error("[TWITTER_MONITOR] Stream processing error:", error instanceof Error ? error.message : String(error));
       if (this.isStreaming) {
         setTimeout(() => this.reconnectStream(), 30000);
       }
@@ -315,7 +343,7 @@ export class TwitterMonitorService extends Service {
         );
       }
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Error processing stream event:", error);
+      logger.error("[TWITTER_MONITOR] Error processing stream event:", error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -340,7 +368,7 @@ export class TwitterMonitorService extends Service {
     try {
       await this.startFilteredStream();
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Stream reconnection failed:", error);
+      logger.error("[TWITTER_MONITOR] Stream reconnection failed:", error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -406,7 +434,7 @@ export class TwitterMonitorService extends Service {
 
       return result;
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Search failed:", error);
+      logger.error("[TWITTER_MONITOR] Search failed:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -451,7 +479,7 @@ export class TwitterMonitorService extends Service {
 
       return user;
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] User lookup failed:", error);
+      logger.error("[TWITTER_MONITOR] User lookup failed:", error instanceof Error ? error.message : String(error));
       return null;
     }
   }
@@ -475,7 +503,7 @@ export class TwitterMonitorService extends Service {
       this.cache.set(cacheKey, trends, { ttl: 1000 * 60 * 15 }); // 15 min cache
       return trends;
     } catch (error) {
-      logger.error("[TWITTER_MONITOR] Failed to get trending topics:", error);
+      logger.error("[TWITTER_MONITOR] Failed to get trending topics:", error instanceof Error ? error.message : String(error));
       return [];
     }
   }
@@ -523,7 +551,7 @@ export class TwitterMonitorService extends Service {
     } catch (error) {
       logger.error(
         "[TWITTER_MONITOR] Failed to get engagement metrics:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return null;
     }
@@ -596,7 +624,7 @@ export class TwitterMonitorService extends Service {
       } catch (error) {
         logger.error(
           `[TWITTER_MONITOR] Failed to check user ${username}:`,
-          error,
+          error instanceof Error ? error.message : String(error),
         );
       }
     }
@@ -641,7 +669,7 @@ export class TwitterMonitorService extends Service {
       } catch (error) {
         logger.error(
           `[TWITTER_MONITOR] Event listener error for ${eventType}:`,
-          error,
+          error instanceof Error ? error.message : String(error),
         );
       }
     });
@@ -823,5 +851,268 @@ export class TwitterMonitorService extends Service {
       location: userData.location,
       website: userData.url,
     };
+  }
+
+  /**
+   * Monitor Twitter lists for new tweets
+   */
+  async monitorLists(): Promise<TwitterListTweets[]> {
+    const listTweets: TwitterListTweets[] = [];
+    
+    if (!this.config.monitoredLists?.length) {
+      return listTweets;
+    }
+
+    for (const listId of this.config.monitoredLists) {
+      try {
+        const cacheKey = `list_tweets_${listId}`;
+        const cached = this.cache.get(cacheKey);
+        
+        if (cached && this.checkRateLimit('lists')) {
+          listTweets.push(cached);
+          continue;
+        }
+
+        // Mock API call for list tweets (replace with actual Twitter API v2 call)
+        const tweets: TwitterMention[] = await this.fetchListTweets(listId);
+        
+        const listData: TwitterListTweets = {
+          listId,
+          tweets,
+          lastUpdated: new Date(),
+          totalTweets: tweets.length,
+        };
+
+        this.cache.set(cacheKey, listData);
+        listTweets.push(listData);
+        
+        logger.debug(`[TWITTER_MONITOR] Fetched ${tweets.length} tweets from list ${listId}`);
+      } catch (error) {
+        logger.error(`[TWITTER_MONITOR] Failed to fetch tweets from list ${listId}:`, error instanceof Error ? error.message : String(error));
+      }
+    }
+
+    return listTweets;
+  }
+
+  /**
+   * Track raid metrics for specific tweets
+   */
+  async trackRaidMetrics(tweetId: string): Promise<RaidMetrics | null> {
+    if (!this.config.raidMonitoring.enabled) {
+      return null;
+    }
+
+    try {
+      const cacheKey = `raid_metrics_${tweetId}`;
+      let raidData = this.cache.get(cacheKey) as RaidMetrics;
+
+      // Get current engagement data
+      const engagementMetrics = await this.getTweetEngagementMetrics(tweetId);
+      
+      if (!raidData) {
+        // Initialize raid tracking
+        raidData = {
+          tweetId,
+          hashtags: await this.extractHashtagsFromTweet(tweetId),
+          engagementData: {
+            likes: engagementMetrics?.metrics.likes || 0,
+            retweets: engagementMetrics?.metrics.retweets || 0,
+            replies: engagementMetrics?.metrics.replies || 0,
+            quotes: engagementMetrics?.metrics.quotes || 0,
+            totalEngagements: (engagementMetrics?.metrics.likes || 0) + (engagementMetrics?.metrics.retweets || 0) + (engagementMetrics?.metrics.replies || 0) + (engagementMetrics?.metrics.quotes || 0),
+          },
+          timeline: [],
+          participants: [],
+          raidScore: 0,
+          velocity: 0,
+          peakTime: new Date(),
+        };
+      }
+
+      // Update timeline
+      const timestamp = new Date();
+      raidData.timeline.push({
+        timestamp,
+        engagementSnapshot: engagementMetrics,
+      });
+
+      // Calculate velocity (engagements per minute)
+      if (raidData.timeline.length > 1) {
+        const timeWindow = this.config.raidMonitoring.timeWindows.short * 60 * 1000; // Convert to ms
+        const recentSnapshots = raidData.timeline.filter(
+          (s) => timestamp.getTime() - s.timestamp.getTime() <= timeWindow
+        );
+        
+        if (recentSnapshots.length > 1) {
+          const oldestSnapshot = recentSnapshots[0];
+          const totalEngagementIncrease = 
+            (engagementMetrics?.metrics.likes || 0) + (engagementMetrics?.metrics.retweets || 0) + (engagementMetrics?.metrics.replies || 0) + (engagementMetrics?.metrics.quotes || 0) -
+            (oldestSnapshot.engagementSnapshot.metrics.likes + oldestSnapshot.engagementSnapshot.metrics.retweets + 
+             oldestSnapshot.engagementSnapshot.metrics.replies + oldestSnapshot.engagementSnapshot.metrics.quotes);
+          
+          const timeElapsedMinutes = (timestamp.getTime() - oldestSnapshot.timestamp.getTime()) / (1000 * 60);
+          raidData.velocity = totalEngagementIncrease / Math.max(timeElapsedMinutes, 1);
+        }
+      }
+
+      // Calculate raid score based on thresholds
+      const thresholds = this.config.raidMonitoring.engagementThresholds;
+      let score = 0;
+      if ((engagementMetrics?.metrics.likes || 0) >= thresholds.likes) score += 1;
+      if ((engagementMetrics?.metrics.retweets || 0) >= thresholds.retweets) score += 2;
+      if ((engagementMetrics?.metrics.replies || 0) >= thresholds.replies) score += 1.5;
+      
+      // Bonus for velocity
+      if (raidData.velocity > 10) score += 2;
+      else if (raidData.velocity > 5) score += 1;
+      
+      raidData.raidScore = score;
+      raidData.engagementData = {
+        likes: engagementMetrics?.metrics.likes || 0,
+        retweets: engagementMetrics?.metrics.retweets || 0,
+        replies: engagementMetrics?.metrics.replies || 0,
+        quotes: engagementMetrics?.metrics.quotes || 0,
+        totalEngagements: (engagementMetrics?.metrics.likes || 0) + (engagementMetrics?.metrics.retweets || 0) + (engagementMetrics?.metrics.replies || 0) + (engagementMetrics?.metrics.quotes || 0),
+      };
+
+      // Update peak time if this is the highest velocity
+      if (raidData.timeline.length > 0) {
+        const maxVelocityEntry = raidData.timeline.reduce((max, current) => 
+          raidData.velocity > (max.engagementSnapshot.metrics.likes || 0) ? current : max
+        );
+        raidData.peakTime = maxVelocityEntry.timestamp;
+      }
+
+      // Cache updated data
+      this.cache.set(cacheKey, raidData);
+
+      // Emit raid milestone events
+      if (raidData.raidScore >= 5) {
+        this.emitEvent("engagement_milestone", { 
+          tweetId, 
+          raidScore: raidData.raidScore, 
+          velocity: raidData.velocity 
+        });
+      }
+
+      return raidData;
+    } catch (error) {
+      logger.error(`[TWITTER_MONITOR] Failed to track raid metrics for tweet ${tweetId}:`, error instanceof Error ? error.message : String(error));
+      return null;
+    }
+  }
+
+  /**
+   * Get raid analytics for a time period
+   */
+  async getRaidAnalytics(startDate: Date, endDate: Date): Promise<TwitterAnalytics['metrics']['raidMetrics']> {
+    if (!this.config.raidMonitoring.enabled) {
+      return undefined;
+    }
+
+    const raids: RaidMetrics[] = [];
+    
+    // Collect all raid data from cache
+    for (const [key, value] of this.cache.dump()) {
+      if (key.startsWith('raid_metrics_')) {
+        const raidData = value.value as RaidMetrics;
+        if (raidData.peakTime >= startDate && raidData.peakTime <= endDate) {
+          raids.push(raidData);
+        }
+      }
+    }
+
+    const successfulRaids = raids.filter(r => r.raidScore >= 5);
+    
+    return {
+      totalRaids: raids.length,
+      successfulRaids: successfulRaids.length,
+      averageRaidScore: raids.length > 0 ? raids.reduce((sum, r) => sum + r.raidScore, 0) / raids.length : 0,
+      topRaidTweets: raids
+        .sort((a, b) => b.raidScore - a.raidScore)
+        .slice(0, 10),
+    };
+  }
+
+  /**
+   * Helper method to fetch tweets from a list (mock implementation)
+   */
+  private async fetchListTweets(listId: string): Promise<TwitterMention[]> {
+    // This would use Twitter API v2 to fetch list tweets
+    // For now, return empty array as mock
+    logger.debug(`[TWITTER_MONITOR] Mock: Fetching tweets from list ${listId}`);
+    return [];
+  }
+
+  /**
+   * Helper method to extract hashtags from a tweet
+   */
+  private async extractHashtagsFromTweet(tweetId: string): Promise<string[]> {
+    // This would fetch the tweet and extract hashtags
+    // For now, return default hashtags
+    return this.config.raidMonitoring.trackHashtags;
+  }
+
+  /**
+   * Check if rate limit allows more requests for a given endpoint type
+   */
+  private isRateLimitOk(endpoint: string): boolean {
+    const now = Date.now();
+    const windowMs = this.config.rateLimits.windowMinutes * 60 * 1000;
+    
+    if (!this.rateLimiter.has(endpoint)) {
+      this.rateLimiter.set(endpoint, []);
+    }
+    
+    const requests = this.rateLimiter.get(endpoint)!;
+    
+    // Remove requests outside the window
+    const validRequests = requests.filter(time => now - time < windowMs);
+    this.rateLimiter.set(endpoint, validRequests);
+    
+    // Check against limits
+    let limit = 300; // default
+    switch (endpoint) {
+      case 'lists':
+        limit = this.config.rateLimits.listsPerWindow;
+        break;
+      case 'users':
+        limit = this.config.rateLimits.usersPerWindow;
+        break;
+      case 'searches':
+        limit = this.config.rateLimits.searchesPerWindow;
+        break;
+      default:
+        limit = this.config.rateLimits.tweetsPerWindow;
+    }
+    
+    if (validRequests.length >= limit) {
+      this.metrics.rateLimitHits++;
+      return false;
+    }
+    
+    // Add current request
+    validRequests.push(now);
+    this.rateLimiter.set(endpoint, validRequests);
+    return true;
+  }
+
+  async stop(): Promise<void> {
+    logger.info("[TWITTER_MONITOR] Stopping Twitter monitoring service...");
+    
+    // Stop streaming if active
+    if (this.isStreaming && this.streamConnection) {
+      this.streamConnection.disconnect();
+      this.isStreaming = false;
+    }
+    
+    // Clear rate limiter
+    this.rateLimiter.clear();
+    
+    // Clear cache
+    this.cache.clear();
+    
+    logger.info("[TWITTER_MONITOR] Twitter monitoring service stopped");
   }
 }

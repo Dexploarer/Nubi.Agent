@@ -197,14 +197,16 @@ const getUserInfoAction: Action = {
 
 // Provider for recent mentions of the agent
 const mentionsProvider: Provider = {
-  get: async (runtime: IAgentRuntime, message: Memory) => {
+  name: "twitter_mentions",
+  description: "Recent Twitter mentions of the agent",
+  get: async (runtime: IAgentRuntime, message: Memory, state?: any) => {
     try {
       const twitterService = runtime.getService(
         "twitter_monitor",
       ) as unknown as TwitterMonitorService;
 
       if (!twitterService) {
-        return "";
+        return { text: "", values: {}, data: {} };
       }
 
       // Get recent mentions from the last hour
@@ -217,7 +219,11 @@ const mentionsProvider: Provider = {
       );
 
       if (recentMentions.tweets.length === 0) {
-        return "No recent Twitter mentions found.";
+        return {
+          text: "No recent Twitter mentions found.",
+          values: { mentionCount: 0 },
+          data: { mentions: [] }
+        };
       }
 
       const mentionSummary = recentMentions.tweets
@@ -227,24 +233,34 @@ const mentionsProvider: Provider = {
         )
         .join("\n");
 
-      return `Recent Twitter mentions:\n${mentionSummary}`;
+      return {
+        text: `Recent Twitter mentions:\n${mentionSummary}`,
+        values: { mentionCount: recentMentions.tweets.length },
+        data: { mentions: recentMentions.tweets }
+      };
     } catch (error) {
       logger.error("Error getting mentions:", error instanceof Error ? error.message : String(error));
-      return "Unable to fetch Twitter mentions at this time.";
+      return {
+        text: "Unable to fetch Twitter mentions at this time.",
+        values: { error: true },
+        data: {}
+      };
     }
   },
 };
 
 // Provider for Twitter trending topics relevant to the agent
 const trendingProvider: Provider = {
-  get: async (runtime: IAgentRuntime, message: Memory) => {
+  name: "twitter_trending",
+  description: "Current trending topics on Twitter",
+  get: async (runtime: IAgentRuntime, message: Memory, state?: any) => {
     try {
       const twitterService = runtime.getService(
         "twitter_monitor",
       ) as unknown as TwitterMonitorService;
 
       if (!twitterService) {
-        return "";
+        return { text: "", values: {}, data: {} };
       }
 
       // Search for trending topics related to our interests
@@ -269,22 +285,247 @@ const trendingProvider: Provider = {
         .slice(0, 3);
 
       if (trending.length === 0) {
-        return "No trending topics found for our focus areas.";
+        return {
+          text: "No trending topics found for our focus areas.",
+          values: { trendingCount: 0 },
+          data: { trending: [] }
+        };
       }
 
       const trendingSummary = trending
         .map((data) => `${data.hashtag}: ${data.count} recent tweets`)
         .join(", ");
 
-      return `Currently trending: ${trendingSummary}`;
+      return {
+        text: `Currently trending: ${trendingSummary}`,
+        values: { trendingCount: trending.length },
+        data: { trending }
+      };
     } catch (error) {
       logger.error("Error getting trending topics:", error instanceof Error ? error.message : String(error));
-      return "Unable to fetch trending topics at this time.";
+      return {
+        text: "Unable to fetch trending topics at this time.",
+        values: { error: true },
+        data: {}
+      };
     }
   },
 };
 
-// Evaluators removed for now due to type compatibility issues
+// Provider for raid analytics
+const raidAnalyticsProvider: Provider = {
+  name: "twitter_raid_analytics",
+  description: "Raid analytics and metrics from Twitter monitoring",
+  get: async (runtime: IAgentRuntime, message: Memory, state?: any) => {
+    try {
+      const twitterService = runtime.getService(
+        "twitter_monitor",
+      ) as unknown as TwitterMonitorService;
+
+      if (!twitterService) {
+        return { text: "", values: {}, data: {} };
+      }
+
+      // Get raid analytics for the last 24 hours
+      const endDate = new Date();
+      const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
+      
+      const raidMetrics = await twitterService.getRaidAnalytics(startDate, endDate);
+
+      if (!raidMetrics) {
+        return {
+          text: "Raid monitoring is not enabled.",
+          values: { raidMonitoringEnabled: false },
+          data: {}
+        };
+      }
+
+      if (raidMetrics.totalRaids === 0) {
+        return {
+          text: "No raid activity detected in the last 24 hours.",
+          values: { totalRaids: 0 },
+          data: { raidMetrics }
+        };
+      }
+
+      const successRate = ((raidMetrics.successfulRaids / raidMetrics.totalRaids) * 100).toFixed(1);
+      
+      return {
+        text: `Raid analytics (24h): ${raidMetrics.totalRaids} total raids, ${raidMetrics.successfulRaids} successful (${successRate}%), average score: ${raidMetrics.averageRaidScore.toFixed(1)}`,
+        values: { 
+          totalRaids: raidMetrics.totalRaids,
+          successfulRaids: raidMetrics.successfulRaids,
+          successRate: parseFloat(successRate),
+          averageScore: raidMetrics.averageRaidScore
+        },
+        data: { raidMetrics }
+      };
+    } catch (error) {
+      logger.error("Error getting raid analytics:", error instanceof Error ? error.message : String(error));
+      return {
+        text: "Unable to fetch raid analytics at this time.",
+        values: { error: true },
+        data: {}
+      };
+    }
+  },
+};
+
+// Action to monitor Twitter lists
+const monitorListsAction: Action = {
+  name: "MONITOR_TWITTER_LISTS",
+  similes: ["TWITTER_LISTS", "LIST_MONITORING", "CHECK_LISTS"],
+  description: "Monitor Twitter lists for new tweets and activity",
+  validate: async (runtime: IAgentRuntime, message: Memory) => {
+    const content = message.content?.text || "";
+    
+    const listIndicators = [
+      "monitor lists",
+      "check lists",
+      "list tweets",
+      "twitter lists",
+      "list activity",
+    ];
+
+    return listIndicators.some(indicator => 
+      content.toLowerCase().includes(indicator)
+    );
+  },
+  handler: async (runtime: IAgentRuntime, message: Memory) => {
+    try {
+      const twitterService = runtime.getService(
+        "twitter_monitor",
+      ) as unknown as TwitterMonitorService;
+
+      if (!twitterService) {
+        logger.warn("Twitter Monitor Service not available");
+        return;
+      }
+
+      // Monitor all configured lists
+      const listTweets = await twitterService.monitorLists();
+
+      if (listTweets.length === 0) {
+        return {
+          success: true,
+          text: "No Twitter lists configured for monitoring",
+          action: "MONITOR_TWITTER_LISTS"
+        };
+      }
+
+      const totalTweets = listTweets.reduce((sum, list) => sum + list.totalTweets, 0);
+      const listSummary = listTweets
+        .map(list => `List ${list.listId}: ${list.totalTweets} tweets`)
+        .join(', ');
+
+      return {
+        success: true,
+        text: `Monitored ${listTweets.length} lists with ${totalTweets} total tweets. ${listSummary}`,
+        action: "MONITOR_TWITTER_LISTS"
+      };
+
+    } catch (error) {
+      logger.error("Twitter list monitoring failed:", error instanceof Error ? error.message : String(error));
+      return;
+    }
+  },
+  examples: [
+    [
+      {
+        name: "{{user1}}",
+        content: { text: "Monitor our Twitter lists for new activity" },
+      },
+      {
+        name: "{{agentName}}",
+        content: { text: "I'll check our monitored Twitter lists for new tweets" },
+      },
+    ],
+  ],
+};
+
+// Action to track raid metrics
+const trackRaidAction: Action = {
+  name: "TRACK_RAID_METRICS",
+  similes: ["RAID_TRACKING", "TRACK_RAID", "RAID_METRICS", "ENGAGEMENT_RAID"],
+  description: "Track raid metrics and engagement for specific tweets",
+  validate: async (runtime: IAgentRuntime, message: Memory) => {
+    const content = message.content?.text || "";
+    
+    const raidIndicators = [
+      "track raid",
+      "raid metrics",
+      "track engagement",
+      "raid analytics",
+      "monitor raid",
+    ];
+
+    // Also check for tweet URLs or IDs
+    const hasTweetId = /twitter\.com\/\w+\/status\/(\d+)|x\.com\/\w+\/status\/(\d+)|\b\d{19}\b/.test(content);
+
+    return raidIndicators.some(indicator => 
+      content.toLowerCase().includes(indicator)
+    ) || hasTweetId;
+  },
+  handler: async (runtime: IAgentRuntime, message: Memory) => {
+    try {
+      const twitterService = runtime.getService(
+        "twitter_monitor",
+      ) as unknown as TwitterMonitorService;
+
+      if (!twitterService) {
+        logger.warn("Twitter Monitor Service not available");
+        return;
+      }
+
+      const content = message.content?.text || "";
+      
+      // Extract tweet ID from URL or direct ID
+      const tweetIdMatch = content.match(/twitter\.com\/\w+\/status\/(\d+)|x\.com\/\w+\/status\/(\d+)|\b(\d{19})\b/);
+      const tweetId = tweetIdMatch ? (tweetIdMatch[1] || tweetIdMatch[2] || tweetIdMatch[3]) : null;
+
+      if (!tweetId) {
+        return {
+          success: false,
+          text: "Please provide a tweet URL or ID to track raid metrics",
+          action: "TRACK_RAID_METRICS"
+        };
+      }
+
+      // Track raid metrics for the tweet
+      const raidMetrics = await twitterService.trackRaidMetrics(tweetId);
+
+      if (!raidMetrics) {
+        return {
+          success: false,
+          text: "Raid monitoring is not enabled or failed to track metrics",
+          action: "TRACK_RAID_METRICS"
+        };
+      }
+
+      return {
+        success: true,
+        text: `Raid metrics for tweet ${tweetId}: Score ${raidMetrics.raidScore.toFixed(1)}, Velocity ${raidMetrics.velocity.toFixed(1)}/min, Total engagements: ${raidMetrics.engagementData.totalEngagements}`,
+        action: "TRACK_RAID_METRICS"
+      };
+
+    } catch (error) {
+      logger.error("Raid tracking failed:", error instanceof Error ? error.message : String(error));
+      return;
+    }
+  },
+  examples: [
+    [
+      {
+        name: "{{user1}}",
+        content: { text: "Track raid metrics for https://twitter.com/user/status/1234567890123456789" },
+      },
+      {
+        name: "{{agentName}}",
+        content: { text: "I'll track the raid metrics for that tweet and monitor engagement" },
+      },
+    ],
+  ],
+};
 
 /**
  * Main Twitter Monitor Plugin
@@ -295,9 +536,9 @@ export const twitterMonitorPlugin: Plugin = {
 
   services: [TwitterMonitorService],
 
-  actions: [searchTwitterAction, getUserInfoAction],
+  actions: [searchTwitterAction, getUserInfoAction, monitorListsAction, trackRaidAction],
 
-  providers: [mentionsProvider, trendingProvider],
+  providers: [mentionsProvider, trendingProvider, raidAnalyticsProvider],
 
   evaluators: [],
 };

@@ -1,7 +1,7 @@
 import { Service, IAgentRuntime, logger } from "@elizaos/core";
 import { Server, Socket as SocketIOSocket } from "socket.io";
 import { createServer } from "http";
-import cors from "cors";
+import * as cors from "cors";
 import { SocketIOAnalyticsService } from "./socket-io-analytics";
 import {
   MessageRouter,
@@ -9,7 +9,7 @@ import {
   PromptType,
 } from "./message-router";
 import { pipelineAnalytics } from "./clickhouse-pipeline-analytics";
-import crypto from "crypto";
+import * as crypto from "crypto";
 
 export interface SocketMessage {
   senderId: string;
@@ -503,7 +503,7 @@ export class SocketIOServerService extends Service {
         }
 
         // Clean up active sessions for this socket
-        for (const [sessionId, session] of this.activeSessions.entries()) {
+        for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
           // Remove sessions that were associated with this socket
           // Note: In a real implementation, you'd track socket.id to session mapping
           if (session.lastActivity < Date.now() - 300000) {
@@ -1263,7 +1263,7 @@ export class SocketIOServerService extends Service {
       process.env.SOCKET_SESSION_TIMEOUT || "1800000",
     ); // 30 minutes default
 
-    for (const [sessionId, session] of this.activeSessions.entries()) {
+    for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
       if (now - session.lastActivity > sessionTimeout) {
         this.activeSessions.delete(sessionId);
 

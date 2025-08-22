@@ -1,6 +1,6 @@
 /**
  * ClickHouse Pipeline Analytics Tests
- * 
+ *
  * Tests the ClickHouse analytics integration for the two-layer pipeline
  */
 
@@ -31,7 +31,7 @@ describe("ClickHouse Pipeline Analytics", () => {
 
   afterEach(async () => {
     await analytics.cleanup();
-    
+
     // Restore original environment
     Object.assign(process.env, originalEnv);
   });
@@ -50,7 +50,7 @@ describe("ClickHouse Pipeline Analytics", () => {
     it("should generate unique trace IDs", () => {
       const traceId1 = analytics.generateTraceId();
       const traceId2 = analytics.generateTraceId();
-      
+
       expect(traceId1).toBeDefined();
       expect(traceId2).toBeDefined();
       expect(traceId1).not.toBe(traceId2);
@@ -85,7 +85,7 @@ describe("ClickHouse Pipeline Analytics", () => {
 
     const mockRoutingEvent = {
       traceId: "test-trace-123",
-      userId: "user-123", 
+      userId: "user-123",
       platform: "websocket" as const,
       messageContent: "Let's organize a raid!",
       extractedVariables: { intent: "raid_coordination" },
@@ -146,7 +146,7 @@ describe("ClickHouse Pipeline Analytics", () => {
   describe("Batching and Performance", () => {
     it("should batch events before flushing", async () => {
       const batchSize = 50;
-      
+
       // Generate multiple events
       const events = Array.from({ length: batchSize }, (_, i) => ({
         traceId: `trace-${i}`,
@@ -180,7 +180,7 @@ describe("ClickHouse Pipeline Analytics", () => {
   describe("Performance Metrics", () => {
     it("should retrieve performance metrics", async () => {
       const metrics = await analytics.getPerformanceMetrics(24); // Last 24 hours
-      
+
       // Should return null when ClickHouse is not available, or data structure when available
       expect(metrics === null || typeof metrics === "object").toBe(true);
     });
@@ -235,7 +235,7 @@ describe("ClickHouse Pipeline Analytics", () => {
 
     it("should handle multiple cleanup calls", async () => {
       await analytics.cleanup();
-      
+
       expect(async () => {
         await analytics.cleanup();
       }).not.toThrow();
@@ -246,14 +246,14 @@ describe("ClickHouse Pipeline Analytics", () => {
     it("should use default values for missing environment variables", () => {
       delete process.env.CLICKHOUSE_DATABASE;
       delete process.env.CLICKHOUSE_USER;
-      
+
       const analyticsWithDefaults = new ClickHousePipelineAnalytics();
       expect(analyticsWithDefaults).toBeDefined();
     });
 
     it("should disable analytics when host is not configured", () => {
       delete process.env.CLICKHOUSE_HOST;
-      
+
       const analyticsDisabled = new ClickHousePipelineAnalytics();
       expect(analyticsDisabled).toBeDefined();
     });

@@ -38,6 +38,7 @@ bun run check-all
 ### Database Configuration
 - **Development**: Uses PGLite (embedded PostgreSQL in WebAssembly) at `./.eliza/.elizadb`
 - **Production**: Uses full PostgreSQL via `POSTGRES_URL` environment variable
+- **Database Poolers**: Supabase transaction pooler (port 6543) and session pooler (port 5432)
 - Automatic adapter selection based on available environment variables
 
 ### Testing Framework
@@ -66,30 +67,37 @@ bun run check-all
    - **Orchestration** (`src/orchestration/`): Strategic action orchestration
    - **App** (`src/app/`): Application lifecycle and coordination
 
-3. **Database Layer**
-   - Centralized `DatabaseConnectionManager` with connection pooling (max 20 connections)
-   - Services use connection manager instead of individual database clients
-   - Parallel query execution for performance optimization
-   - Vector embeddings support with multiple dimensions
-
-4. **Service Architecture**
+3. **Database Layer with Pooler Management**
+   - **DatabasePoolerManager**: Intelligent dual-pool architecture
+   - **Transaction Pool** (port 6543): Fast CRUD operations, 20 max connections
+   - **Session Pool** (port 5432): Complex queries with JOINs, 5 max connections
+   - **Intelligent Routing**: Automatic query complexity detection and pool selection
    - **DatabaseMemoryService**: Enhanced context retrieval with semantic search
-   - **EnhancedResponseGenerator**: Contextually aware response generation
-   - **MessageBusService**: Multi-transport communication (Discord, Telegram, X/Twitter, HTTP)
+   - Connection pooling with centralized database manager
+   - Parallel query execution for performance optimization
+
+4. **UX Integration System (Real-time Communication)**
+   - **Socket.IO Integration**: Bidirectional real-time communication
+   - **Two-Layer Processing Pipeline**:
+     - **Layer 1**: Security filtering, rate limiting, XSS prevention
+     - **Layer 2**: Message classification, intelligent routing, prompt injection
+   - **Message Classification**: 7 specialized prompt types (community-manager, raid-coordinator, crypto-analyst, meme-lord, support-agent, personality-core, emergency-handler)
+   - **Security Features**: Content filtering, spam detection, user session management
+   - **Analytics Pipeline**: Real-time analytics with ClickHouse integration
+
+5. **Service Architecture**
+   - **SocketIOServerService**: Real-time WebSocket server with session management
+   - **MessageRouter**: Dynamic system prompt routing based on message analysis
    - **CrossPlatformIdentityService**: User identity linking across platforms
+   - **CommunityManagementService**: Community engagement and moderation
    - All services extend ElizaOS `Service` class
 
-5. **Telegram Raid System**
+6. **Telegram Raid System**
    - Complete raid coordination system in `src/telegram-raids/`
+   - **OptimizedRaidDatabase**: Batch operations with database pooler integration
    - Engagement verification, leaderboards, moderation
    - Rate limiting and anti-abuse measures
    - Integration with X/Twitter for social media raids
-
-6. **Performance Optimizations**
-   - Database queries executed in parallel using `Promise.all()`
-   - Connection pooling with centralized database manager
-   - Async operation optimization throughout services
-   - Broadcast operations parallelized across transports
 
 ### Key Architectural Patterns
 
@@ -109,15 +117,21 @@ bun run check-all
    - Follows ElizaOS service patterns
    - Compatible with ElizaOS plugin system
 
+4. **UX Processing Pipeline**
+   ```
+   WebSocket/Socket.IO → Layer 1 Security → Layer 2 Classification → ElizaOS
+   ```
+
 ## Response Generation System
 
 NUBI uses a sophisticated multi-layered response system:
 
 - **Personality Evolution**: Dynamic trait adjustment (10 dimensions in config)
-- **Emotional State Processing**: Context-aware emotional responses
+- **Emotional State Processing**: Context-aware emotional responses  
 - **Anti-Detection Mechanisms**: Human-like variation patterns (typo rate, contradiction rate, etc.)
 - **Context Providers**: Database-driven contextual awareness
 - **Memory Systems**: Semantic, conversational, and personality memory
+- **Message Classification**: Intelligent routing based on content analysis
 
 ## Configuration Files
 
@@ -129,19 +143,30 @@ NUBI uses a sophisticated multi-layered response system:
 ## Important Development Notes
 
 ### Database Operations
-- Always use `DatabaseConnectionManager` for database operations
+- Always use `DatabasePoolerManager` for database operations when available
+- **Transaction Pool**: Use for simple CRUD operations (INSERT, UPDATE, DELETE, simple SELECT)
+- **Session Pool**: Use for complex queries with JOINs, analytics, vector operations
 - Services should implement connection pooling patterns
 - Use typed query results, not raw database responses
+
+### UX Integration Development
+- **WebSocket Services**: Use `SocketIOServerService` and `SocketIOClientService`
+- **Message Processing**: Leverage `MessageRouter` for intelligent classification
+- **Security**: All messages pass through 2-layer filtering before reaching ElizaOS
+- **Session Management**: Automatic session cleanup and timeout handling
+- **Analytics**: Real-time tracking with `SocketIOAnalyticsService`
 
 ### Testing Considerations
 - Database tests may fail without proper PostgreSQL connection
 - Mock services appropriately in tests using `MockRuntime` from `src/__tests__/test-utils.ts`
 - Use `bun test` framework, not Jest
+- Socket.IO tests require proper cleanup in afterEach hooks
 
 ### Performance Patterns
-- Execute independent database queries in parallel
-- Use centralized connection management
+- Execute independent database queries in parallel using `Promise.all()`
+- Use centralized connection management with pooler routing
 - Implement proper error handling with connection cleanup
+- Leverage intelligent query routing for optimal performance
 
 ### Code Style
 - Use ElizaOS logger: `import { logger } from "@elizaos/core"`
@@ -155,11 +180,14 @@ NUBI uses a sophisticated multi-layered response system:
 - Identity linking system with cross-platform user management
 - Database migrations for schema management
 - Analytics and webhook processing capabilities
+- Dual pooler architecture for optimized query performance
 
 ## Environment Variables
 
 Key environment variables:
 - `POSTGRES_URL`: Production PostgreSQL connection
+- `SUPABASE_TRANSACTION_POOLER_URL`: Transaction pooler connection (port 6543)
+- `SUPABASE_SESSION_POOLER_URL`: Session pooler connection (port 5432)  
 - `PGLITE_DATA_DIR`: Development database location (default: `./.eliza/.elizadb`)
 - `NODE_ENV`: Environment mode
 - `OPENAI_API_KEY`: Required for AI responses
@@ -167,3 +195,6 @@ Key environment variables:
 - `DISCORD_API_TOKEN`: For Discord integration
 - `TWITTER_API_KEY`: For Twitter/X integration
 - `CLICKHOUSE_HOST`: For analytics (optional)
+- `SOCKET_PREPROCESSING_ENABLED`: Enable UX preprocessing pipeline
+- `SOCKET_CONTENT_FILTERING`: Enable content filtering
+- `SOCKET_RATE_LIMITING`: Enable rate limiting
