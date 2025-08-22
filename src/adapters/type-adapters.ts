@@ -86,7 +86,7 @@ export class MemoryWrapper {
     }
     
     getAction(): string | null {
-        return this.memory.content?.action || null;
+        return (this.memory.content?.action as string) || null;
     }
     
     getCustomProperty<T = any>(key: string): T | undefined {

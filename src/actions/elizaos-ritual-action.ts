@@ -11,8 +11,8 @@ import {
     State,
     Content,
     HandlerCallback,
-    Validator,
-    logger
+    logger,
+    UUID
 } from '@elizaos/core';
 
 // Helper function to create Content object
@@ -54,7 +54,7 @@ export const ritualAction: Action = {
             },
             {
                 name: 'Nubi',
-                content: createContent('I have initiated the greeting ritual. The community can now participate.')
+                content: createContent('I have initiated the greeting ritual. The community can now participate.', 'NUBI_RITUAL')
             }
         ],
         [
@@ -64,7 +64,7 @@ export const ritualAction: Action = {
             },
             {
                 name: 'Nubi',
-                content: createContent('Welcome ritual started! Let us embrace our new community members.')
+                content: createContent('Welcome ritual started! Let us embrace our new community members.', 'NUBI_RITUAL')
             }
         ]
     ],
@@ -75,7 +75,7 @@ export const ritualAction: Action = {
         state: State,
         options?: any,
         callback?: HandlerCallback
-    ): Promise<ActionResult> => {
+    ): Promise<void> => {
         try {
             // Extract ritual type from message
             const messageText = message.content?.text || '';
@@ -98,43 +98,34 @@ Keep the response mystical yet engaging. Include:
 
 Response:`;
 
-            // Generate ritual response
-            const result = await runtime.completion({
-                context: ritualPrompt,
-                modelClass: state.modelClass
+            // Generate ritual response using the runtime's model
+            const result = await runtime.useModel('text_generation', {
+                prompt: ritualPrompt,
+                temperature: 0.8,
+                max_tokens: 500
             });
             
+            const responseText = result?.text || "The ritual begins, the energy flows through our community.";
+            
             if (callback) {
-                const content = createContent(result.text, 'NUBI_RITUAL');
+                const content = createContent(responseText, 'NUBI_RITUAL');
                 await callback(content);
             }
             
             // Store ritual in memory
             const ritualMemory: Memory = {
-                ...message,
-                content: createContent(`Ritual performed: ${ritualType} - ${result.text}`),
-                roomId: message.roomId,
+                id: generateUUID(),
+                entityId: message.entityId || generateUUID(),
+                content: createContent(`Ritual performed: ${ritualType} - ${responseText}`),
                 agentId: runtime.agentId,
+                roomId: message.roomId,
                 createdAt: Date.now()
             };
             
-            await runtime.memoryManager.createMemory(ritualMemory);
+            await runtime.createMemory(ritualMemory, 'memories');
             
             // Log ritual performance
-            logger.info(`Ritual performed: ${ritualType}`, {
-                participant: state.senderName,
-                roomId: message.roomId
-            });
-            
-            // Return success result
-            return {
-                success: true,
-                metadata: {
-                    ritualType,
-                    participant: state.senderName,
-                    timestamp: Date.now()
-                }
-            };
+            logger.info(`Ritual performed: ${ritualType} by ${state.senderName} in room ${message.roomId}`);
             
         } catch (error) {
             logger.error('Ritual action failed:', error);
@@ -146,11 +137,6 @@ Response:`;
             if (callback) {
                 await callback(errorResult);
             }
-            
-            return {
-                success: false,
-                error: error.message
-            };
         }
     }
 };
@@ -181,7 +167,7 @@ export const recordAction: Action = {
         state: State,
         options?: any,
         callback?: HandlerCallback
-    ): Promise<ActionResult> => {
+    ): Promise<void> => {
         try {
             const momentDescription = message.content?.text || 'A significant moment';
             
@@ -196,14 +182,15 @@ export const recordAction: Action = {
             
             // Store in memory
             const chronicleMemory: Memory = {
-                ...message,
+                id: generateUUID(),
+                entityId: message.entityId || generateUUID(),
                 content: createContent(JSON.stringify(chronicleEntry)),
                 roomId: message.roomId,
                 agentId: runtime.agentId,
                 createdAt: Date.now()
             };
             
-            await runtime.memoryManager.createMemory(chronicleMemory);
+            await runtime.createMemory(chronicleMemory, 'memories');
             
             const responseText = `📜 This moment has been recorded in the eternal chronicles of our community. Future generations will remember: "${momentDescription}"`;
             
@@ -211,17 +198,8 @@ export const recordAction: Action = {
                 await callback(createContent(responseText));
             }
             
-            return {
-                success: true,
-                metadata: chronicleEntry
-            };
-            
         } catch (error) {
             logger.error('Record action failed:', error);
-            return {
-                success: false,
-                error: error.message
-            };
         }
     }
 };
@@ -246,6 +224,17 @@ function extractRitualType(text: string): string {
     
     // Default ritual type
     return 'Sacred Community Ritual';
+}
+
+/**
+ * Generate a UUID
+ */
+function generateUUID(): UUID {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    }) as UUID;
 }
 
 /**
@@ -276,60 +265,4 @@ export interface ActiveRitual {
     participants: RitualParticipant[];
     startedAt: number;
     phase: 'gathering' | 'active' | 'closing' | 'complete';
-}
-
-/**
- * Get active ritual for a room
- */
-export async function getActiveRitual(
-    runtime: IAgentRuntime,
-    roomId: string
-): Promise<ActiveRitual | null> {
-    try {
-        // Query for active ritual in cache
-        const cacheKey = `ritual:active:${roomId}`;
-        const cached = await runtime.cacheManager.get(cacheKey);
-        
-        if (cached) {
-            return JSON.parse(cached);
-        }
-        
-        // Query memories for recent ritual
-        const memories = await runtime.memoryManager.getMemories({
-            roomId,
-            count: 50
-        });
-        
-        // Find most recent ritual initiation
-        for (const memory of memories) {
-            const text = memory.content?.text || '';
-            if (text.includes('Ritual performed:') && 
-                memory.createdAt > Date.now() - 3600000) { // Within last hour
-                
-                // Extract ritual data
-                const ritual: ActiveRitual = {
-                    id: `ritual-${memory.id}`,
-                    type: extractRitualType(text),
-                    initiator: memory.userId || 'unknown',
-                    participants: [],
-                    startedAt: memory.createdAt,
-                    phase: 'active'
-                };
-                
-                // Cache the ritual
-                await runtime.cacheManager.set(
-                    cacheKey,
-                    JSON.stringify(ritual),
-                    { ttl: 3600 } // 1 hour TTL
-                );
-                
-                return ritual;
-            }
-        }
-        
-        return null;
-    } catch (error) {
-        logger.error('Failed to get active ritual:', error);
-        return null;
-    }
 }
