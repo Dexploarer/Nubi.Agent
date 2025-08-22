@@ -28,6 +28,7 @@ The knowledge files are automatically loaded by the `@elizaos/plugin-knowledge` 
 ## Configuration
 
 The knowledge configuration is defined in:
+
 - `config.json` - Plugin-specific settings
 - `src/nubi-character.ts` - Character knowledge configuration
 
@@ -43,7 +44,7 @@ To add new knowledge files:
 ## RAG Settings
 
 - **Chunk Size**: 1000 characters
-- **Chunk Overlap**: 200 characters  
+- **Chunk Overlap**: 200 characters
 - **Retrieval Limit**: 5 chunks per query
 - **Similarity Threshold**: 0.7 (70% similarity required)
 

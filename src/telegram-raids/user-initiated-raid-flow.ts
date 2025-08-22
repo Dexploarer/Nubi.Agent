@@ -64,51 +64,34 @@ export class UserInitiatedRaidFlow {
     try {
       const configPath = path.join(
         process.cwd(),
-        "config",
-        "anubis-raid-config.yaml",
+        "configs",
+        "raid-config.yaml",
       );
       const configContent = fs.readFileSync(configPath, "utf8");
-      const fullConfig = yaml.load(configContent) as any;
+      const full = yaml.load(configContent) as any;
 
       this.config = {
         userInitiated: {
-          enabled: fullConfig.anubis_raid_bot.user_initiated?.enabled ?? true,
-          prophetMultiplier:
-            fullConfig.anubis_raid_bot.user_initiated?.prophet_multiplier ??
-            2.0,
-          autoCreateRaid:
-            fullConfig.anubis_raid_bot.user_initiated?.auto_create_raid ?? true,
+          enabled: full?.user_initiated?.enabled ?? true,
+          prophetMultiplier: full?.user_initiated?.prophet_multiplier ?? 2.0,
+          autoCreateRaid: full?.user_initiated?.auto_create_raid ?? true,
           requireAdminApproval:
-            fullConfig.anubis_raid_bot.user_initiated?.require_admin_approval ??
-            false,
-          cooldownMinutes:
-            fullConfig.anubis_raid_bot.user_initiated?.cooldown_minutes ?? 5,
+            full?.user_initiated?.require_admin_approval ?? false,
+          cooldownMinutes: full?.user_initiated?.cooldown_minutes ?? 5,
           maxDailyInitiations:
-            fullConfig.anubis_raid_bot.user_initiated?.max_daily_initiations ??
-            10,
+            full?.user_initiated?.max_daily_initiations ?? 10,
         },
         chatLock: {
-          enabled: fullConfig.anubis_raid_bot.chat_lock?.enabled ?? true,
+          enabled: full?.chat_lock?.enabled ?? true,
           defaultTargets: {
-            likes:
-              fullConfig.anubis_raid_bot.chat_lock?.default_targets?.likes ??
-              25,
-            retweets:
-              fullConfig.anubis_raid_bot.chat_lock?.default_targets?.retweets ??
-              10,
-            comments:
-              fullConfig.anubis_raid_bot.chat_lock?.default_targets?.comments ??
-              5,
-            quotes:
-              fullConfig.anubis_raid_bot.chat_lock?.default_targets?.quotes ??
-              3,
+            likes: full?.chat_lock?.default_targets?.likes ?? 25,
+            retweets: full?.chat_lock?.default_targets?.retweets ?? 10,
+            comments: full?.chat_lock?.default_targets?.comments ?? 5,
+            quotes: full?.chat_lock?.default_targets?.quotes ?? 3,
           },
-          unlockConditions:
-            fullConfig.anubis_raid_bot.chat_lock?.unlock_conditions ??
-            "all_targets",
+          unlockConditions: full?.chat_lock?.unlock_conditions ?? "all_targets",
           progressUpdateInterval:
-            fullConfig.anubis_raid_bot.chat_lock?.progress_update_interval ??
-            30,
+            full?.chat_lock?.progress_update_interval ?? 30,
         },
       };
 

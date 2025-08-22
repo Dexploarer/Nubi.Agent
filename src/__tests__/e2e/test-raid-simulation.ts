@@ -3,7 +3,13 @@
  * Simulates a complete raid flow from start to finish
  */
 
-import { IAgentRuntime, Memory, State, UUID, HandlerCallback } from "@elizaos/core";
+import {
+  IAgentRuntime,
+  Memory,
+  State,
+  UUID,
+  HandlerCallback,
+} from "@elizaos/core";
 import { EnhancedTelegramRaidsService } from "./src/telegram-raids/elizaos-enhanced-telegram-raids";
 import enhancedTelegramRaidsPlugin from "./src/telegram-raids/elizaos-enhanced-telegram-raids";
 
@@ -13,11 +19,11 @@ console.log("🎮 Simulating Complete Raid Flow\n");
 class MockRuntime implements Partial<IAgentRuntime> {
   agentId = "test-agent-123" as UUID;
   services = new Map<string, any>();
-  
+
   getService(name: string) {
     return this.services.get(name);
   }
-  
+
   registerService(name: string, service: any) {
     this.services.set(name, service);
   }
@@ -39,15 +45,17 @@ const startRaidMessage: Memory = {
   roomId: "telegram-room" as UUID,
   content: {
     text: "/startraid https://x.com/nubi/status/1234567890",
-    source: "telegram"
+    source: "telegram",
   },
   createdAt: Date.now(),
   embedding: [],
-  unique: true
+  unique: true,
 };
 
 // Find and execute START_RAID action
-const startRaidAction = enhancedTelegramRaidsPlugin.actions?.find(a => a.name === "START_RAID");
+const startRaidAction = enhancedTelegramRaidsPlugin.actions?.find(
+  (a) => a.name === "START_RAID",
+);
 if (startRaidAction) {
   const result = await startRaidAction.handler(
     runtime,
@@ -56,7 +64,7 @@ if (startRaidAction) {
     {},
     async (response) => {
       console.log("   Bot response:", response.text?.substring(0, 100) + "...");
-    }
+    },
   );
   console.log("   Result:", result.success ? "✅ Success" : "❌ Failed");
 }
@@ -66,7 +74,7 @@ console.log("\nStep 2️⃣: Multiple users joining the raid");
 const joinUsers = [
   { id: "user-bob", name: "Bob" },
   { id: "user-charlie", name: "Charlie" },
-  { id: "user-diana", name: "Diana" }
+  { id: "user-diana", name: "Diana" },
 ];
 
 for (const user of joinUsers) {
@@ -78,21 +86,27 @@ for (const user of joinUsers) {
     roomId: "telegram-room" as UUID,
     content: {
       text: "/joinraid",
-      source: "telegram"
+      source: "telegram",
     },
     createdAt: Date.now(),
     embedding: [],
-    unique: true
+    unique: true,
   };
 
   const joinResult = await raidsService.joinRaid(user.id, user.name);
-  console.log(`   ${user.name} joined:`, joinResult.includes("Welcome") ? "✅" : "❌");
+  console.log(
+    `   ${user.name} joined:`,
+    joinResult.includes("Welcome") ? "✅" : "❌",
+  );
 }
 
 // Step 3: Check raid stats
 console.log("\nStep 3️⃣: Checking raid statistics");
 const statsResult = await raidsService.getRaidStats();
-console.log("   Stats retrieved:", statsResult.includes("Stats") || statsResult.includes("raid") ? "✅" : "❌");
+console.log(
+  "   Stats retrieved:",
+  statsResult.includes("Stats") || statsResult.includes("raid") ? "✅" : "❌",
+);
 
 // Step 4: Display raid features
 console.log("\nStep 4️⃣: Raid Features Verification");
@@ -102,10 +116,10 @@ const features = [
   { name: "Leaderboard", status: true },
   { name: "Auto-raid scheduling", status: raidsService["raidConfig"].autoRaid },
   { name: "X/Twitter integration", status: true },
-  { name: "Session persistence", status: true }
+  { name: "Session persistence", status: true },
 ];
 
-features.forEach(f => {
+features.forEach((f) => {
   console.log(`   ${f.name}: ${f.status ? "✅" : "❌"}`);
 });
 
@@ -127,6 +141,8 @@ console.log("   ✅ Stats tracking operational");
 console.log("   ✅ Configuration loaded correctly");
 
 console.log("\n🎯 Telegram Raids Enhancement is FULLY INTEGRATED!");
-console.log("   Ready to coordinate community raids from Telegram to X/Twitter");
+console.log(
+  "   Ready to coordinate community raids from Telegram to X/Twitter",
+);
 
 export {};

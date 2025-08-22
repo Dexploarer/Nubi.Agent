@@ -83,7 +83,7 @@ services:
       - "9000:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
-      - ../analytics/clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ../analytics/clickhouse-setup.sql:/docker-entrypoint-initdb.d/init.sql
     environment:
       - CLICKHOUSE_DB=analytics
       - CLICKHOUSE_USER=${CLICKHOUSE_USER:-default}
@@ -100,8 +100,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
+      - ../nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ../nginx/ssl:/etc/nginx/ssl
     networks:
       - nubi-network
     depends_on:

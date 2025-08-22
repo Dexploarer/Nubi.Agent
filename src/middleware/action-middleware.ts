@@ -10,7 +10,7 @@ import {
 
 /**
  * Action Middleware for ElizaOS
- * 
+ *
  * Preprocesses @mentions and routes messages appropriately across platforms.
  * Handles Discord, Telegram, Twitter mention formats and normalizes them.
  */
@@ -77,13 +77,20 @@ function normalizeMentions(text: string, agentName: string): string {
 
   // Replace all mentions of the agent with a normalized @agent format
   const agentAliases = [
-    "nubi", "anubis", "anubischat", "nubibot", "jackal",
-    "nubi_bot", "anubis_bot", "nubiai", "anubisai"
+    "nubi",
+    "anubis",
+    "anubischat",
+    "nubibot",
+    "jackal",
+    "nubi_bot",
+    "anubis_bot",
+    "nubiai",
+    "anubisai",
   ];
 
   for (const mention of mentions) {
     const username = mention.username.toLowerCase();
-    if (agentAliases.some(alias => username.includes(alias))) {
+    if (agentAliases.some((alias) => username.includes(alias))) {
       normalizedText = normalizedText.replace(mention.raw, `@${agentName}`);
     }
   }
@@ -97,20 +104,21 @@ function normalizeMentions(text: string, agentName: string): string {
 function detectPlatform(message: Memory): string {
   // Check for platform indicators in metadata
   const metadata = (message as any).metadata || {};
-  
+
   if (metadata.platform) return metadata.platform;
   if (metadata.source) return metadata.source;
-  
+
   // Check for platform-specific fields
   if ((message as any).discordId || (message as any).guildId) return "discord";
-  if ((message as any).telegramChatId || (message as any).telegram_chat_id) return "telegram";
+  if ((message as any).telegramChatId || (message as any).telegram_chat_id)
+    return "telegram";
   if ((message as any).tweetId || (message as any).twitter_id) return "twitter";
-  
+
   // Check content patterns
   const text = message.content?.text || "";
   if (text.includes("<@") && text.includes(">")) return "discord";
   if (text.includes("_bot")) return "telegram";
-  
+
   return "unknown";
 }
 
@@ -120,15 +128,15 @@ function detectPlatform(message: Memory): string {
 async function preprocessMessage(
   runtime: IAgentRuntime,
   message: Memory,
-  state: State
+  state?: State,
 ): Promise<Memory> {
   try {
     const platform = detectPlatform(message);
     const text = message.content?.text || "";
-    
+
     // Normalize mentions
     const normalizedText = normalizeMentions(text, runtime.agentId);
-    
+
     // Create preprocessed message
     const processedMessage: Memory = {
       ...message,
@@ -142,20 +150,22 @@ async function preprocessMessage(
     // Add platform metadata
     (processedMessage as any).platform = platform;
     (processedMessage as any).mentions = detectMentions(text);
-    
+
     // Add to state for downstream use
     if (state) {
-      state.platform = platform;
-      state.preprocessed = true;
-      state.originalText = text;
-      state.normalizedText = normalizedText;
+      (state as any).platform = platform;
+      (state as any).preprocessed = true;
+      (state as any).originalText = text;
+      (state as any).normalizedText = normalizedText;
     }
 
-    logger.debug(`[ACTION_MIDDLEWARE] Preprocessed ${platform} message with ${detectMentions(text).length} mentions`);
-    
+    logger.debug(
+      `[ACTION_MIDDLEWARE] Preprocessed ${platform} message with ${detectMentions(text).length} mentions`,
+    );
+
     return processedMessage;
   } catch (error) {
-    logger.error("[ACTION_MIDDLEWARE] Preprocessing failed:", error);
+    logger.error("[ACTION_MIDDLEWARE] Preprocessing failed:", error as any);
     return message; // Return original on error
   }
 }
@@ -166,24 +176,27 @@ async function preprocessMessage(
 export function withActionMiddleware(action: Action): Action {
   return {
     ...action,
-    
+
     validate: async (
       runtime: IAgentRuntime,
       message: Memory,
-      state?: State
+      state?: State,
     ): Promise<boolean> => {
       try {
         // Preprocess message
         const processedMessage = await preprocessMessage(
           runtime,
           message,
-          state || ({ values: {}, data: {}, text: "" } as State)
+          state || ({ values: {}, data: {}, text: "" } as State),
         );
-        
+
         // Call original validate with processed message
         return action.validate(runtime, processedMessage, state);
       } catch (error) {
-        logger.error(`[ACTION_MIDDLEWARE] Validation error in ${action.name}:`, error);
+        logger.error(
+          `[ACTION_MIDDLEWARE] Validation error in ${action.name}:`,
+          error as any,
+        );
         return false;
       }
     },
@@ -191,36 +204,49 @@ export function withActionMiddleware(action: Action): Action {
     handler: async (
       runtime: IAgentRuntime,
       message: Memory,
-      state: State,
-      options: any,
-      callback?: HandlerCallback
+      state?: State,
+      options?: any,
+      callback?: HandlerCallback,
     ): Promise<ActionResult> => {
       try {
         // Preprocess message
-        const processedMessage = await preprocessMessage(runtime, message, state);
-        
+        const processedMessage = await preprocessMessage(
+          runtime,
+          message,
+          state,
+        );
+
         // Add correlation ID for tracing
         const correlationId = `${action.name}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         (state as any).correlationId = correlationId;
-        
-        logger.debug(`[ACTION_MIDDLEWARE] Executing ${action.name} with correlation ID: ${correlationId}`);
-        
+
+        logger.debug(
+          `[ACTION_MIDDLEWARE] Executing ${action.name} with correlation ID: ${correlationId}`,
+        );
+
         // Call original handler with processed message
         const result: any = await action.handler(
           runtime,
           processedMessage,
-          state,
+          state || ({} as State),
           options,
-          callback
+          callback,
         );
-        
+
         // Log completion
-        logger.debug(`[ACTION_MIDDLEWARE] ${action.name} completed: ${result.success ? "success" : "failure"}`);
-        
-        return result || { success: false, message: "No result" } as ActionResult;
+        logger.debug(
+          `[ACTION_MIDDLEWARE] ${action.name} completed: ${result.success ? "success" : "failure"}`,
+        );
+
+        return (
+          result || ({ success: false, message: "No result" } as ActionResult)
+        );
       } catch (error) {
-        logger.error(`[ACTION_MIDDLEWARE] Handler error in ${action.name}:`, error);
-        
+        logger.error(
+          `[ACTION_MIDDLEWARE] Handler error in ${action.name}:`,
+          error as any,
+        );
+
         // Return error result
         return {
           success: false,
@@ -240,29 +266,38 @@ export function createPlatformAction(
     discord?: (message: Memory, state: State) => Promise<ActionResult>;
     telegram?: (message: Memory, state: State) => Promise<ActionResult>;
     twitter?: (message: Memory, state: State) => Promise<ActionResult>;
-  }
+  },
 ): Action {
   return withActionMiddleware({
     ...baseAction,
-    
+
     handler: async (
       runtime: IAgentRuntime,
       message: Memory,
-      state: State,
-      options: any,
-      callback?: HandlerCallback
+      state?: State,
+      options?: any,
+      callback?: HandlerCallback,
     ): Promise<ActionResult> => {
       const platform = (message as any).platform || detectPlatform(message);
-      
+
       // Use platform-specific handler if available
-      const platformHandler = platformHandlers[platform as keyof typeof platformHandlers];
+      const platformHandler =
+        platformHandlers[platform as keyof typeof platformHandlers];
       if (platformHandler) {
-        logger.debug(`[PLATFORM_ACTION] Using ${platform}-specific handler for ${baseAction.name}`);
-        return platformHandler(message, state);
+        logger.debug(
+          `[PLATFORM_ACTION] Using ${platform}-specific handler for ${baseAction.name}`,
+        );
+        return platformHandler(message, (state || ({} as State)) as State);
       }
-      
+
       // Fall back to base handler
-      return (baseAction.handler as any)(runtime, message, state, options, callback);
+      return (baseAction.handler as any)(
+        runtime,
+        message,
+        (state || ({} as State)) as State,
+        options,
+        callback,
+      );
     },
   });
 }

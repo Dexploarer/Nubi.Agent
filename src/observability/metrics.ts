@@ -11,7 +11,8 @@ class MetricsRegistry {
     this.startTimeSec = Math.floor(Date.now() / 1000);
     this.counters["nubi_app_starts_total"] = 1;
     // Uptime gauge via function
-    this.gauges["nubi_uptime_seconds"] = () => Math.max(0, Math.floor(Date.now() / 1000) - this.startTimeSec);
+    this.gauges["nubi_uptime_seconds"] = () =>
+      Math.max(0, Math.floor(Date.now() / 1000) - this.startTimeSec);
   }
 
   inc(name: string, value: number = 1) {
@@ -54,4 +55,3 @@ export function metricsIncrementErrors() {
 export function metricsGetText(): string {
   return registry.render();
 }
-

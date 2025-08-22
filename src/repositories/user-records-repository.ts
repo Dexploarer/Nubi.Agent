@@ -37,7 +37,7 @@ export class UserRecordsRepository {
       // Check if record exists
       const existing = await this.findByUserAndContent(
         params.userUuid,
-        params.content
+        params.content,
       );
 
       if (existing) {
@@ -54,8 +54,8 @@ export class UserRecordsRepository {
           .where(
             and(
               eq(user_records.user_uuid, params.userUuid),
-              eq(user_records.content, params.content)
-            )
+              eq(user_records.content, params.content),
+            ),
           )
           .returning();
 
@@ -91,7 +91,7 @@ export class UserRecordsRepository {
    */
   async findByUserAndContent(
     userUuid: UUID,
-    content: string
+    content: string,
   ): Promise<UserRecord | null> {
     const result = await this.db
       .select()
@@ -99,8 +99,8 @@ export class UserRecordsRepository {
       .where(
         and(
           eq(user_records.user_uuid, userUuid),
-          eq(user_records.content, content)
-        )
+          eq(user_records.content, content),
+        ),
       )
       .limit(1);
 
@@ -110,15 +110,15 @@ export class UserRecordsRepository {
   /**
    * Find all records for a user
    */
-  async findByUser(
-    userUuid: UUID,
-    limit = 100
-  ): Promise<UserRecord[]> {
+  async findByUser(userUuid: UUID, limit = 100): Promise<UserRecord[]> {
     const results = await this.db
       .select()
       .from(user_records)
       .where(eq(user_records.user_uuid, userUuid))
-      .orderBy(desc(user_records.importance_score), desc(user_records.created_at))
+      .orderBy(
+        desc(user_records.importance_score),
+        desc(user_records.created_at),
+      )
       .limit(limit);
 
     return results.map((r) => this.mapToUserRecord(r));
@@ -130,7 +130,7 @@ export class UserRecordsRepository {
   async findByType(
     userUuid: UUID,
     recordType: string,
-    limit = 50
+    limit = 50,
   ): Promise<UserRecord[]> {
     const results = await this.db
       .select()
@@ -138,8 +138,8 @@ export class UserRecordsRepository {
       .where(
         and(
           eq(user_records.user_uuid, userUuid),
-          eq(user_records.record_type, recordType)
-        )
+          eq(user_records.record_type, recordType),
+        ),
       )
       .orderBy(desc(user_records.importance_score))
       .limit(limit);
@@ -153,7 +153,7 @@ export class UserRecordsRepository {
   async findImportant(
     userUuid: UUID,
     minImportance: number,
-    limit = 20
+    limit = 20,
   ): Promise<UserRecord[]> {
     const results = await this.db
       .select()
@@ -161,8 +161,8 @@ export class UserRecordsRepository {
       .where(
         and(
           eq(user_records.user_uuid, userUuid),
-          sql`${user_records.importance_score} >= ${minImportance}`
-        )
+          sql`${user_records.importance_score} >= ${minImportance}`,
+        ),
       )
       .orderBy(desc(user_records.importance_score))
       .limit(limit);
@@ -185,10 +185,7 @@ export class UserRecordsRepository {
   /**
    * Merge tags arrays, removing duplicates
    */
-  private mergeTags(
-    existing: string[] | any,
-    newTags: string[]
-  ): string[] {
+  private mergeTags(existing: string[] | any, newTags: string[]): string[] {
     // Handle JSONB tags field
     const existingArray = Array.isArray(existing) ? existing : [];
     const merged = [...new Set([...existingArray, ...newTags])];

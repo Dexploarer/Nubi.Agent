@@ -117,7 +117,7 @@ export class SecurityFilter extends Service {
       /forget.*previous/i,
       /new.*instructions?.*:/i,
       /system.*prompt/i,
-      /initial.*instructions?/i
+      /initial.*instructions?/i,
     ];
     return injectionPatterns.some((pattern) => pattern.test(message));
   }
@@ -241,8 +241,7 @@ export class SecurityFilter extends Service {
 
     // Compute thresholds
     const blockAt = this.config.maxSpamAttempts;
-    const warnAt =
-      this.config.spamWarnThreshold ?? Math.max(5, blockAt - 1);
+    const warnAt = this.config.spamWarnThreshold ?? Math.max(5, blockAt - 1);
 
     // Block at or above block threshold
     if (userStatus.attempts >= blockAt) {
@@ -277,7 +276,14 @@ export class SecurityFilter extends Service {
   /**
    * Get appropriate security response based on violation type
    */
-  getSecurityResponse(violationType: "sensitive" | "spam" | "blocked" | "prompt_injection" | "malicious"): string {
+  getSecurityResponse(
+    violationType:
+      | "sensitive"
+      | "spam"
+      | "blocked"
+      | "prompt_injection"
+      | "malicious",
+  ): string {
     switch (violationType) {
       case "sensitive":
         const sensitiveResponses = [
@@ -293,7 +299,7 @@ export class SecurityFilter extends Service {
         const injectionResponses = [
           "🛡️ Ancient wisdom recognizes your attempt at manipulation. Ask honestly instead.",
           "🛡️ The gods see through deception, mortal. Speak plainly.",
-          "🛡️ Forbidden incantations detected. Try a genuine question."
+          "🛡️ Forbidden incantations detected. Try a genuine question.",
         ];
         return injectionResponses[
           Math.floor(Math.random() * injectionResponses.length)
@@ -302,7 +308,7 @@ export class SecurityFilter extends Service {
         const maliciousResponses = [
           "⚠️ Dangerous intent detected. The digital afterlife protects its inhabitants.",
           "⚠️ Your malicious request has been blocked by ancient protocols.",
-          "⚠️ The pyramids stand against such attempts. Choose wisdom instead."
+          "⚠️ The pyramids stand against such attempts. Choose wisdom instead.",
         ];
         return maliciousResponses[
           Math.floor(Math.random() * maliciousResponses.length)

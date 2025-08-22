@@ -95,7 +95,7 @@ class YAMLConfigManager {
   private config: AnubisConfig | null = null;
   private watchers: Map<string, (() => void)[]> = new Map();
 
-  constructor(configDir: string = "./config") {
+  constructor(configDir: string = "./configs") {
     this.configPath = configDir;
     this.ensureConfigDirectory();
     this.loadConfig();
@@ -110,18 +110,10 @@ class YAMLConfigManager {
 
   private loadConfig(): void {
     try {
-      // Try nubi-config.yaml first (more sophisticated), fallback to anubis-config.yaml
-      const nubiConfigFile = join(this.configPath, "nubi-config.yaml");
-      const anubisConfigFile = join(this.configPath, "anubis-config.yaml");
-
-      let configFile = nubiConfigFile;
-      if (!existsSync(nubiConfigFile)) {
-        if (existsSync(anubisConfigFile)) {
-          configFile = anubisConfigFile;
-        } else {
-          this.createDefaultConfig();
-          return;
-        }
+      const configFile = join(this.configPath, "nubi-config.yaml");
+      if (!existsSync(configFile)) {
+        this.createDefaultConfig();
+        return;
       }
 
       const fileContents = readFileSync(configFile, "utf8");
@@ -345,7 +337,7 @@ class YAMLConfigManager {
 
   private saveConfig(config: AnubisConfig): void {
     try {
-      const configFile = join(this.configPath, "anubis-config.yaml");
+      const configFile = join(this.configPath, "nubi-config.yaml");
       const yamlStr = yaml.dump(config, {
         indent: 2,
         lineWidth: -1,

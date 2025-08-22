@@ -4,9 +4,11 @@ import {
   type Project,
   type ProjectAgent,
 } from "@elizaos/core";
-import { nubiCharacter } from "./nubi-character";
-import nubiPlugin from "./nubi-plugin";
-import clickhouseAnalyticsPlugin from "./plugins/clickhouse-analytics";
+
+// Import from modular structure
+import { nubiCharacter } from "./character";
+import { nubiPlugin, clickhouseAnalyticsPlugin } from "./plugins";
+import { createNubiApplication, createAppConfig } from "./app";
 
 // Remove explicit telegram plugin import to avoid duplicate registration
 // The character's plugins array handles telegram via `@elizaos/plugin-telegram`
@@ -78,12 +80,18 @@ const initCharacter = ({ runtime }: { runtime: IAgentRuntime }) => {
   }
 };
 
+// Create modular application instance
+const app = createNubiApplication(createAppConfig('NUBI', '1.0.0', 'development'));
+
 export const projectAgent: ProjectAgent = {
   character: nubiCharacter,
-  init: async (runtime: IAgentRuntime) => await initCharacter({ runtime }),
+  init: async (runtime: IAgentRuntime) => {
+    await initCharacter({ runtime });
+    await app.initialize();
+    await app.start();
+  },
+  // Plugins are now managed through character.plugins array for better ElizaOS compliance
   plugins: [
-    // Prefer plugin resolution via character.plugins to avoid duplicate registration
-    nubiPlugin, // Enhanced NUBI plugin with raids integration
     clickhouseAnalyticsPlugin, // Analytics and observability
   ],
 //   tests: [ProjectStarterTestSuite],
@@ -93,7 +101,8 @@ const project: Project = {
   agents: [projectAgent],
 };
 
-export { nubiCharacter as character } from "./nubi-character";
-export { nubiCharacter } from "./nubi-character";
+// Export from modular structure
+export { nubiCharacter as character } from "./character";
+export { nubiCharacter } from "./character";
 
 export default project;

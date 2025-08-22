@@ -79,7 +79,10 @@ export class PersonalityService {
 
     // Help requests influence empathy (based on sentiment)
     if (text.includes("help") || text.includes("please")) {
-      const sentiment = typeof (state as any)?.sentiment === "number" ? (state as any).sentiment : 0;
+      const sentiment =
+        typeof (state as any)?.sentiment === "number"
+          ? (state as any).sentiment
+          : 0;
       if (sentiment < 0) {
         // negative sentiment: empathy decreases
         this.state.empathy = clamp01to100(this.state.empathy - 1);
@@ -163,7 +166,9 @@ export class PersonalityService {
     // Simple periodic minor drift to simulate personality evolution
     this.evolutionInterval = setInterval(() => {
       // nudge creativity slightly
-      this.state.creativity = clamp01to100(this.state.creativity + (Math.random() > 0.5 ? 1 : -1));
+      this.state.creativity = clamp01to100(
+        this.state.creativity + (Math.random() > 0.5 ? 1 : -1),
+      );
     }, 60_000);
   }
 

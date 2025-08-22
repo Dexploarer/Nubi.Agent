@@ -25,16 +25,20 @@ export class ServiceErrorHandler {
     methodName: string,
     fn: () => Promise<T>,
     fallback?: T,
-    context?: any
+    context?: any,
   ): Promise<T> {
     const correlationId = `${serviceName}_${methodName}_${Date.now()}`;
     const startTime = Date.now();
 
     try {
-      logger.debug(`[${serviceName}] Executing ${methodName} - ${JSON.stringify({ correlationId, context })}`);
+      logger.debug(
+        `[${serviceName}] Executing ${methodName} - ${JSON.stringify({ correlationId, context })}`,
+      );
       const result = await fn();
       const duration = Date.now() - startTime;
-      logger.debug(`[${serviceName}] ${methodName} completed in ${duration}ms - ${JSON.stringify({ correlationId })}`);
+      logger.debug(
+        `[${serviceName}] ${methodName} completed in ${duration}ms - ${JSON.stringify({ correlationId })}`,
+      );
       return result;
     } catch (error) {
       const serviceError: ServiceError = {
@@ -51,7 +55,10 @@ export class ServiceErrorHandler {
 
       // Return fallback if provided
       if (fallback !== undefined) {
-        logger.warn(`[${serviceName}] ${methodName} failed, using fallback`, JSON.stringify({ correlationId }));
+        logger.warn(
+          `[${serviceName}] ${methodName} failed, using fallback`,
+          JSON.stringify({ correlationId }),
+        );
         return fallback;
       }
 
@@ -67,7 +74,7 @@ export class ServiceErrorHandler {
     serviceName: string,
     methodName: string,
     fn: () => Promise<void>,
-    context?: any
+    context?: any,
   ): Promise<void> {
     await this.wrapMethod(serviceName, methodName, fn, undefined, context);
   }
@@ -80,10 +87,16 @@ export class ServiceErrorHandler {
     methodName: string,
     fn: () => Promise<T>,
     rollback?: () => Promise<void>,
-    context?: any
+    context?: any,
   ): Promise<T> {
     try {
-      return await this.wrapMethod(serviceName, methodName, fn, undefined, context);
+      return await this.wrapMethod(
+        serviceName,
+        methodName,
+        fn,
+        undefined,
+        context,
+      );
     } catch (error) {
       if (rollback) {
         logger.warn(`[${serviceName}] Rolling back ${methodName}`);
@@ -91,7 +104,10 @@ export class ServiceErrorHandler {
           await rollback();
           logger.info(`[${serviceName}] Rollback completed for ${methodName}`);
         } catch (rollbackError) {
-          logger.error(`[${serviceName}] Rollback failed for ${methodName}:`, rollbackError);
+          logger.error(
+            `[${serviceName}] Rollback failed for ${methodName}:`,
+            rollbackError,
+          );
         }
       }
       throw error;
@@ -108,7 +124,7 @@ export class ServiceErrorHandler {
         stack: error.error.stack,
         context: error.context,
         correlationId: error.correlationId,
-      })
+      }),
     );
   }
 
@@ -153,7 +169,11 @@ export class ServiceErrorHandler {
  * Decorator for automatic error handling
  */
 export function withErrorHandling(serviceName: string) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (
+    target: any,
+    propertyKey: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
@@ -162,7 +182,7 @@ export function withErrorHandling(serviceName: string) {
         propertyKey,
         () => originalMethod.apply(this, args),
         undefined,
-        { args }
+        { args },
       );
     };
 
@@ -176,24 +196,24 @@ export function withErrorHandling(serviceName: string) {
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
-  initialDelay: number = 1000
+  initialDelay: number = 1000,
 ): Promise<T> {
   let lastError: Error | undefined;
-  
+
   for (let i = 0; i < maxRetries; i++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (i < maxRetries - 1) {
         const delay = initialDelay * Math.pow(2, i);
         logger.debug(`Retry attempt ${i + 1}/${maxRetries} after ${delay}ms`);
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
-  
+
   throw lastError || new Error("Retry failed");
 }
 

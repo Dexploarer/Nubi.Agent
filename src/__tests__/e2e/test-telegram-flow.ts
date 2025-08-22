@@ -47,7 +47,7 @@ const commands = [
   { cmd: "/joinraid", desc: "Join the active raid" },
   { cmd: "/raidstats", desc: "View your raid statistics" },
   { cmd: "/leaderboard", desc: "Show raid leaderboard" },
-  { cmd: "/endraid", desc: "End the current raid (admin)" }
+  { cmd: "/endraid", desc: "End the current raid (admin)" },
 ];
 
 commands.forEach(({ cmd, desc }) => {
@@ -62,6 +62,8 @@ console.log("   - Comment: +15 points");
 console.log("   - Quote tweet: +20 points");
 
 console.log("\n✅ Telegram Raids Integration Verified!");
-console.log("   The system is ready to coordinate raids from Telegram to X/Twitter");
+console.log(
+  "   The system is ready to coordinate raids from Telegram to X/Twitter",
+);
 
 export {};

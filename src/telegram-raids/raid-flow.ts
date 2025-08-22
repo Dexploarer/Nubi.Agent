@@ -63,19 +63,28 @@ export class AnubisRaidFlow {
     try {
       const configPath = path.join(
         process.cwd(),
-        "config",
-        "anubis-raid-config.yaml",
+        "configs",
+        "raid-config.yaml",
       );
       const configContent = fs.readFileSync(configPath, "utf8");
-      const fullConfig = yaml.load(configContent) as any;
+      const full = yaml.load(configContent) as any;
 
       this.config = {
-        enabled: fullConfig.anubis_raid_bot.x_settings.auto_post,
-        postInterval: fullConfig.anubis_raid_bot.x_settings.post_interval,
-        autoRaid: fullConfig.anubis_raid_bot.raid_settings.auto_raid,
+        enabled: Boolean(full?.x_posting?.enabled),
+        postInterval: Number(full?.x_posting?.post_interval_hours ?? 4),
+        autoRaid: Boolean(full?.raid?.auto_create),
         testMode: process.env.RAID_TEST_MODE === "true",
-        maxConcurrentRaids:
-          fullConfig.anubis_raid_bot.raid_settings.max_concurrent_raids || 3,
+        maxConcurrentRaids: Number(
+          full?.raid?.max_participants
+            ? Math.max(
+                1,
+                Math.min(
+                  10,
+                  Math.floor((full.raid.max_participants || 3) / 10),
+                ),
+              )
+            : 3,
+        ),
       };
 
       logger.info("Raid flow configuration loaded");

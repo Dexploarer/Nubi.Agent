@@ -46,6 +46,7 @@ export class RaidCoordinator {
   private telegramClient: any;
   private raidTracker: RaidTracker;
   private config!: RaidConfig;
+  private personaData: any | undefined;
   private activeRaids: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(runtime: IAgentRuntime) {
@@ -59,16 +60,61 @@ export class RaidCoordinator {
     try {
       const configPath = path.join(
         process.cwd(),
-        "config",
-        "anubis-raid-config.yaml",
+        "configs",
+        "raid-config.yaml",
       );
       const configContent = fs.readFileSync(configPath, "utf8");
-      const fullConfig = yaml.load(configContent) as any;
-      this.config = fullConfig.anubis_raid_bot;
+      const full = yaml.load(configContent) as any;
+
+      // Preserve persona data for tone rotation
+      this.personaData = {
+        raid_personas: full?.raid_personas,
+        personality_rotation: full?.personality_rotation,
+        mood_modifiers: full?.mood_modifiers,
+      };
+
+      // Map unified config to internal structure
+      this.config = {
+        name: "Anubis Solana Raiders",
+        version: "1.0.0",
+        channels: {
+          telegram: {
+            channel_id:
+              full?.telegram?.raid_channel ||
+              process.env.TELEGRAM_CHANNEL_ID ||
+              "@AnubisRaids",
+            test_channel: process.env.TELEGRAM_TEST_CHANNEL || "@AnubisTest",
+          },
+        },
+        raid_settings: {
+          auto_raid: Boolean(full?.raid?.auto_create),
+          raid_duration: Number(full?.raid?.duration_minutes ?? 30),
+          min_participants: Number(full?.raid?.min_participants ?? 10),
+          scoring: {
+            like: Number(full?.raid?.scoring?.like_points ?? 1),
+            retweet: Number(full?.raid?.scoring?.repost_points ?? 2),
+            reply: Number(full?.raid?.scoring?.comment_points ?? 3),
+            quote_tweet: 5,
+          },
+          multipliers: {
+            speed_bonus: { first_5: 3.0, first_10: 2.0, first_25: 1.5 },
+          },
+        },
+        templates: {
+          raid_announcement:
+            full?.x_posting?.templates?.raid_announcement ||
+            this.getDefaultConfig().templates.raid_announcement,
+          raid_update: this.getDefaultConfig().templates.raid_update,
+          raid_complete:
+            full?.x_posting?.templates?.raid_victory ||
+            this.getDefaultConfig().templates.raid_complete,
+          raid_reminder: this.getDefaultConfig().templates.raid_reminder,
+        },
+      } as RaidConfig;
+
       logger.info("Raid configuration loaded successfully");
     } catch (error) {
-      logger.error("Failed to load raid configuration:", error);
-      // Use default configuration
+      logger.error("Failed to load raid configuration:", error as any);
       this.config = this.getDefaultConfig();
     }
   }
@@ -137,7 +183,7 @@ export class RaidCoordinator {
       const raidId = await this.raidTracker.createRaid(tweetData);
 
       // Generate raid announcement
-      const announcement = this.generateRaidMessage(
+      let announcement = this.generateRaidMessage(
         this.config.templates.raid_announcement,
         {
           tweet_link: tweetData.url,
@@ -145,6 +191,13 @@ export class RaidCoordinator {
           min_raiders: this.config.raid_settings.min_participants.toString(),
         },
       );
+
+      const personaIntro = this.pickPersonaPhrase("start");
+      if (personaIntro) {
+        announcement = `${personaIntro}
+
+${announcement}`;
+      }
 
       // Select channel (test or main)
       const channelId = isTest
@@ -178,7 +231,7 @@ export class RaidCoordinator {
       logger.info(`Raid created successfully: ${raidId}`);
       return raidId;
     } catch (error) {
-      logger.error("Failed to create raid:", error);
+      logger.error("Failed to create raid:", error as any);
       throw error;
     }
   }
@@ -234,7 +287,7 @@ export class RaidCoordinator {
         const stats = await this.raidTracker.getRaidStats(raidId);
         const timeLeft = Math.ceil((raid.endTime - Date.now()) / 60000); // minutes
 
-        const update = this.generateRaidMessage(
+        let update = this.generateRaidMessage(
           this.config.templates.raid_update,
           {
             current_raiders: stats.totalParticipants.toString(),
@@ -243,6 +296,13 @@ export class RaidCoordinator {
             top_raider: stats.topRaider?.username || "None",
           },
         );
+
+        const during = this.pickPersonaPhrase("during");
+        if (during) {
+          update = `${during}
+
+${update}`;
+        }
 
         // Edit the original message with update
         await this.editTelegramMessage(channelId, messageId, update);
@@ -267,7 +327,7 @@ export class RaidCoordinator {
         await this.telegramClient.editMessageText(channelId, messageId, text);
       }
     } catch (error) {
-      logger.error("Failed to edit Telegram message:", error);
+      logger.error("Failed to edit Telegram message:", error as any);
     }
   }
 
@@ -280,7 +340,7 @@ export class RaidCoordinator {
       const stats = await this.raidTracker.getRaidStats(raidId);
 
       // Generate completion message
-      const completion = this.generateRaidMessage(
+      let completion = this.generateRaidMessage(
         this.config.templates.raid_complete,
         {
           total_raiders: stats.totalParticipants.toString(),
@@ -289,6 +349,13 @@ export class RaidCoordinator {
           top_points: stats.topRaider?.points?.toString() || "0",
         },
       );
+
+      const finish = this.pickPersonaPhrase("complete");
+      if (finish) {
+        completion = `${finish}
+
+${completion}`;
+      }
 
       // Send completion message
       await this.sendTelegramMessage(channelId, completion);
@@ -302,7 +369,7 @@ export class RaidCoordinator {
 
       logger.info(`Raid completed: ${raidId}`);
     } catch (error) {
-      logger.error("Failed to complete raid:", error);
+      logger.error("Failed to complete raid:", error as any);
     }
   }
 
@@ -335,7 +402,7 @@ export class RaidCoordinator {
         return `You're already in this raid, @${username}! Keep raiding! 💪`;
       }
     } catch (error) {
-      logger.error("Failed to handle raid join:", error);
+      logger.error("Failed to handle raid join:", error as any);
       return "Failed to join raid. Please try again.";
     }
   }
@@ -352,7 +419,7 @@ export class RaidCoordinator {
         `⏱️ Status: ${stats.status}`
       );
     } catch (error) {
-      logger.error("Failed to get raid stats:", error);
+      logger.error("Failed to get raid stats:", error as any);
       return "Failed to retrieve stats. Please try again.";
     }
   }
@@ -366,5 +433,29 @@ export class RaidCoordinator {
     await this.raidTracker.cleanup();
 
     logger.info("Raid Coordinator cleaned up");
+  }
+
+  // Persona helpers
+  private currentPersonaId(): string | undefined {
+    const rot = this.personaData?.personality_rotation?.schedule;
+    if (!rot) return undefined;
+    const hour = new Date().getHours();
+    if (hour >= 6 && hour < 12) return rot.morning;
+    if (hour >= 12 && hour < 18) return rot.afternoon;
+    if (hour >= 18 && hour < 22) return rot.evening;
+    if (hour >= 22 || hour < 2) return rot.night;
+    if (hour >= 2 && hour < 6) return rot.late_night;
+    return undefined;
+  }
+
+  private pickPersonaPhrase(
+    phase: "start" | "during" | "complete",
+  ): string | undefined {
+    const pid = this.currentPersonaId();
+    const personas = this.personaData?.raid_personas;
+    if (!pid || !personas || !personas[pid]) return undefined;
+    const arr: string[] = personas[pid]?.phrases?.[phase] || [];
+    if (!Array.isArray(arr) || arr.length === 0) return undefined;
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 }

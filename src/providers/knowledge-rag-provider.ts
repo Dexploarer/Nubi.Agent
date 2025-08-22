@@ -1,4 +1,11 @@
-import { Provider, IAgentRuntime, Memory, State, logger, ModelType } from "@elizaos/core";
+import {
+  Provider,
+  IAgentRuntime,
+  Memory,
+  State,
+  logger,
+  ModelType,
+} from "@elizaos/core";
 
 /**
  * Knowledge RAG Provider
@@ -9,7 +16,8 @@ import { Provider, IAgentRuntime, Memory, State, logger, ModelType } from "@eliz
 
 export const knowledgeRagProvider: Provider = {
   name: "KNOWLEDGE_RAG",
-  description: "Retrieves relevant knowledge snippets via RAG for context enhancement",
+  description:
+    "Retrieves relevant knowledge snippets via RAG for context enhancement",
   dynamic: true,
 
   get: async (
@@ -19,15 +27,16 @@ export const knowledgeRagProvider: Provider = {
   ): Promise<any> => {
     try {
       // Extract message text
-      const messageText = typeof message.content === "string"
-        ? message.content
-        : message.content?.text || "";
+      const messageText =
+        typeof message.content === "string"
+          ? message.content
+          : message.content?.text || "";
 
       if (!messageText || messageText.length < 10) {
         return {
           text: "",
           values: { ragEnabled: false },
-          data: { reason: "Message too short for RAG" }
+          data: { reason: "Message too short for RAG" },
         };
       }
 
@@ -38,25 +47,27 @@ export const knowledgeRagProvider: Provider = {
         return {
           text: "",
           values: { ragEnabled: false },
-          data: { reason: "Knowledge service not available" }
+          data: { reason: "Knowledge service not available" },
         };
       }
 
       // Perform semantic search using the message as query
-      const searchResults = await (knowledgeService as any).search({
-        query: messageText,
-        topK: 3,
-        threshold: 0.7, // Minimum similarity threshold
-      }).catch((error: any) => {
-        logger.debug("[KNOWLEDGE_RAG] Search failed:", error);
-        return null;
-      });
+      const searchResults = await (knowledgeService as any)
+        .search({
+          query: messageText,
+          topK: 3,
+          threshold: 0.7, // Minimum similarity threshold
+        })
+        .catch((error: any) => {
+          logger.debug("[KNOWLEDGE_RAG] Search failed:", error);
+          return null;
+        });
 
       if (!searchResults || searchResults.length === 0) {
         return {
           text: "",
           values: { ragEnabled: true, ragHits: 0 },
-          data: { searchPerformed: true, results: [] }
+          data: { searchPerformed: true, results: [] },
         };
       }
 
@@ -65,7 +76,7 @@ export const knowledgeRagProvider: Provider = {
         content: result.content?.substring(0, 500), // Limit snippet length
         source: result.source || "knowledge_base",
         similarity: result.similarity || result.score || 0,
-        metadata: result.metadata || {}
+        metadata: result.metadata || {},
       }));
 
       // Build context text from high-relevance snippets
@@ -78,10 +89,13 @@ export const knowledgeRagProvider: Provider = {
       let messageEmbedding = null;
       try {
         messageEmbedding = await runtime.useModel(ModelType.TEXT_EMBEDDING, {
-          text: messageText
+          text: messageText,
         });
       } catch (embedError) {
-        logger.debug("[KNOWLEDGE_RAG] Embedding generation failed:", embedError);
+        logger.debug(
+          "[KNOWLEDGE_RAG] Embedding generation failed:",
+          embedError,
+        );
       }
 
       return {
@@ -97,14 +111,14 @@ export const knowledgeRagProvider: Provider = {
           results: knowledgeSnippets,
           messageEmbedding,
           query: messageText.substring(0, 100),
-        }
+        },
       };
     } catch (error) {
       logger.error("[KNOWLEDGE_RAG_PROVIDER] Error:", error);
       return {
         text: "",
         values: { ragEnabled: false, error: true },
-        data: { error: error instanceof Error ? error.message : String(error) }
+        data: { error: error instanceof Error ? error.message : String(error) },
       };
     }
   },

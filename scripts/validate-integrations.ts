@@ -1,4 +1,4 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env bun
 
 /**
  * ElizaOS Integration Validator
@@ -6,21 +6,21 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { io } from 'socket.io-client';
+// socket.io-client may not be installed; load lazily if present
 import * as fs from 'fs';
 import * as path from 'path';
 
-interface ValidationResult {
+export interface ValidationResult {
   component: string;
   status: 'pass' | 'fail' | 'warning';
   message: string;
   details?: any;
 }
 
-class IntegrationValidator {
-  private results: ValidationResult[] = [];
+export class IntegrationValidator {
+  public results: ValidationResult[] = [];
 
-  async validateAll() {
+  async validateAll(): Promise<ValidationResult[]> {
     console.log('🔍 ElizaOS Integration Validation Starting...\n');
 
     // 1. Validate Plugin Structure
@@ -43,10 +43,11 @@ class IntegrationValidator {
 
     // Print results
     this.printResults();
+    return this.results;
   }
 
   private async validatePluginStructure() {
-    const pluginPath = path.join(__dirname, '..', 'anubis', 'src', 'nubi-plugin.ts');
+    const pluginPath = path.join(__dirname, '..', 'src', 'nubi-plugin.ts');
     
     if (fs.existsSync(pluginPath)) {
       const content = fs.readFileSync(pluginPath, 'utf-8');
@@ -117,7 +118,7 @@ class IntegrationValidator {
       ];
 
       for (const func of functions) {
-        const funcPath = path.join(__dirname, '..', 'anubis', 'supabase', 'functions', func);
+        const funcPath = path.join(__dirname, '..', 'supabase', 'functions', func);
         if (fs.existsSync(funcPath)) {
           this.results.push({
             component: `Edge Function: ${func}`,
@@ -144,41 +145,56 @@ class IntegrationValidator {
 
   private async validateSocketIO() {
     const port = process.env.PORT || 8080;
-    const socket = io(`http://localhost:${port}`, {
-      timeout: 5000,
-      reconnection: false
-    });
+    // Dynamically import socket.io-client if available
+    try {
+      const mod = await import('socket.io-client');
+      const io = (mod as any).io || (mod as any).default?.io || (mod as any).default;
+      if (!io) throw new Error('socket.io-client export not found');
 
-    return new Promise<void>((resolve) => {
-      socket.on('connect', () => {
-        this.results.push({
-          component: 'Socket.IO',
-          status: 'pass',
-          message: `Socket.IO server running on port ${port}`
-        });
-        socket.disconnect();
-        resolve();
+      const socket = io(`http://localhost:${port}`, {
+        timeout: 5000,
+        reconnection: false
       });
 
-      socket.on('connect_error', (error) => {
-        this.results.push({
-          component: 'Socket.IO',
-          status: 'warning',
-          message: 'Socket.IO server not running',
-          details: 'Start server with: npm start'
+      return await new Promise<void>((resolve) => {
+        socket.on('connect', () => {
+          this.results.push({
+            component: 'Socket.IO',
+            status: 'pass',
+            message: `Socket.IO server running on port ${port}`
+          });
+          socket.disconnect();
+          resolve();
         });
-        resolve();
-      });
 
-      setTimeout(() => {
-        socket.disconnect();
-        resolve();
-      }, 3000);
-    });
+        socket.on('connect_error', () => {
+          this.results.push({
+            component: 'Socket.IO',
+            status: 'warning',
+            message: 'Socket.IO server not running',
+            details: 'Start server with: bun run dev'
+          });
+          resolve();
+        });
+
+        setTimeout(() => {
+          socket.disconnect();
+          resolve();
+        }, 3000);
+      });
+    } catch (e: any) {
+      // socket.io-client not installed; report as warning but continue
+      this.results.push({
+        component: 'Socket.IO',
+        status: 'warning',
+        message: 'socket.io-client not installed; skipping Socket.IO check',
+        details: 'Add socket.io-client to dependencies to enable check'
+      });
+    }
   }
 
   private async validateCharacter() {
-    const characterPath = path.join(__dirname, '..', 'anubis', 'config', 'nubi-config.yaml');
+    const characterPath = path.join(__dirname, '..', 'config', 'nubi-config.yaml');
     
     if (fs.existsSync(characterPath)) {
       const content = fs.readFileSync(characterPath, 'utf-8');
@@ -211,7 +227,7 @@ class IntegrationValidator {
   }
 
   private async validateEdgeFunctions() {
-    const functionsDir = path.join(__dirname, '..', 'anubis', 'supabase', 'functions');
+    const functionsDir = path.join(__dirname, '..', 'supabase', 'functions');
     
     if (fs.existsSync(functionsDir)) {
       const functions = fs.readdirSync(functionsDir).filter(f => 
@@ -241,7 +257,7 @@ class IntegrationValidator {
       'personality-service.ts'
     ];
 
-    const servicesDir = path.join(__dirname, '..', 'anubis', 'src', 'services');
+    const servicesDir = path.join(__dirname, '..', 'src', 'services');
     
     for (const service of services) {
       const servicePath = path.join(servicesDir, service);
@@ -305,6 +321,11 @@ class IntegrationValidator {
   }
 }
 
-// Run validation
-const validator = new IntegrationValidator();
-validator.validateAll().catch(console.error);
+// Run validation when executed directly
+if (import.meta.main) {
+  const validator = new IntegrationValidator();
+  validator.validateAll().catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });
+}

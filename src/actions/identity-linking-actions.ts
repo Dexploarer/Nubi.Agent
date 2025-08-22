@@ -41,8 +41,8 @@ export const linkAccountAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
-    options: any,
+    state?: State,
+    options?: any,
     callback?: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
@@ -57,7 +57,9 @@ export const linkAccountAction: Action = {
         return { success: false };
       }
 
-      const result = await identityService.processMessage(message);
+      const result = (await identityService.processMessage(message)) as
+        | string
+        | undefined;
 
       if (result) {
         await callback?.({
@@ -81,7 +83,7 @@ export const linkAccountAction: Action = {
 
       return { success: true };
     } catch (error) {
-      logger.error("[LINK_ACCOUNT] Action failed:", error);
+      logger.error("[LINK_ACCOUNT] Action failed:", error as any);
 
       await callback?.({
         text: "❌ Failed to process linking request. Please try again later.",
@@ -164,8 +166,8 @@ export const unlinkAccountAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
-    options: any,
+    state?: State,
+    options?: any,
     callback?: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
@@ -180,7 +182,9 @@ export const unlinkAccountAction: Action = {
         return { success: false };
       }
 
-      const result = await identityService.processMessage(message);
+      const result = (await identityService.processMessage(message)) as
+        | string
+        | undefined;
 
       if (result) {
         await callback?.({
@@ -198,7 +202,7 @@ export const unlinkAccountAction: Action = {
 
       return { success: true };
     } catch (error) {
-      logger.error("[UNLINK_ACCOUNT] Action failed:", error);
+      logger.error("[UNLINK_ACCOUNT] Action failed:", error as any);
 
       await callback?.({
         text: "❌ Failed to process unlinking request. Please try again later.",
@@ -252,8 +256,8 @@ export const showLinkedAccountsAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
-    options: any,
+    state?: State,
+    options?: any,
     callback?: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
@@ -268,7 +272,9 @@ export const showLinkedAccountsAction: Action = {
         return { success: false };
       }
 
-      const result = await identityService.processMessage(message);
+      const result = (await identityService.processMessage(message)) as
+        | string
+        | undefined;
 
       await callback?.({
         text: result || "📱 No linked accounts found",
@@ -276,7 +282,7 @@ export const showLinkedAccountsAction: Action = {
 
       return { success: true };
     } catch (error) {
-      logger.error("[SHOW_LINKED_ACCOUNTS] Action failed:", error);
+      logger.error("[SHOW_LINKED_ACCOUNTS] Action failed:", error as any);
 
       await callback?.({
         text: "❌ Failed to fetch linked accounts. Please try again later.",
@@ -318,8 +324,8 @@ export const verificationCodeAction: Action = {
   handler: async (
     runtime: IAgentRuntime,
     message: Memory,
-    state: State,
-    options: any,
+    state?: State,
+    options?: any,
     callback?: HandlerCallback,
   ): Promise<ActionResult> => {
     try {
@@ -340,7 +346,7 @@ export const verificationCodeAction: Action = {
 
       return { success: false };
     } catch (error) {
-      logger.error("[VERIFICATION_CODE] Action failed:", error);
+      logger.error("[VERIFICATION_CODE] Action failed:", error as any);
       return { success: false };
     }
   },
@@ -356,7 +362,7 @@ export const identityContextProvider = {
   description: "Provides cross-platform identity context for users",
   dynamic: true,
 
-  get: async (runtime: IAgentRuntime, message: Memory, state: State) => {
+  get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
     try {
       const identityService = runtime.getService(
         "cross-platform-identity",
@@ -407,7 +413,7 @@ export const identityContextProvider = {
         },
       };
     } catch (error) {
-      logger.error("[IDENTITY_CONTEXT] Provider failed:", error);
+      logger.error("[IDENTITY_CONTEXT] Provider failed:", error as any);
       return {
         text: "",
         values: {},

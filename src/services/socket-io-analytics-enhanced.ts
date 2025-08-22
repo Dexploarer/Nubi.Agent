@@ -42,11 +42,11 @@ class ClickHouseSocketAnalytics {
   private flushTimer?: NodeJS.Timeout;
 
   constructor() {
-    this.host = process.env.CLICKHOUSE_HOST || '';
-    const user = process.env.CLICKHOUSE_USER || 'default';
-    const pass = process.env.CLICKHOUSE_PASSWORD || '';
-    this.auth = Buffer.from(`${user}:${pass}`).toString('base64');
-    
+    this.host = process.env.CLICKHOUSE_HOST || "";
+    const user = process.env.CLICKHOUSE_USER || "default";
+    const pass = process.env.CLICKHOUSE_PASSWORD || "";
+    this.auth = Buffer.from(`${user}:${pass}`).toString("base64");
+
     if (this.host) {
       this.flushTimer = setInterval(() => this.flush(), 3000);
     }
@@ -54,18 +54,18 @@ class ClickHouseSocketAnalytics {
 
   async track(event: Partial<ClickHouseSocketEvent>) {
     if (!this.host) return;
-    
+
     const fullEvent: ClickHouseSocketEvent = {
       timestamp: new Date().toISOString(),
-      socket_id: '',
+      socket_id: "",
       connection_id: uuidv4(),
-      event_type: 'custom',
-      event_name: 'unknown',
-      ...event
+      event_type: "custom",
+      event_name: "unknown",
+      ...event,
     };
-    
+
     this.queue.push(fullEvent);
-    
+
     if (this.queue.length >= 100) {
       await this.flush();
     }
@@ -73,37 +73,48 @@ class ClickHouseSocketAnalytics {
 
   async flush() {
     if (this.queue.length === 0 || !this.host) return;
-    
+
     const events = [...this.queue];
     this.queue = [];
-    
+
     try {
-      const body = events.map(e => JSON.stringify({
-        ...e,
-        rooms_joined: e.rooms_joined || [],
-        metadata: typeof e.metadata === 'string' ? e.metadata : JSON.stringify(e.metadata || {})
-      })).join('\n');
-      
-      const query = 'INSERT INTO elizaos_analytics.socket_events FORMAT JSONEachRow';
-      
+      const body = events
+        .map((e) =>
+          JSON.stringify({
+            ...e,
+            rooms_joined: e.rooms_joined || [],
+            metadata:
+              typeof e.metadata === "string"
+                ? e.metadata
+                : JSON.stringify(e.metadata || {}),
+          }),
+        )
+        .join("\n");
+
+      const query =
+        "INSERT INTO elizaos_analytics.socket_events FORMAT JSONEachRow";
+
       const response = await fetch(
         `${this.host}/?database=elizaos_analytics&query=${encodeURIComponent(query)}`,
         {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Authorization': `Basic ${this.auth}`,
-            'Content-Type': 'application/x-ndjson'
+            Authorization: `Basic ${this.auth}`,
+            "Content-Type": "application/x-ndjson",
           },
-          body: body
-        }
+          body: body,
+        },
       );
-      
+
       if (!response.ok) {
-        logger.error('ClickHouse Socket insert failed:', String(response.status));
+        logger.error(
+          "ClickHouse Socket insert failed:",
+          String(response.status),
+        );
         this.queue.unshift(...events);
       }
     } catch (error) {
-      logger.error('ClickHouse Socket error:', error);
+      logger.error("ClickHouse Socket error:", error);
       this.queue.unshift(...events);
     }
   }
@@ -117,7 +128,7 @@ class ClickHouseSocketAnalytics {
 }
 
 export class SocketIOAnalyticsService extends Service {
-    private io: any = null;
+  private io: any = null;
   static serviceType = "socket_analytics" as const;
   capabilityDescription = "Socket.IO with ClickHouse Analytics";
 
@@ -133,7 +144,9 @@ export class SocketIOAnalyticsService extends Service {
     this.analytics = new ClickHouseSocketAnalytics();
   }
 
-  static async start(runtime: IAgentRuntime): Promise<SocketIOAnalyticsService> {
+  static async start(
+    runtime: IAgentRuntime,
+  ): Promise<SocketIOAnalyticsService> {
     const service = new SocketIOAnalyticsService(runtime);
     await service.initialize();
     return service;
@@ -167,124 +180,126 @@ export class SocketIOAnalyticsService extends Service {
     const io = this.socketServer;
 
     // Track new connections
-    io.on('connection', async (socket: any) => {
+    io.on("connection", async (socket: any) => {
       const connectionId = uuidv4();
       const startTime = Date.now();
-      
+
       this.connectionStats.set(socket.id, {
         connectionId,
         connectTime: startTime,
-        rooms: new Set(['default']),
-        userId: null
+        rooms: new Set(["default"]),
+        userId: null,
       });
 
       // Track connection event
       await this.analytics.track({
-        event_type: 'connect',
-        event_name: 'socket_connected',
+        event_type: "connect",
+        event_name: "socket_connected",
         socket_id: socket.id,
         connection_id: connectionId,
-        transport: socket.conn?.transport?.name || 'unknown',
-        client_ip: socket.handshake?.address || '',
-        user_agent: socket.handshake?.headers?.['user-agent'] || '',
+        transport: socket.conn?.transport?.name || "unknown",
+        client_ip: socket.handshake?.address || "",
+        user_agent: socket.handshake?.headers?.["user-agent"] || "",
         connected_clients: io.engine?.clientsCount || 0,
-        namespace: socket.nsp?.name || '/',
+        namespace: socket.nsp?.name || "/",
         metadata: JSON.stringify({
           query: socket.handshake?.query,
-          auth: socket.handshake?.auth ? 'authenticated' : 'anonymous'
-        })
+          auth: socket.handshake?.auth ? "authenticated" : "anonymous",
+        }),
       });
 
       // Track custom events
       socket.onAny(async (eventName: string, ...args: any[]) => {
         const payload = JSON.stringify(args);
         const latency = Date.now() - startTime;
-        
+
         await this.analytics.track({
-          event_type: 'custom',
+          event_type: "custom",
           event_name: eventName,
           socket_id: socket.id,
           connection_id: connectionId,
           latency_ms: latency,
           payload_size_bytes: new TextEncoder().encode(payload).length,
-          rooms_joined: Array.from(this.connectionStats.get(socket.id)?.rooms || []),
+          rooms_joined: Array.from(
+            this.connectionStats.get(socket.id)?.rooms || [],
+          ),
           connected_clients: io.engine?.clientsCount || 0,
           agent_id: this.runtime.agentId,
           metadata: JSON.stringify({
             eventArgs: args.slice(0, 3), // First 3 args only
-            timestamp: Date.now()
-          })
+            timestamp: Date.now(),
+          }),
         });
       });
 
       // Track room joins
-      socket.on('join', async (room: string) => {
+      socket.on("join", async (room: string) => {
         const stats = this.connectionStats.get(socket.id);
         if (stats) {
           stats.rooms.add(room);
         }
-        
+
         await this.analytics.track({
-          event_type: 'room',
-          event_name: 'room_joined',
+          event_type: "room",
+          event_name: "room_joined",
           socket_id: socket.id,
           connection_id: connectionId,
           room_id: room,
           rooms_joined: Array.from(stats?.rooms || []),
-          connected_clients: io.engine?.clientsCount || 0
+          connected_clients: io.engine?.clientsCount || 0,
         });
       });
 
       // Track room leaves
-      socket.on('leave', async (room: string) => {
+      socket.on("leave", async (room: string) => {
         const stats = this.connectionStats.get(socket.id);
         if (stats) {
           stats.rooms.delete(room);
         }
-        
+
         await this.analytics.track({
-          event_type: 'room',
-          event_name: 'room_left',
+          event_type: "room",
+          event_name: "room_left",
           socket_id: socket.id,
           connection_id: connectionId,
           room_id: room,
           rooms_joined: Array.from(stats?.rooms || []),
-          connected_clients: io.engine?.clientsCount || 0
+          connected_clients: io.engine?.clientsCount || 0,
         });
       });
 
       // Track disconnections
-      socket.on('disconnect', async (reason: string) => {
+      socket.on("disconnect", async (reason: string) => {
         const stats = this.connectionStats.get(socket.id);
         const sessionDuration = stats ? Date.now() - stats.connectTime : 0;
-        
+
         await this.analytics.track({
-          event_type: 'disconnect',
-          event_name: 'socket_disconnected',
+          event_type: "disconnect",
+          event_name: "socket_disconnected",
           socket_id: socket.id,
           connection_id: connectionId,
           connected_clients: (io.engine?.clientsCount || 1) - 1,
           metadata: JSON.stringify({
             reason,
             sessionDurationMs: sessionDuration,
-            roomsJoined: Array.from(stats?.rooms || [])
-          })
+            roomsJoined: Array.from(stats?.rooms || []),
+          }),
         });
-        
+
         this.connectionStats.delete(socket.id);
       });
 
       // Track errors
-      socket.on('error', async (error: any) => {
+      socket.on("error", async (error: any) => {
         await this.analytics.track({
-          event_type: 'error',
-          event_name: 'socket_error',
+          event_type: "error",
+          event_name: "socket_error",
           socket_id: socket.id,
           connection_id: connectionId,
           metadata: JSON.stringify({
             error: error.message || error,
-            stack: error.stack
-          })
+            stack: error.stack,
+          }),
         });
       });
     });
@@ -293,18 +308,18 @@ export class SocketIOAnalyticsService extends Service {
     setInterval(async () => {
       const io = this.socketServer;
       if (!io) return;
-      
+
       await this.analytics.track({
-        event_type: 'stats',
-        event_name: 'server_stats',
-        socket_id: 'server',
-        connection_id: 'server',
+        event_type: "stats",
+        event_name: "server_stats",
+        socket_id: "server",
+        connection_id: "server",
         connected_clients: io.engine?.clientsCount || 0,
         metadata: JSON.stringify({
           totalConnections: this.connectionStats.size,
           namespaces: Object.keys(io.nsps || {}),
-          timestamp: Date.now()
-        })
+          timestamp: Date.now(),
+        }),
       });
     }, 30000); // Every 30 seconds
   }
@@ -318,21 +333,21 @@ export class SocketIOAnalyticsService extends Service {
 
     const roomId = data.roomId?.toString();
     const payload = JSON.stringify(data);
-    
+
     // Track emission
     await this.analytics.track({
-      event_type: 'emit',
+      event_type: "emit",
       event_name: event,
-      socket_id: 'server',
-      connection_id: 'server',
+      socket_id: "server",
+      connection_id: "server",
       room_id: roomId,
       agent_id: data.agentId?.toString(),
       user_id: data.userId?.toString(),
       payload_size_bytes: new TextEncoder().encode(payload).length,
       metadata: JSON.stringify({
         broadcast: !roomId,
-        timestamp: data.timestamp
-      })
+        timestamp: data.timestamp,
+      }),
     });
 
     if (roomId) {
@@ -346,17 +361,17 @@ export class SocketIOAnalyticsService extends Service {
     await this.analytics.close();
   }
 
-    async stop(): Promise<void> {
-        if (this.io) {
-            await new Promise<void>((resolve) => {
-                this.io?.close(() => {
-                    logger.info("[SocketIOAnalytics] Server stopped");
-                    resolve();
-                });
-            });
-            this.io = null;
-        }
+  async stop(): Promise<void> {
+    if (this.io) {
+      await new Promise<void>((resolve) => {
+        this.io?.close(() => {
+          logger.info("[SocketIOAnalytics] Server stopped");
+          resolve();
+        });
+      });
+      this.io = null;
     }
+  }
 }
 
 export default SocketIOAnalyticsService;

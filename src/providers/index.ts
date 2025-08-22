@@ -8,5 +8,5 @@ import emotionalStateProviderImport from "./emotional-state-provider";
 
 export const nubiProviders = [
   enhancedContextProviderImport,
-  emotionalStateProviderImport
+  emotionalStateProviderImport,
 ];

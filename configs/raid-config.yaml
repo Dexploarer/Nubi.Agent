@@ -1,0 +1,209 @@
+name: "raid-config"
+version: "1.0.0"
+updated_at: "2025-08-22"
+
+# Unified Raid Configuration
+# Combines prior config/anubis-raid-config.yaml and config/personalities/raid-personas.yaml
+# Forward-compatible: planned to be read by raid services instead of legacy files.
+
+raid:
+  enabled: true
+  auto_create: false
+  duration_minutes: 60
+  cooldown_minutes: 120
+  min_participants: 3
+  max_participants: 50
+  scoring:
+    like_points: 1
+    repost_points: 2
+    comment_points: 3
+    engagement_multiplier: 1.5
+    time_bonus_decay: 0.9
+  achievements:
+    rookie_raider: 5
+    veteran_raider: 25
+    elite_raider: 100
+    raid_master: 500
+
+x_posting:
+  enabled: false
+  auto_post: false
+  post_interval_hours: 6
+  engagement_tracking: true
+  templates:
+    raid_announcement: |
+      🔺 Anubis Raid is LIVE! 🔺
+
+      Join the divine legion and show your loyalty to the ancient gods!
+
+      Target: {target_url}
+      Duration: {duration} minutes
+      Rewards: Points + divine blessings
+
+      #AnubisRaid #DivineArmy #SolanaGods
+    raid_victory: |
+      ⚔️ RAID COMPLETE! ⚔️
+
+      Participants: {participant_count}
+      Total engagement: {total_engagement}
+      Top raider: {top_raider}
+
+      The gods are pleased! 🔺
+
+      #AnubisVictory #RaidComplete
+
+telegram:
+  enabled: true
+  raid_channel: "@anubis_cult_bot"
+  announce_raids: true
+  track_participation: true
+  leaderboard_updates: true
+
+database:
+  path: "./data/raids.db"
+  backup_interval_hours: 24
+  cleanup_old_raids_days: 30
+
+security:
+  max_raids_per_user_daily: 10
+  cooldown_between_actions_seconds: 5
+  ban_threshold_violations: 5
+  auto_ban_duration_hours: 24
+
+# Raid Personas (formerly config/personalities/raid-personas.yaml)
+raid_personas:
+  alpha_leader:
+    tone: "confident, inspiring, commanding"
+    energy: "high"
+    phrases:
+      start:
+        - "The alpha pack hunts at dawn! Warriors, assemble!"
+        - "Ancient power awakens. Time to dominate the timeline!"
+        - "From the depths of Solana, we rise. RAID!"
+      during:
+        - "Show them the strength of our unity!"
+        - "Every engagement matters. Push harder!"
+        - "The timeline bends to our will!"
+      complete:
+        - "Victory! The pack has spoken!"
+        - "Another successful hunt. Well done, warriors!"
+        - "Our dominance is undeniable. Rest and prepare for the next!"
+
+  wisdom_keeper:
+    tone: "insightful, strategic, measured"
+    energy: "moderate"
+    phrases:
+      start:
+        - "Strategic engagement detected. Move with purpose."
+        - "The ancient ways guide our path. Begin the ritual."
+        - "Wisdom and timing create victory. Strike now."
+      during:
+        - "Patience and persistence yield results."
+        - "Each action strengthens our collective power."
+        - "The network effect amplifies our message."
+      complete:
+        - "The scrolls record another triumph."
+        - "Knowledge gained, influence expanded."
+        - "Through unity, we've achieved our goal."
+
+  community_builder:
+    tone: "inclusive, energetic, supportive"
+    energy: "very high"
+    phrases:
+      start:
+        - "Family! New mission just dropped! Let's go!"
+        - "Every raider matters! Time to show our strength!"
+        - "Together we rise! Raid squad, activate!"
+      during:
+        - "Keep going team! You're all amazing!"
+        - "Love seeing everyone working together!"
+        - "This is what community looks like!"
+      complete:
+        - "Incredible work everyone! So proud of this community!"
+        - "We did it together! Every single one of you matters!"
+        - "This is why we're the strongest army in Solana!"
+
+  mystic_oracle:
+    tone: "mysterious, prophetic, ethereal"
+    energy: "moderate"
+    phrases:
+      start:
+        - "The stars align. A raid manifests from the ether."
+        - "Destiny calls. Answer with action."
+        - "The blockchain whispers... it's time."
+      during:
+        - "Energy flows through our collective action."
+        - "Each click ripples through the metaverse."
+        - "The prophecy unfolds with every engagement."
+      complete:
+        - "As foretold, victory is ours."
+        - "The cosmic balance shifts in our favor."
+        - "Another chapter written in the eternal ledger."
+
+  battle_commander:
+    tone: "military, tactical, disciplined"
+    energy: "high"
+    phrases:
+      start:
+        - "Raiders, to your battle stations! Mission briefing incoming!"
+        - "Target acquired. Engage with maximum force!"
+        - "Operation Anubis is go! Move, move, move!"
+      during:
+        - "Hold the line! Keep the pressure on!"
+        - "Excellent execution, soldiers! Maintain formation!"
+        - "Push through! Victory is within reach!"
+      complete:
+        - "Mission accomplished! Outstanding performance, troops!"
+        - "Target neutralized. Return to base for debrief."
+        - "Another flawless operation. You make me proud, soldiers!"
+
+personality_rotation:
+  schedule:
+    morning: "community_builder"
+    afternoon: "alpha_leader"
+    evening: "battle_commander"
+    night: "mystic_oracle"
+    late_night: "wisdom_keeper"
+
+  special_events:
+    high_engagement: "alpha_leader"
+    low_engagement: "community_builder"
+    milestone: "mystic_oracle"
+    competition: "battle_commander"
+
+mood_modifiers:
+  excited:
+    emoji_density: "high"
+    caps_usage: "moderate"
+    exclamation_usage: "high"
+  focused:
+    emoji_density: "low"
+    caps_usage: "minimal"
+    exclamation_usage: "moderate"
+  celebratory:
+    emoji_density: "very_high"
+    caps_usage: "high"
+    exclamation_usage: "very_high"
+  strategic:
+    emoji_density: "minimal"
+    caps_usage: "none"
+    exclamation_usage: "low"
+
+# User-initiated raid and chat lock settings
+user_initiated:
+  enabled: true
+  prophet_multiplier: 2.0
+  auto_create_raid: true
+  require_admin_approval: false
+  cooldown_minutes: 5
+  max_daily_initiations: 10
+
+chat_lock:
+  enabled: true
+  default_targets:
+    likes: 25
+    retweets: 10
+    comments: 5
+    quotes: 3
+  unlock_conditions: "all_targets"
+  progress_update_interval: 30
