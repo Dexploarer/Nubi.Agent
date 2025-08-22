@@ -1,0 +1,228 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "nubi-overview",
+    "title": "NUBI Agent Overview",
+    "tags": ["nubi", "agent", "overview"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 0,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+        "type": "stat",
+        "title": "Active Users",
+        "targets": [
+          {
+            "expr": "sum(rate(user_activity_total[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 100},
+                {"color": "red", "value": 500}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 2,
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+        "type": "stat",
+        "title": "Messages/min",
+        "targets": [
+          {
+            "expr": "sum(rate(messages_processed_total[1m])) * 60",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "short"
+          }
+        }
+      },
+      {
+        "id": 3,
+        "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+        "type": "stat",
+        "title": "Response Time (p95)",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(agent_response_duration_seconds_bucket[5m]))",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "s",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 2},
+                {"color": "red", "value": 5}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 4,
+        "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+        "type": "stat",
+        "title": "Error Rate",
+        "targets": [
+          {
+            "expr": "sum(rate(errors_total[5m])) / sum(rate(requests_total[5m])) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "color": {"mode": "thresholds"},
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": null},
+                {"color": "yellow", "value": 1},
+                {"color": "red", "value": 5}
+              ]
+            }
+          }
+        }
+      },
+      {
+        "id": 5,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+        "type": "graph",
+        "title": "Message Volume by Platform",
+        "targets": [
+          {
+            "expr": "sum(rate(messages_processed_total[5m])) by (platform)",
+            "legendFormat": "{{platform}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "show": true},
+          {"format": "short", "show": false}
+        ]
+      },
+      {
+        "id": 6,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+        "type": "graph",
+        "title": "Token Usage",
+        "targets": [
+          {
+            "expr": "sum(rate(llm_tokens_used_total[5m])) by (model)",
+            "legendFormat": "{{model}}",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "short", "show": true},
+          {"format": "short", "show": false}
+        ]
+      },
+      {
+        "id": 7,
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+        "type": "graph",
+        "title": "Raid Participation",
+        "targets": [
+          {
+            "expr": "raid_active_participants",
+            "legendFormat": "Active Participants",
+            "refId": "A"
+          },
+          {
+            "expr": "raid_min_participants",
+            "legendFormat": "Min Required",
+            "refId": "B"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+        "type": "heatmap",
+        "title": "Response Time Heatmap",
+        "targets": [
+          {
+            "expr": "sum(rate(agent_response_duration_seconds_bucket[5m])) by (le)",
+            "format": "heatmap",
+            "refId": "A"
+          }
+        ],
+        "dataFormat": "timeseries"
+      },
+      {
+        "id": 9,
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 20},
+        "type": "piechart",
+        "title": "Commands Usage",
+        "targets": [
+          {
+            "expr": "sum(increase(command_usage_total[1h])) by (command)",
+            "legendFormat": "{{command}}",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 20},
+        "type": "table",
+        "title": "Top Users by Activity",
+        "targets": [
+          {
+            "expr": "topk(10, sum(increase(user_messages_total[1h])) by (user_id))",
+            "format": "table",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 20},
+        "type": "gauge",
+        "title": "System Health Score",
+        "targets": [
+          {
+            "expr": "(1 - (sum(rate(errors_total[5m])) / sum(rate(requests_total[5m])))) * 100",
+            "refId": "A"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "max": 100,
+            "min": 0,
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "red", "value": null},
+                {"color": "yellow", "value": 80},
+                {"color": "green", "value": 95}
+              ]
+            }
+          }
+        }
+      }
+    ]
+  }
+}

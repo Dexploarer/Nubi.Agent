@@ -1,0 +1,282 @@
+import { eq, and, desc, gte, lte, sql } from "drizzle-orm";
+import { type PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import { UUID, logger } from "@elizaos/core";
+import { nubi_sessions, nubi_session_messages } from "../schemas/elizaos-schemas";
+
+export interface NubiSession {
+  id: UUID;
+  agentId: UUID;
+  userId: UUID;
+  roomId?: UUID;
+  status: string;
+  timeoutMinutes: number;
+  autoRenew: boolean;
+  expiresAt: Date;
+  lastActivity: Date;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SessionMessage {
+  id: UUID;
+  sessionId: UUID;
+  senderId: UUID;
+  senderType: "user" | "agent";
+  content: any;
+  sequenceNumber: number;
+  timestamp: Date;
+  metadata?: Record<string, any>;
+}
+
+export class NubiSessionsRepository {
+  constructor(private readonly db: PostgresJsDatabase<any>) {}
+
+  /**
+   * Create a new session
+   */
+  async create(params: {
+    agentId: UUID;
+    userId: UUID;
+    roomId?: UUID;
+    timeoutMinutes?: number;
+    autoRenew?: boolean;
+    metadata?: Record<string, any>;
+  }): Promise<NubiSession> {
+    const timeoutMinutes = params.timeoutMinutes || 60;
+    const expiresAt = new Date(Date.now() + timeoutMinutes * 60 * 1000);
+
+    const [created] = await this.db
+      .insert(nubi_sessions)
+      .values({
+        agent_id: params.agentId,
+        user_id: params.userId,
+        room_id: params.roomId,
+        status: "active",
+        timeout_minutes: timeoutMinutes,
+        auto_renew: params.autoRenew || false,
+        expires_at: expiresAt,
+        last_activity: new Date(),
+        metadata: params.metadata || {},
+        created_at: new Date(),
+        updated_at: new Date(),
+      })
+      .returning();
+
+    return this.mapToNubiSession(created);
+  }
+
+  /**
+   * Find session by ID
+   */
+  async findById(id: UUID): Promise<NubiSession | null> {
+    const result = await this.db
+      .select()
+      .from(nubi_sessions)
+      .where(eq(nubi_sessions.id, id))
+      .limit(1);
+
+    return result.length > 0 ? this.mapToNubiSession(result[0]) : null;
+  }
+
+  /**
+   * Find active sessions for a user
+   */
+  async findActiveByUser(
+    userId: UUID,
+    agentId?: UUID
+  ): Promise<NubiSession[]> {
+    let query = this.db
+      .select()
+      .from(nubi_sessions)
+      .where(
+        and(
+          eq(nubi_sessions.user_id, userId),
+          eq(nubi_sessions.status, "active"),
+          gte(nubi_sessions.expires_at, new Date())
+        )
+      );
+
+    if (agentId) {
+      query = query.where(eq(nubi_sessions.agent_id, agentId));
+    }
+
+    const results = await query.orderBy(desc(nubi_sessions.last_activity));
+    return results.map((r) => this.mapToNubiSession(r));
+  }
+
+  /**
+   * Update session activity
+   */
+  async updateActivity(id: UUID): Promise<NubiSession | null> {
+    const [updated] = await this.db
+      .update(nubi_sessions)
+      .set({
+        last_activity: new Date(),
+        updated_at: new Date(),
+      })
+      .where(eq(nubi_sessions.id, id))
+      .returning();
+
+    return updated ? this.mapToNubiSession(updated) : null;
+  }
+
+  /**
+   * Renew session
+   */
+  async renew(id: UUID, additionalMinutes?: number): Promise<NubiSession | null> {
+    const session = await this.findById(id);
+    if (!session) return null;
+
+    const extensionMinutes = additionalMinutes || session.timeoutMinutes;
+    const newExpiresAt = new Date(Date.now() + extensionMinutes * 60 * 1000);
+
+    const [updated] = await this.db
+      .update(nubi_sessions)
+      .set({
+        expires_at: newExpiresAt,
+        last_activity: new Date(),
+        updated_at: new Date(),
+      })
+      .where(eq(nubi_sessions.id, id))
+      .returning();
+
+    return updated ? this.mapToNubiSession(updated) : null;
+  }
+
+  /**
+   * Expire session
+   */
+  async expire(id: UUID): Promise<boolean> {
+    const [updated] = await this.db
+      .update(nubi_sessions)
+      .set({
+        status: "expired",
+        updated_at: new Date(),
+      })
+      .where(eq(nubi_sessions.id, id))
+      .returning();
+
+    return !!updated;
+  }
+
+  /**
+   * Add message to session
+   */
+  async addMessage(params: {
+    sessionId: UUID;
+    senderId: UUID;
+    senderType: "user" | "agent";
+    content: any;
+    metadata?: Record<string, any>;
+  }): Promise<SessionMessage> {
+    // Get next sequence number
+    const [lastMessage] = await this.db
+      .select({ max_seq: sql`MAX(sequence_number)` })
+      .from(nubi_session_messages)
+      .where(eq(nubi_session_messages.session_id, params.sessionId));
+
+    const nextSeq = (lastMessage?.max_seq || 0) + 1 as any;
+
+    const [created] = await this.db
+      .insert(nubi_session_messages)
+      .values({
+        session_id: params.sessionId,
+        sender_id: params.senderId,
+        sender_type: params.senderType,
+        content: params.content,
+        sequence_number: nextSeq,
+        timestamp: new Date(),
+        metadata: params.metadata || {},
+      })
+      .returning();
+
+    // Update session activity
+    await this.updateActivity(params.sessionId);
+
+    return this.mapToSessionMessage(created);
+  }
+
+  /**
+   * Get session messages
+   */
+  async getMessages(
+    sessionId: UUID,
+    limit = 100,
+    beforeSequence?: number
+  ): Promise<SessionMessage[]> {
+    let query = this.db
+      .select()
+      .from(nubi_session_messages)
+      .where(eq(nubi_session_messages.session_id, sessionId));
+
+    if (beforeSequence !== undefined) {
+      query = query.where(
+        sql`${nubi_session_messages.sequence_number} < ${beforeSequence}`
+      );
+    }
+
+    const results = await query
+      .orderBy(desc(nubi_session_messages.sequence_number))
+      .limit(limit);
+
+    return results.map((r) => this.mapToSessionMessage(r));
+  }
+
+  /**
+   * Clean up expired sessions
+   */
+  async cleanupExpired(): Promise<number> {
+    const result = await this.db
+      .update(nubi_sessions)
+      .set({
+        status: "expired",
+        updated_at: new Date(),
+      })
+      .where(
+        and(
+          eq(nubi_sessions.status, "active"),
+          lte(nubi_sessions.expires_at, new Date())
+        )
+      )
+      .returning();
+
+    return result.length;
+  }
+
+  /**
+   * Map database row to domain type
+   */
+  private mapToNubiSession(row: any): NubiSession {
+    return {
+      id: row.id as UUID,
+      agentId: row.agent_id as UUID,
+      userId: row.user_id as UUID,
+      roomId: row.room_id as UUID,
+      status: row.status,
+      timeoutMinutes: row.timeout_minutes,
+      autoRenew: row.auto_renew,
+      expiresAt: row.expires_at,
+      lastActivity: row.last_activity,
+      metadata: row.metadata || {},
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  /**
+   * Map message row to domain type
+   */
+  private mapToSessionMessage(row: any): SessionMessage {
+    return {
+      id: row.id as UUID,
+      sessionId: row.session_id as UUID,
+      senderId: row.sender_id as UUID,
+      senderType: row.sender_type as "user" | "agent",
+      content: row.content,
+      sequenceNumber: row.sequence_number,
+      timestamp: row.timestamp,
+      metadata: row.metadata || {},
+    };
+  }
+}

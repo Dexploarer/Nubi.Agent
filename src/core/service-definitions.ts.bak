@@ -1,0 +1,192 @@
+import { Service, type IAgentRuntime } from "@elizaos/core";
+import SupabaseServiceManager from "./supabase-service-manager";
+
+// Base service classes aligned with runtime DatabaseAdapter and optional Redis
+export class BaseService extends Service {
+  capabilityDescription = "NUBI base service";
+  protected database?: any; // DatabaseAdapter from runtime
+  protected redisClient?: any;
+
+  async initialize(runtime: IAgentRuntime): Promise<void> {
+    // Override in subclasses
+  }
+
+  async stop(): Promise<void> {
+    // no-op by default
+  }
+}
+
+export class CacheService extends BaseService {}
+export class VectorService extends BaseService {}
+export class MemoryService extends BaseService {}
+export class MCPService extends BaseService {}
+
+// Service definitions for NUBI initialization aligned with elizaOS SQL plugin
+export const SERVICE_DEFINITIONS: SupabaseServiceManager[] = [
+  // Core infrastructure services (highest priority)
+  {
+    name: 'logger',
+    service: class LoggerService extends BaseService {
+      async initialize(): Promise<void> {/* no-op */}
+    },
+    dependencies: [],
+    priority: 1,
+    required: true,
+    timeout: 5000,
+    requiresDatabase: false
+  },
+
+  {
+    name: 'config',
+    service: class ConfigService extends BaseService {
+      async initialize(): Promise<void> {/* no-op */}
+    },
+    dependencies: ['logger'],
+    priority: 2,
+    required: true,
+    timeout: 5000,
+    requiresDatabase: false
+  },
+
+  // Cache service (preferred Redis, fallback to DB cache table via runtime adapter)
+  {
+    name: 'cache',
+    service: class RuntimeCacheService extends CacheService {
+      async initialize(): Promise<void> {
+        if (this.redisClient) {
+          await this.redisClient.ping();
+          return;
+        }
+        if (this.database) {
+          // Rely on @elizaos/plugin-sql cache table
+          // We attempt a lightweight read via runtime APIs; adapters handle schema
+          // If table is missing, the SQL plugin's migration should create it
+        }
+      }
+    },
+    dependencies: ['config'],
+    priority: 3,
+    required: false,
+    timeout: 10000,
+    requiresDatabase: true
+  },
+
+  // Memory services (use runtime.getMemories which abstracts the adapter)
+  {
+    name: 'memory',
+    service: class RuntimeMemoryService extends MemoryService {
+      async initialize(runtime: IAgentRuntime): Promise<void> {
+        // Health probe via runtime API
+        await runtime.getMemories({ roomId: "00000000-0000-0000-0000-000000000000", count: 1, unique: true, tableName: "memories" });
+      }
+    },
+    dependencies: ['config', 'cache'],
+    priority: 4,
+    required: true,
+    timeout: 15000,
+    requiresDatabase: true
+  },
+
+  // Vector/Embedding service – defer to runtime or plugin-provided RPCs if present
+  {
+    name: 'embeddings',
+    service: class RuntimeEmbeddingService extends VectorService {
+      async initialize(): Promise<void> {
+        // No hard requirement; warn if vector search not configured
+        // Vector ops in elizaOS are handled via embeddings table or provider
+      }
+    },
+    dependencies: ['config', 'cache', 'memory'],
+    priority: 5,
+    required: false,
+    timeout: 15000,
+    requiresDatabase: true
+  },
+
+  // MCP Tool services
+  {
+    name: 'mcp-tools',
+    service: class MCPToolService extends MCPService {
+      async initialize(): Promise<void> { /* setup external tools */ }
+    },
+    dependencies: ['config', 'cache'],
+    priority: 6,
+    required: false,
+    timeout: 20000,
+    requiresDatabase: false
+  },
+
+  // AI/LLM services
+  {
+    name: 'llm-provider',
+    service: class LLMProviderService extends BaseService {
+      async initialize(): Promise<void> { /* connect providers */ }
+    },
+    dependencies: ['config', 'cache'],
+    priority: 7,
+    required: true,
+    timeout: 15000,
+    requiresDatabase: false
+  },
+
+  // Character/Agent services
+  {
+    name: 'character',
+    service: class CharacterService extends BaseService {
+      async initialize(): Promise<void> { /* load character config */ }
+    },
+    dependencies: ['config', 'memory', 'llm-provider'],
+    priority: 8,
+    required: true,
+    timeout: 10000,
+    requiresDatabase: false
+  },
+
+  // Action/Behavior services
+  {
+    name: 'actions',
+    service: class ActionService extends BaseService {
+      async initialize(): Promise<void> { /* register actions */ }
+    },
+    dependencies: ['config', 'character', 'mcp-tools', 'memory'],
+    priority: 9,
+    required: true,
+    timeout: 15000,
+    requiresDatabase: false
+  },
+
+  // Communication services
+  {
+    name: 'discord',
+    service: class DiscordService extends BaseService {
+      async initialize(): Promise<void> {
+        const token = process.env.DISCORD_APPLICATION_ID;
+        if (!token) throw new Error('Discord service requires DISCORD_APPLICATION_ID');
+      }
+    },
+    dependencies: ['config', 'character', 'actions', 'memory', 'cache'],
+    priority: 10,
+    required: false,
+    timeout: 20000,
+    requiresDatabase: false
+  },
+
+  {
+    name: 'telegram',
+    service: class TelegramService extends BaseService {
+      async initialize(): Promise<void> {
+        const token = process.env.TELEGRAM_BOT_TOKEN;
+        if (!token) throw new Error('Telegram service requires TELEGRAM_BOT_TOKEN');
+      }
+    },
+    dependencies: ['config', 'character', 'actions', 'memory', 'cache'],
+    priority: 11,
+    required: false,
+    timeout: 20000,
+    requiresDatabase: false
+  }
+];
+
+export function getServicesByPriority(): SupabaseServiceManager[] {
+  return [...SERVICE_DEFINITIONS].sort((a, b) => a.priority - b.priority);
+}

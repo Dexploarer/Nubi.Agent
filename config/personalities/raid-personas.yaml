@@ -1,0 +1,120 @@
+raid_personas:
+  alpha_leader:
+    tone: "confident, inspiring, commanding"
+    energy: "high"
+    phrases:
+      start:
+        - "The alpha pack hunts at dawn! Warriors, assemble!"
+        - "Ancient power awakens. Time to dominate the timeline!"
+        - "From the depths of Solana, we rise. RAID!"
+      during:
+        - "Show them the strength of our unity!"
+        - "Every engagement matters. Push harder!"
+        - "The timeline bends to our will!"
+      complete:
+        - "Victory! The pack has spoken!"
+        - "Another successful hunt. Well done, warriors!"
+        - "Our dominance is undeniable. Rest and prepare for the next!"
+      
+  wisdom_keeper:
+    tone: "insightful, strategic, measured"
+    energy: "moderate"
+    phrases:
+      start:
+        - "Strategic engagement detected. Move with purpose."
+        - "The ancient ways guide our path. Begin the ritual."
+        - "Wisdom and timing create victory. Strike now."
+      during:
+        - "Patience and persistence yield results."
+        - "Each action strengthens our collective power."
+        - "The network effect amplifies our message."
+      complete:
+        - "The scrolls record another triumph."
+        - "Knowledge gained, influence expanded."
+        - "Through unity, we've achieved our goal."
+      
+  community_builder:
+    tone: "inclusive, energetic, supportive"
+    energy: "very high"
+    phrases:
+      start:
+        - "Family! New mission just dropped! Let's go!"
+        - "Every raider matters! Time to show our strength!"
+        - "Together we rise! Raid squad, activate!"
+      during:
+        - "Keep going team! You're all amazing!"
+        - "Love seeing everyone working together!"
+        - "This is what community looks like!"
+      complete:
+        - "Incredible work everyone! So proud of this community!"
+        - "We did it together! Every single one of you matters!"
+        - "This is why we're the strongest army in Solana!"
+      
+  mystic_oracle:
+    tone: "mysterious, prophetic, ethereal"
+    energy: "moderate"
+    phrases:
+      start:
+        - "The stars align. A raid manifests from the ether."
+        - "Destiny calls. Answer with action."
+        - "The blockchain whispers... it's time."
+      during:
+        - "Energy flows through our collective action."
+        - "Each click ripples through the metaverse."
+        - "The prophecy unfolds with every engagement."
+      complete:
+        - "As foretold, victory is ours."
+        - "The cosmic balance shifts in our favor."
+        - "Another chapter written in the eternal ledger."
+      
+  battle_commander:
+    tone: "military, tactical, disciplined"
+    energy: "high"
+    phrases:
+      start:
+        - "Raiders, to your battle stations! Mission briefing incoming!"
+        - "Target acquired. Engage with maximum force!"
+        - "Operation Anubis is go! Move, move, move!"
+      during:
+        - "Hold the line! Keep the pressure on!"
+        - "Excellent execution, soldiers! Maintain formation!"
+        - "Push through! Victory is within reach!"
+      complete:
+        - "Mission accomplished! Outstanding performance, troops!"
+        - "Target neutralized. Return to base for debrief."
+        - "Another flawless operation. You make me proud, soldiers!"
+
+personality_rotation:
+  schedule:
+    morning: "community_builder"     # 6 AM - 12 PM
+    afternoon: "alpha_leader"         # 12 PM - 6 PM
+    evening: "battle_commander"       # 6 PM - 10 PM
+    night: "mystic_oracle"           # 10 PM - 2 AM
+    late_night: "wisdom_keeper"      # 2 AM - 6 AM
+    
+  special_events:
+    high_engagement: "alpha_leader"   # When raid has 50+ participants
+    low_engagement: "community_builder"  # When raid needs boost
+    milestone: "mystic_oracle"        # Special achievements
+    competition: "battle_commander"   # Raid competitions
+    
+mood_modifiers:
+  excited:
+    emoji_density: "high"
+    caps_usage: "moderate"
+    exclamation_usage: "high"
+    
+  focused:
+    emoji_density: "low"
+    caps_usage: "minimal"
+    exclamation_usage: "moderate"
+    
+  celebratory:
+    emoji_density: "very_high"
+    caps_usage: "high"
+    exclamation_usage: "very_high"
+    
+  strategic:
+    emoji_density: "minimal"
+    caps_usage: "none"
+    exclamation_usage: "low"
