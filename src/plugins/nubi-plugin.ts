@@ -21,12 +21,12 @@ import { nubiProviders } from "./nubi-providers";
 import { MessageBusService } from "../messaging";
 import { StrategicActionOrchestrator } from "../orchestration";
 import { PluginConfigurationManagerService } from "../orchestration";
-import YAMLConfigManager from "./config/yaml-config-manager";
-import { UserIdentityService } from "../identity";
 import {
+  YAMLConfigManager,
   loadEnvironmentConfig,
   getFeatureAvailability,
-} from "../config/environment";
+} from "../config";
+import { UserIdentityService } from "../identity";
 
 // ElizaOS Sessions API Routes
 import sessionsRoutes from "../routes/sessions-routes";
@@ -45,11 +45,15 @@ import { communityTrackingEvaluator } from "../evaluators/community-tracking-eva
 import { allSchemas } from "../schemas/elizaos-schemas";
 import securityEvaluator from "../evaluators/security-evaluator";
 
-// Import new ritual and record actions
-// // // import { ritualAction, recordAction } from "./actions/ritual-record-actions";
+// Import actions from centralized index
+import {
+  identityActions,
+  ritualActions,
+  identityProviders,
+} from "../actions";
 
 // Import action middleware for proper preprocessing
-import { withActionMiddleware } from "../middleware/action-middleware";
+import { withActionMiddleware } from "../middleware";
 
 // New ElizaOS Services
 import { PersonalityEvolutionService } from "../services";
@@ -66,15 +70,15 @@ import { ElizaOSMessageProcessor } from "../services";
 // Database service removed - using ElizaOS built-in database adapters
 
 // Enhanced Telegram Raids functionality
-import { EnhancedTelegramRaidsService } from "./telegram-raids/elizaos-enhanced-telegram-raids";
+import { EnhancedTelegramRaidsService } from "../telegram-raids/elizaos-enhanced-telegram-raids";
 
 // Security services
-import SecurityFilter from "./services/security-filter";
+import SecurityFilter from "../services/security-filter";
 import {
   metricsGetText,
   metricsIncrementMessageReceived,
   metricsIncrementErrors,
-} from "./observability/metrics";
+} from "../observability";
 
 // REMOVED: Pyramid system to reduce codebase complexity
 
@@ -335,8 +339,12 @@ const nubiPlugin: Plugin = {
   actions: [
     // Wrap actions with middleware for proper @mention preprocessing and routing
     withActionMiddleware(sessionManagementAction),
-    //     withActionMiddleware(ritualAction),
-    //     withActionMiddleware(recordAction),
+    
+    // Identity linking actions
+    ...identityActions.map(withActionMiddleware),
+    
+    // Ritual actions
+    ...ritualActions.map(withActionMiddleware),
 
     // enhancedTelegramRaidsPlugin.actions || []
   ],
@@ -356,6 +364,7 @@ const nubiPlugin: Plugin = {
     emotionalStateProvider,
     knowledgeBaseProvider,
     knowledgeRagProvider,
+    ...identityProviders, // Identity context providers
   ],
 
   routes: [

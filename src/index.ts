@@ -10,6 +10,11 @@ import { nubiCharacter } from "./character";
 import { nubiPlugin, clickhouseAnalyticsPlugin } from "./plugins";
 import { createNubiApplication, createAppConfig } from "./app";
 
+// Import middleware, models, and observability
+import * as middleware from "./middleware";
+import * as models from "./models";
+import * as observability from "./observability";
+
 // Remove explicit telegram plugin import to avoid duplicate registration
 // The character's plugins array handles telegram via `@elizaos/plugin-telegram`
 // import { ProjectStarterTestSuite } from "./__tests__/e2e/project-starter.e2e";
@@ -104,5 +109,8 @@ const project: Project = {
 // Export from modular structure
 export { nubiCharacter as character } from "./character";
 export { nubiCharacter } from "./character";
+
+// Export middleware, models, and observability modules
+export { middleware, models, observability };
 
 export default project;

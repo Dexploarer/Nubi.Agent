@@ -50,7 +50,7 @@
     "@elizaos/plugin-twitter": "^1.2.21",
     "@elizaos/plugin-video-understanding": "^1.0.2",
     "@elizaos/plugin-web-search": "^0.25.6-alpha.1",
-    "@promptordie/xmcpx": "^1.0.0",
+    "@promptordie/xmcpx": "^1.0.2",
     "@supabase/supabase-js": "^2.56.0",
     "@tanstack/react-query": "^5.29.0",
     "@types/js-yaml": "^4.0.9",

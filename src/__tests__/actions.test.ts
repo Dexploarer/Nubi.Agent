@@ -16,7 +16,7 @@ import {
   testErrorHandling,
 } from "./test-utils";
 import type { Action, HandlerCallback } from "@elizaos/core";
-import plugin from "../plugin";
+import plugin from "../plugins/nubi-plugin";
 
 describe("Plugin Actions", () => {
   describe("NUBI_RITUAL Action", () => {

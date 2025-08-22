@@ -2,6 +2,12 @@
   "knowledge": {
     "files": [
       {
+        "path": "src/knowledge/index.md",
+        "title": "Knowledge Base Index",
+        "description": "Comprehensive index and navigation for all knowledge content",
+        "tags": ["index", "navigation", "overview", "organization"]
+      },
+      {
         "path": "src/knowledge/anubis-chat-platform.md",
         "title": "Anubis.Chat Platform Knowledge",
         "description": "Core platform overview, features, and competitive advantages",
@@ -36,6 +42,54 @@
         "title": "Agent Capabilities",
         "description": "AI agent capabilities and limitations",
         "tags": ["agent", "capabilities", "ai"]
+      },
+      {
+        "path": "src/knowledge/solana-ecosystem.md",
+        "title": "Solana Ecosystem Knowledge",
+        "description": "Complete Solana knowledge, DeFi, NFTs, protocols, and ecosystem",
+        "tags": ["solana", "defi", "nft", "blockchain", "crypto", "protocols"]
+      },
+      {
+        "path": "src/knowledge/web3-culture.md",
+        "title": "Web3 Culture and Community",
+        "description": "Crypto culture, memes, community dynamics, and trends",
+        "tags": ["web3", "culture", "memes", "community", "crypto", "trends"]
+      },
+      {
+        "path": "src/knowledge/market-analysis.md",
+        "title": "Market Analysis and Trading",
+        "description": "Trading psychology, market cycles, technical analysis, and strategies",
+        "tags": ["trading", "market", "analysis", "psychology", "technical", "strategies"]
+      },
+      {
+        "path": "src/knowledge/community-management.md",
+        "title": "Community Management",
+        "description": "Community building, moderation, engagement, and best practices",
+        "tags": ["community", "management", "moderation", "engagement", "building"]
+      },
+      {
+        "path": "src/knowledge/development-practices.md",
+        "title": "Modern Development Practices",
+        "description": "Development methodologies, best practices, tools, and standards",
+        "tags": ["development", "practices", "methodologies", "tools", "standards"]
+      },
+      {
+        "path": "src/knowledge/security-privacy.md",
+        "title": "Web3 Security and Privacy",
+        "description": "Security best practices, privacy protection, and risk management",
+        "tags": ["security", "privacy", "web3", "risk", "protection", "best-practices"]
+      },
+      {
+        "path": "src/knowledge/content-creation.md",
+        "title": "Content Creation and Social Media",
+        "description": "Social media strategy, content creation, and engagement",
+        "tags": ["content", "social-media", "creation", "strategy", "engagement"]
+      },
+      {
+        "path": "src/knowledge/business-strategy.md",
+        "title": "Business Strategy and Startup",
+        "description": "Startup knowledge, growth strategies, monetization, and planning",
+        "tags": ["business", "strategy", "startup", "growth", "monetization", "planning"]
       }
     ],
     "settings": {

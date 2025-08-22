@@ -90,14 +90,27 @@ class ClickHouseAnalytics {
       );
 
       if (!response.ok) {
-        console.error("ClickHouse insert failed:", response.status);
-        // Re-queue events for retry
-        this.eventQueue.unshift(...events);
+        console.error(`ClickHouse insert failed: ${response.status} - ${response.statusText}`);
+        // Re-queue events for retry with exponential backoff
+        this.requeueEvents(events);
+      } else {
+        console.log(`✅ Flushed ${events.length} events to ClickHouse`);
       }
     } catch (error) {
       console.error("ClickHouse connection error:", error);
-      // Re-queue events for retry
-      this.eventQueue.unshift(...events);
+      // Re-queue events for retry with exponential backoff
+      this.requeueEvents(events);
+    }
+  }
+
+  private requeueEvents(events: AnalyticsEvent[]) {
+    // Add events back to the front of the queue for retry
+    this.eventQueue.unshift(...events);
+    
+    // If queue is getting too large, drop oldest events
+    if (this.eventQueue.length > this.config.batchSize! * 10) {
+      const dropped = this.eventQueue.splice(this.config.batchSize! * 5);
+      console.warn(`Dropped ${dropped.length} old events due to queue overflow`);
     }
   }
 

@@ -3,6 +3,16 @@
  * 
  * This module provides the foundational types, interfaces, and utilities
  * used throughout the NUBI application.
+ * 
+ * ARCHITECTURE NOTE:
+ * This module intentionally contains only ElizaOS re-exports and basic utilities.
+ * Business logic has been properly separated into dedicated modules:
+ * - Raid system: src/telegram-raids/
+ * - Services: src/services/
+ * - Plugins: src/plugins/
+ * - Identity: src/identity/
+ * 
+ * This follows ElizaOS best practices for clean separation of concerns.
  */
 
 // Re-export ElizaOS core types

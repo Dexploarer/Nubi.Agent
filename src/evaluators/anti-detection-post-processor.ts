@@ -15,6 +15,12 @@ import {
  * Runs AFTER ElizaOS generates responses to apply humanization patterns.
  *
  * Original location: anti-detection-system.ts (610 lines)
+ * 
+ * OPTIMIZATIONS:
+ * - LRU cache for conversation memories with automatic cleanup
+ * - Reduced memory footprint with bounded collections
+ * - Improved performance with pre-compiled regex patterns
+ * - Better error handling and graceful degradation
  */
 
 interface ConversationMemory {
@@ -24,7 +30,129 @@ interface ConversationMemory {
   lastResponseTime: number;
   messageCount: number;
   formality: number; // 0-1, decreases over time
+  accessCount: number; // For LRU tracking
 }
+
+// Optimized conversation memory storage with LRU eviction
+class ConversationMemoryManager {
+  private memories = new Map<string, ConversationMemory>();
+  private maxMemories = 1000; // Prevent memory leaks
+  private cleanupInterval = 300000; // 5 minutes
+  private lastCleanup = Date.now();
+
+  constructor() {
+    // Schedule periodic cleanup
+    setInterval(() => this.cleanup(), this.cleanupInterval);
+  }
+
+  get(roomId: string): ConversationMemory {
+    // Cleanup if needed
+    if (Date.now() - this.lastCleanup > this.cleanupInterval) {
+      this.cleanup();
+    }
+
+    if (!this.memories.has(roomId)) {
+      // Evict least recently used if at capacity
+      if (this.memories.size >= this.maxMemories) {
+        this.evictLRU();
+      }
+
+      this.memories.set(roomId, {
+        recentTopics: [],
+        contradictions: new Map(),
+        personalReferences: [],
+        lastResponseTime: 0,
+        messageCount: 0,
+        formality: 0.7,
+        accessCount: 1,
+      });
+    } else {
+      // Update access count for LRU tracking
+      const memory = this.memories.get(roomId)!;
+      memory.accessCount++;
+    }
+
+    return this.memories.get(roomId)!;
+  }
+
+  update(roomId: string, text: string): void {
+    const memory = this.get(roomId);
+
+    memory.messageCount++;
+    memory.lastResponseTime = Date.now();
+
+    // Decrease formality over time
+    memory.formality = Math.max(0.2, memory.formality - 0.05);
+
+    // Track topics with bounded collection
+    const topics = ["solana", "defi", "nft", "blockchain", "crypto"];
+    for (const topic of topics) {
+      if (text.toLowerCase().includes(topic)) {
+        memory.recentTopics.push(topic);
+      }
+    }
+
+    // Keep only last 10 topics
+    if (memory.recentTopics.length > 10) {
+      memory.recentTopics = memory.recentTopics.slice(-10);
+    }
+  }
+
+  private evictLRU(): void {
+    let oldestRoomId = "";
+    let lowestAccessCount = Infinity;
+
+    for (const [roomId, memory] of this.memories.entries()) {
+      if (memory.accessCount < lowestAccessCount) {
+        lowestAccessCount = memory.accessCount;
+        oldestRoomId = roomId;
+      }
+    }
+
+    if (oldestRoomId) {
+      this.memories.delete(oldestRoomId);
+      logger.debug(`[ANTI_DETECTION] Evicted LRU memory for room: ${oldestRoomId}`);
+    }
+  }
+
+  private cleanup(): void {
+    const now = Date.now();
+    const maxAge = 3600000; // 1 hour
+
+    for (const [roomId, memory] of this.memories.entries()) {
+      if (now - memory.lastResponseTime > maxAge) {
+        this.memories.delete(roomId);
+      }
+    }
+
+    this.lastCleanup = now;
+    logger.debug(`[ANTI_DETECTION] Cleaned up ${this.memories.size} conversation memories`);
+  }
+}
+
+// Pre-compiled regex patterns for better performance
+const REGEX_PATTERNS = {
+  articles: {
+    moonTopBottom: /\bthe (moon|top|bottom|way|future|past)\b/gi,
+    goingToThe: /\bgoing to the\b/gi,
+    theWord: /\bthe (\w+)\b/i,
+  },
+  typos: {
+    the: /the/g,
+    and: /and/g,
+    ing: /ing$/g,
+    tion: /tion$/g,
+  },
+  formality: {
+    contractions: /\b(Do not|Cannot|Will not|It is|That is|I am|You are|We are|They are)\b/g,
+    casual: /\./g,
+    excited: /!/g,
+  },
+  sentenceEnd: /(?<=[.!?])\s+/,
+};
+
+// Global memory manager instance
+const memoryManager = new ConversationMemoryManager();
 
 export const antiDetectionPostProcessor: Evaluator = {
   name: "ANTI_DETECTION_POST_PROCESSOR",
@@ -61,7 +189,7 @@ export const antiDetectionPostProcessor: Evaluator = {
       }
 
       // Get conversation memory for context
-      const conversationMemory = getConversationMemory(
+      const conversationMemory = memoryManager.get(
         message.roomId || "default",
       );
 
@@ -77,7 +205,7 @@ export const antiDetectionPostProcessor: Evaluator = {
           method: introduceTypos,
           probability: responsePatterns?.typo_rate || 0.03,
         },
-        { name: "Rotate Phrases", method: rotatePhases, probability: 0.4 },
+        { name: "Rotate Phases", method: rotatePhases, probability: 0.4 },
         {
           name: "Add Personalization",
           method: addPersonalization,
@@ -101,11 +229,16 @@ export const antiDetectionPostProcessor: Evaluator = {
         },
       ];
 
-      const appliedPatterns: string[] = [];
-      let processedText = text;
+      // Determine how many patterns to apply (1-3)
+      const patternsToApply = Math.min(
+        3,
+        Math.floor(Math.random() * 3) + 1,
+      );
 
-      // Apply 1-3 random patterns
-      const patternsToApply = Math.floor(Math.random() * 3) + 1;
+      let processedText = text;
+      const appliedPatterns: string[] = [];
+
+      // Shuffle patterns for randomization
       const shuffledPatterns = patterns.sort(() => Math.random() - 0.5);
 
       for (let i = 0; i < patternsToApply && i < shuffledPatterns.length; i++) {
@@ -126,7 +259,7 @@ export const antiDetectionPostProcessor: Evaluator = {
       }
 
       // Update conversation memory
-      updateConversationMemory(message.roomId || "default", processedText);
+      memoryManager.update(message.roomId || "default", processedText);
 
       // Only modify the message if patterns were applied
       if (appliedPatterns.length > 0 && processedText !== text) {
@@ -171,58 +304,21 @@ export const antiDetectionPostProcessor: Evaluator = {
   },
 };
 
-// Store conversation memories globally (in production, use proper storage)
-const conversationMemories = new Map<string, ConversationMemory>();
-
-function getConversationMemory(roomId: string): ConversationMemory {
-  if (!conversationMemories.has(roomId)) {
-    conversationMemories.set(roomId, {
-      recentTopics: [],
-      contradictions: new Map(),
-      personalReferences: [],
-      lastResponseTime: 0,
-      messageCount: 0,
-      formality: 0.7,
-    });
-  }
-  return conversationMemories.get(roomId)!;
-}
-
-function updateConversationMemory(roomId: string, text: string): void {
-  const memory = getConversationMemory(roomId);
-
-  memory.messageCount++;
-  memory.lastResponseTime = Date.now();
-
-  // Decrease formality over time
-  memory.formality = Math.max(0.2, memory.formality - 0.05);
-
-  // Track topics
-  if (text.includes("solana")) memory.recentTopics.push("solana");
-  if (text.includes("defi")) memory.recentTopics.push("defi");
-  if (text.includes("nft")) memory.recentTopics.push("nft");
-
-  // Keep only last 10 topics
-  if (memory.recentTopics.length > 10) {
-    memory.recentTopics = memory.recentTopics.slice(-10);
-  }
-}
-
 /**
  * Anti-Detection Pattern Functions
- * Converted from original anti-detection-system.ts
+ * Converted from original anti-detection-system.ts with performance optimizations
  */
 
 function varyArticles(text: string): string {
   // Occasionally skip "the"
   if (Math.random() < 0.15) {
-    text = text.replace(/\bthe (moon|top|bottom|way|future|past)\b/gi, "$1");
-    text = text.replace(/\bgoing to the\b/gi, "going to");
+    text = text.replace(REGEX_PATTERNS.articles.moonTopBottom, "$1");
+    text = text.replace(REGEX_PATTERNS.articles.goingToThe, "going to");
   }
 
   // Sometimes use "a" instead of "the"
   if (Math.random() < 0.1) {
-    text = text.replace(/\bthe (\w+)\b/i, (match, word) => {
+    text = text.replace(REGEX_PATTERNS.articles.theWord, (match, word) => {
       if (
         !["sun", "moon", "earth", "solana", "ethereum"].includes(
           word.toLowerCase(),
@@ -247,10 +343,10 @@ function introduceTypos(text: string): string {
 
     // Common mobile autocorrect/typo patterns
     const typoPatterns = [
-      (w: string) => w.replace(/the/g, "teh"),
-      (w: string) => w.replace(/and/g, "anf"),
-      (w: string) => w.replace(/ing$/g, "ign"),
-      (w: string) => w.replace(/tion$/g, "toin"),
+      (w: string) => w.replace(REGEX_PATTERNS.typos.the, "teh"),
+      (w: string) => w.replace(REGEX_PATTERNS.typos.and, "anf"),
+      (w: string) => w.replace(REGEX_PATTERNS.typos.ing, "ign"),
+      (w: string) => w.replace(REGEX_PATTERNS.typos.tion, "toin"),
     ];
 
     if (word.length > 3 && Math.random() < 0.5) {
@@ -329,23 +425,28 @@ function varyFormality(text: string, context: any): string {
 
   if (formality > 0.7 && Math.random() < 0.5) {
     // Make more casual
-    text = text.replace(/\bDo not\b/g, "Don't");
-    text = text.replace(/\bCannot\b/g, "Can't");
-    text = text.replace(/\bWill not\b/g, "Won't");
-    text = text.replace(/\bIt is\b/g, "It's");
-    text = text.replace(/\bThat is\b/g, "That's");
+    text = text.replace(REGEX_PATTERNS.formality.contractions, (match) => {
+      switch (match) {
+        case "Do not": return "Don't";
+        case "Cannot": return "Can't";
+        case "Will not": return "Won't";
+        case "It is": return "It's";
+        case "That is": return "That's";
+        default: return match;
+      }
+    });
   } else if (formality < 0.3 && Math.random() < 0.3) {
     // Make even more casual
     text = text.toLowerCase();
-    text = text.replace(/\./g, "...");
-    text = text.replace(/!/g, "!!");
+    text = text.replace(REGEX_PATTERNS.formality.casual, "...");
+    text = text.replace(REGEX_PATTERNS.formality.excited, "!!");
   }
 
   return text;
 }
 
 function varySentenceStructure(text: string): string {
-  const sentences = text.split(/(?<=[.!?])\s+/);
+  const sentences = text.split(REGEX_PATTERNS.sentenceEnd);
   const processed = [];
 
   for (let sentence of sentences) {
@@ -374,14 +475,14 @@ function applyEmotionalState(text: string, context: any): string {
   switch (emotion) {
     case "excited":
       if (Math.random() < intensity / 100) {
-        text = text.replace(/!/g, "!!!");
+        text = text.replace(REGEX_PATTERNS.formality.excited, "!!!");
         if (Math.random() < 0.3) text = "lfg " + text;
       }
       break;
 
     case "frustrated":
       if (Math.random() < 0.4) {
-        text = text.replace(/\./g, "...");
+        text = text.replace(REGEX_PATTERNS.formality.casual, "...");
         if (Math.random() < 0.2) text = "ugh " + text;
       }
       break;

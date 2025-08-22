@@ -39,43 +39,57 @@ export interface EnvironmentConfig {
  * Load and validate environment configuration
  */
 export function loadEnvironmentConfig(): EnvironmentConfig {
-  // Required variables
-  const openaiApiKey = process.env.OPENAI_API_KEY;
-  if (!openaiApiKey) {
-    throw new Error("OPENAI_API_KEY is required");
+  try {
+    // Required variables
+    const openaiApiKey = process.env.OPENAI_API_KEY;
+    if (!openaiApiKey) {
+      throw new Error("OPENAI_API_KEY is required");
+    }
+
+    const config: EnvironmentConfig = {
+      // Core API Keys
+      openaiApiKey,
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY,
+
+      // Platform Integration
+      telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
+      discordApiToken: process.env.DISCORD_API_TOKEN,
+      twitterApiKey: process.env.TWITTER_API_KEY,
+      twitterApiSecret: process.env.TWITTER_API_SECRET_KEY,
+      twitterAccessToken: process.env.TWITTER_ACCESS_TOKEN,
+      twitterAccessTokenSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+
+      // Database
+      databaseUrl: process.env.DATABASE_URL,
+
+      // NUBI Specific
+      raidsEnabled: process.env.RAIDS_ENABLED === "true",
+      autoRaids: process.env.AUTO_RAIDS === "true",
+      raidIntervalHours: safeParseInt(process.env.RAID_INTERVAL_HOURS, 6),
+      maxConcurrentRaids: safeParseInt(process.env.MAX_CONCURRENT_RAIDS, 3),
+      raidDurationMinutes: safeParseInt(process.env.RAID_DURATION_MINUTES, 30),
+      minRaidParticipants: safeParseInt(process.env.MIN_RAID_PARTICIPANTS, 5),
+
+      // Performance
+      logLevel: process.env.LOG_LEVEL || "info",
+      nodeEnv: process.env.NODE_ENV || "development",
+    };
+
+    validateConfig(config);
+    return config;
+  } catch (error) {
+    logger.error("Failed to load environment configuration:", error);
+    throw error;
   }
+}
 
-  const config: EnvironmentConfig = {
-    // Core API Keys
-    openaiApiKey,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-
-    // Platform Integration
-    telegramBotToken: process.env.TELEGRAM_BOT_TOKEN,
-    discordApiToken: process.env.DISCORD_API_TOKEN,
-    twitterApiKey: process.env.TWITTER_API_KEY,
-    twitterApiSecret: process.env.TWITTER_API_SECRET_KEY,
-    twitterAccessToken: process.env.TWITTER_ACCESS_TOKEN,
-    twitterAccessTokenSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
-
-    // Database
-    databaseUrl: process.env.DATABASE_URL,
-
-    // NUBI Specific
-    raidsEnabled: process.env.RAIDS_ENABLED === "true",
-    autoRaids: process.env.AUTO_RAIDS === "true",
-    raidIntervalHours: parseInt(process.env.RAID_INTERVAL_HOURS || "6"),
-    maxConcurrentRaids: parseInt(process.env.MAX_CONCURRENT_RAIDS || "3"),
-    raidDurationMinutes: parseInt(process.env.RAID_DURATION_MINUTES || "30"),
-    minRaidParticipants: parseInt(process.env.MIN_RAID_PARTICIPANTS || "5"),
-
-    // Performance
-    logLevel: process.env.LOG_LEVEL || "info",
-    nodeEnv: process.env.NODE_ENV || "development",
-  };
-
-  validateConfig(config);
-  return config;
+/**
+ * Safely parse integer environment variable
+ */
+function safeParseInt(value: string | undefined, defaultValue: number): number {
+  if (!value) return defaultValue;
+  const parsed = parseInt(value, 10);
+  return isNaN(parsed) ? defaultValue : parsed;
 }
 
 /**

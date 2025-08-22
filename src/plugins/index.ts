@@ -71,17 +71,30 @@ export interface ProviderRegistry {
 }
 
 // Plugin implementations
-export { nubiPlugin } from './nubi-plugin';
-export { clickhouseAnalyticsPlugin } from './clickhouse-analytics-plugin';
+export { default as nubiPlugin } from './nubi-plugin';
+export { clickhouseAnalyticsPlugin } from './clickhouse-analytics';
 export { nubiProviders } from './nubi-providers';
 
 // Plugin manager implementation
 export class PluginManagerImpl implements PluginManager {
   private plugins: PluginRegistry = {};
+  private pluginStats: Map<string, { loadTime: number; enabled: boolean }> = new Map();
 
   register(plugin: Plugin): void {
-    if (this.validate(plugin)) {
-      this.plugins[plugin.name] = plugin;
+    try {
+      if (this.validate(plugin)) {
+        this.plugins[plugin.name] = plugin;
+        this.pluginStats.set(plugin.name, { 
+          loadTime: Date.now(), 
+          enabled: true 
+        });
+        logger.info(`✅ Registered plugin: ${plugin.name}`);
+      } else {
+        logger.error(`❌ Failed to validate plugin: ${plugin.name}`);
+      }
+    } catch (error) {
+      logger.error(`Failed to register plugin ${plugin.name}:`, error);
+      throw error;
     }
   }
 
@@ -94,16 +107,40 @@ export class PluginManagerImpl implements PluginManager {
   }
 
   enable(name: string): void {
-    const plugin = this.plugins[name];
-    if (plugin) {
-      // Enable plugin logic
+    try {
+      const plugin = this.plugins[name];
+      if (plugin) {
+        const stats = this.pluginStats.get(name);
+        if (stats) {
+          stats.enabled = true;
+          this.pluginStats.set(name, stats);
+        }
+        logger.info(`✅ Enabled plugin: ${name}`);
+      } else {
+        logger.warn(`Plugin not found: ${name}`);
+      }
+    } catch (error) {
+      logger.error(`Failed to enable plugin ${name}:`, error);
+      throw error;
     }
   }
 
   disable(name: string): void {
-    const plugin = this.plugins[name];
-    if (plugin) {
-      // Disable plugin logic
+    try {
+      const plugin = this.plugins[name];
+      if (plugin) {
+        const stats = this.pluginStats.get(name);
+        if (stats) {
+          stats.enabled = false;
+          this.pluginStats.set(name, stats);
+        }
+        logger.info(`🛑 Disabled plugin: ${name}`);
+      } else {
+        logger.warn(`Plugin not found: ${name}`);
+      }
+    } catch (error) {
+      logger.error(`Failed to disable plugin ${name}:`, error);
+      throw error;
     }
   }
 
@@ -117,6 +154,20 @@ export class PluginManagerImpl implements PluginManager {
       Array.isArray(plugin.providers) &&
       Array.isArray(plugin.services)
     );
+  }
+
+  getPluginStats(name: string): { loadTime: number; enabled: boolean } | null {
+    return this.pluginStats.get(name) || null;
+  }
+
+  getAllPluginStats(): Record<string, { loadTime: number; enabled: boolean }> {
+    const result: Record<string, { loadTime: number; enabled: boolean }> = {};
+    
+    for (const [name, stats] of this.pluginStats.entries()) {
+      result[name] = stats;
+    }
+    
+    return result;
   }
 }
 

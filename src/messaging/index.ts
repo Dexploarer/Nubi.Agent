@@ -76,10 +76,12 @@ export interface MessageHandler {
 // Service exports
 export { MessageBusService } from './message-bus';
 
-// Transport implementations
-export { DiscordTransport } from './transports/discord-transport';
-export { TelegramTransport } from './transports/telegram-transport';
-export { TwitterTransport } from './transports/twitter-transport';
+// Transport implementations - exported from message-bus.ts
+export { 
+  DiscordTransport, 
+  TelegramTransport, 
+  TwitterTransport 
+} from './message-bus';
 
 // Utility functions
 export function createMessage(
@@ -121,5 +123,47 @@ export function createMessageContext(
     lastActivity: Date.now(),
     messageCount: 0,
     metadata: {}
+  };
+}
+
+export function createTransportConfig(
+  apiKey?: string,
+  baseUrl?: string,
+  retries: number = 3,
+  timeout: number = 30000
+): TransportConfig {
+  return {
+    apiKey,
+    baseUrl,
+    retries,
+    timeout
+  };
+}
+
+export function createMessageHandler(
+  name: string,
+  pattern: RegExp | string,
+  handler: (message: Message, context: MessageContext) => Promise<void>,
+  priority: number = 0
+): MessageHandler {
+  return {
+    name,
+    pattern,
+    handler,
+    priority
+  };
+}
+
+export function createMessageBusConfig(
+  transports: Transport[] = [],
+  retryAttempts: number = 3,
+  timeout: number = 30000,
+  enableLogging: boolean = true
+): MessageBusConfig {
+  return {
+    transports,
+    retryAttempts,
+    timeout,
+    enableLogging
   };
 }

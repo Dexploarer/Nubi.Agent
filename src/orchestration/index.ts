@@ -66,23 +66,50 @@ export interface StrategyConfig {
 }
 
 // Service exports
-export { StrategicActionOrchestrator } from './strategic-action-orchestrator';
+export { StrategyActionOrchestratorService as StrategicActionOrchestrator } from './strategic-action-orchestrator';
 export { PluginConfigurationManagerService } from './plugin-configuration-manager';
 
 // Orchestration manager implementation
 export class OrchestrationManagerImpl implements OrchestrationManager {
   private flows: Map<string, ActionFlow> = new Map();
+  private flowStats: Map<string, { startTime: number; endTime?: number }> = new Map();
 
   async startFlow(flow: ActionFlow): Promise<void> {
-    this.flows.set(flow.id, flow);
-    // Start flow execution logic
+    try {
+      if (!validateActionFlow(flow)) {
+        throw new Error(`Invalid flow configuration: ${flow.name}`);
+      }
+      
+      this.flows.set(flow.id, flow);
+      this.flowStats.set(flow.id, { startTime: Date.now() });
+      
+      logger.info(`🚀 Started flow: ${flow.name} (${flow.id})`);
+    } catch (error) {
+      logger.error(`Failed to start flow ${flow.name}:`, error);
+      throw error;
+    }
   }
 
   async stopFlow(flowId: string): Promise<void> {
-    const flow = this.flows.get(flowId);
-    if (flow) {
-      flow.status = 'failed';
-      this.flows.set(flowId, flow);
+    try {
+      const flow = this.flows.get(flowId);
+      if (flow) {
+        flow.status = 'failed';
+        this.flows.set(flowId, flow);
+        
+        const stats = this.flowStats.get(flowId);
+        if (stats) {
+          stats.endTime = Date.now();
+          this.flowStats.set(flowId, stats);
+        }
+        
+        logger.info(`🛑 Stopped flow: ${flow.name} (${flowId})`);
+      } else {
+        logger.warn(`Flow not found: ${flowId}`);
+      }
+    } catch (error) {
+      logger.error(`Failed to stop flow ${flowId}:`, error);
+      throw error;
     }
   }
 
@@ -95,7 +122,39 @@ export class OrchestrationManagerImpl implements OrchestrationManager {
   }
 
   updateFlow(flow: ActionFlow): void {
-    this.flows.set(flow.id, flow);
+    try {
+      if (!validateActionFlow(flow)) {
+        throw new Error(`Invalid flow configuration: ${flow.name}`);
+      }
+      this.flows.set(flow.id, flow);
+      logger.debug(`Updated flow: ${flow.name} (${flow.id})`);
+    } catch (error) {
+      logger.error(`Failed to update flow ${flow.id}:`, error);
+      throw error;
+    }
+  }
+
+  getFlowStats(flowId: string): { startTime: number; endTime?: number; duration?: number } | null {
+    const stats = this.flowStats.get(flowId);
+    if (!stats) return null;
+    
+    return {
+      ...stats,
+      duration: stats.endTime ? stats.endTime - stats.startTime : Date.now() - stats.startTime
+    };
+  }
+
+  getAllFlowStats(): Record<string, { startTime: number; endTime?: number; duration?: number }> {
+    const result: Record<string, { startTime: number; endTime?: number; duration?: number }> = {};
+    
+    for (const [flowId, stats] of this.flowStats.entries()) {
+      result[flowId] = {
+        ...stats,
+        duration: stats.endTime ? stats.endTime - stats.startTime : Date.now() - stats.startTime
+      };
+    }
+    
+    return result;
   }
 }
 

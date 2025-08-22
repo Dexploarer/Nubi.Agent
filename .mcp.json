@@ -2,7 +2,7 @@
   "mcpServers": {
     "xmcpx": {
       "command": "npx",
-      "args": ["-y", "@promptordie/xmcpx@latest"],
+      "args": ["-y", "@promptordie/xmcpx@1.0.2"],
       "env": {
         "NODE_ENV": "production"
       }

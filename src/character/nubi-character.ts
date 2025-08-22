@@ -359,12 +359,21 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
     ],
     // Knowledge files for RAG retrieval
     files: [
+      "src/knowledge/index.md",
       "src/knowledge/anubis-chat-platform.md",
       "src/knowledge/conversation-patterns.md",
       "src/knowledge/creativity-innovation.md",
       "src/knowledge/emotional-intelligence.md",
       "src/knowledge/technical-expertise.md",
       "src/knowledge/agent-capabilities.md",
+      "src/knowledge/solana-ecosystem.md",
+      "src/knowledge/web3-culture.md",
+      "src/knowledge/market-analysis.md",
+      "src/knowledge/community-management.md",
+      "src/knowledge/development-practices.md",
+      "src/knowledge/security-privacy.md",
+      "src/knowledge/content-creation.md",
+      "src/knowledge/business-strategy.md",
     ],
     // RAG settings
     settings: {
@@ -463,7 +472,7 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
         xmcpx: {
           type: 'stdio',
           command: 'npx',
-          args: ['-y', '@promptordie/xmcpx@latest'],
+          args: ['-y', '@promptordie/xmcpx@1.0.2'],
           env: {
             // Twitter API Configuration
             TWITTER_COOKIE_STRING: process.env.TWITTER_COOKIE_STRING || '',

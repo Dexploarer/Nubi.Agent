@@ -117,15 +117,36 @@ class YAMLConfigManager {
       }
 
       const fileContents = readFileSync(configFile, "utf8");
-      this.config = yaml.load(fileContents) as AnubisConfig;
-
-      logger.info(
-        `✅ YAML configuration loaded from ${configFile.split("/").pop()}`,
-      );
+      const loadedConfig = yaml.load(fileContents) as AnubisConfig;
+      
+      // Validate the loaded config structure
+      if (this.validateConfigStructure(loadedConfig)) {
+        this.config = loadedConfig;
+        logger.info(
+          `✅ YAML configuration loaded from ${configFile.split("/").pop()}`,
+        );
+      } else {
+        logger.warn("Invalid config structure, creating default config");
+        this.createDefaultConfig();
+      }
     } catch (error) {
       logger.error("Failed to load YAML configuration:", error);
       this.createDefaultConfig();
     }
+  }
+
+  private validateConfigStructure(config: any): config is AnubisConfig {
+    return (
+      config &&
+      typeof config === "object" &&
+      config.agent &&
+      config.agent.personality &&
+      config.agent.response_patterns &&
+      config.agent.behavior &&
+      Array.isArray(config.plugins) &&
+      config.knowledge &&
+      config.templates
+    );
   }
 
   private createDefaultConfig(): void {
@@ -316,10 +337,27 @@ class YAMLConfigManager {
     this.config = defaultConfig;
   }
 
+  private configCache: AnubisConfig | null = null;
+  private lastLoadTime: number = 0;
+  private readonly CACHE_TTL = 30000; // 30 seconds
+
   public getConfig(): AnubisConfig {
+    const now = Date.now();
+    
+    // Return cached config if still valid
+    if (this.configCache && (now - this.lastLoadTime) < this.CACHE_TTL) {
+      return this.configCache;
+    }
+
+    // Load fresh config
     if (!this.config) {
       this.loadConfig();
     }
+    
+    // Update cache
+    this.configCache = this.config!;
+    this.lastLoadTime = now;
+    
     return this.config!;
   }
 
@@ -331,8 +369,16 @@ class YAMLConfigManager {
     this.config = { ...this.config!, ...updates };
     this.saveConfig(this.config);
 
+    // Clear cache when config is updated
+    this.clearCache();
+
     // Notify watchers
     this.notifyWatchers("config_updated");
+  }
+
+  public clearCache(): void {
+    this.configCache = null;
+    this.lastLoadTime = 0;
   }
 
   private saveConfig(config: AnubisConfig): void {

@@ -12,7 +12,7 @@ export type { IAgentRuntime, Service, Memory, logger, UUID } from '../core';
 export interface UserIdentity {
   id: string;
   internalId: string;
-  platform: string;
+  platform: Platform;
   platformId: string;
   username: string;
   displayName?: string;
@@ -51,7 +51,7 @@ export interface UserPreferences {
 }
 
 // Platform-specific types
-export type Platform = 'discord' | 'telegram' | 'twitter' | 'web';
+export type Platform = 'discord' | 'telegram' | 'twitter' | 'web' | 'unknown';
 
 export interface PlatformConfig {
   platform: Platform;
@@ -59,6 +59,25 @@ export interface PlatformConfig {
   apiSecret?: string;
   baseUrl?: string;
   enabled: boolean;
+}
+
+// Enhanced types for internal use
+export interface EnhancedMemoryContext {
+  userId: string; // ElizaOS UUID
+  platformUserId: string; // Platform-specific ID
+  username: string; // Platform username
+  displayName: string; // Full name
+  platform: Platform; // twitter/telegram/discord
+  roomId: string; // Room context
+  roomName?: string; // Human-readable room name
+  linkedIdentities?: UserIdentity[]; // Other platform identities
+}
+
+export interface PotentialLink {
+  identity1: string;
+  identity2: string;
+  confidence: number;
+  reason: string;
 }
 
 // Service exports
@@ -92,4 +111,42 @@ export function validateIdentity(identity: UserIdentity): boolean {
     identity.platformId &&
     identity.username
   );
+}
+
+export function createIdentityLink(
+  sourceId: string,
+  targetId: string,
+  confidence: number,
+  evidence: string[] = []
+): IdentityLink {
+  return {
+    id: `link_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    sourceId,
+    targetId,
+    confidence,
+    evidence,
+    createdAt: new Date()
+  };
+}
+
+export function createUserProfile(
+  internalId: string,
+  preferredName: string,
+  platforms: Record<string, UserIdentity> = {}
+): UserProfile {
+  return {
+    id: `profile_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    internalId,
+    preferredName,
+    platforms,
+    preferences: {
+      language: 'en',
+      timezone: 'UTC',
+      notificationSettings: {},
+      privacySettings: {}
+    },
+    metadata: {},
+    createdAt: new Date(),
+    updatedAt: new Date()
+  };
 }
