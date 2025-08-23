@@ -94,22 +94,22 @@ export class NUBISessionsService extends Service {
   static serviceType = "nubi_sessions" as const;
   capabilityDescription = "ElizaOS Sessions API implementation with NUBI-specific extensions";
 
-  protected runtime: IAgentRuntime | undefined;
+  declare protected runtime: IAgentRuntime;
   private poolerManager?: DatabasePoolerManager;
   private memoryService?: DatabaseMemoryService;
   private sessions: Map<string, Session> = new Map();
   private sessionTimers: Map<string, NodeJS.Timeout> = new Map();
+  private isRunning: boolean = false;
 
-  constructor(runtime?: IAgentRuntime) {
+  constructor(runtime: IAgentRuntime) {
     super(runtime);
-    if (runtime) {
-      this.runtime = runtime;
-    }
+    this.runtime = runtime;
   }
 
   async start(): Promise<void> {
     try {
       logger.info("[NUBI_SESSIONS] Starting NUBI Sessions Service...");
+      this.isRunning = true;
 
       if (!this.runtime) {
         logger.warn("[NUBI_SESSIONS] No runtime available, service will operate in limited mode");
@@ -222,6 +222,10 @@ export class NUBISessionsService extends Service {
    * Create a new session
    */
   async createSession(config: SessionConfig): Promise<Session> {
+    if (!this.isRunning) {
+      throw new Error("Sessions service is not running");
+    }
+    
     const sessionId = crypto.randomUUID() as UUID;
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (config.timeout || 3600000)); // 1 hour default
@@ -615,6 +619,8 @@ export class NUBISessionsService extends Service {
   }
 
   async stop(): Promise<void> {
+    this.isRunning = false;
+    
     // Clear all timers
     for (const timer of this.sessionTimers.values()) {
       clearTimeout(timer);

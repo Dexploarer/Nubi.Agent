@@ -124,7 +124,7 @@ export class RaidSessionManager extends Service {
 
       logger.info("[RAID_MANAGER] Raid Session Manager started successfully");
     } catch (error) {
-      logger.error("[RAID_MANAGER] Failed to start:", error);
+      logger.error("[RAID_MANAGER] Failed to start:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -191,7 +191,7 @@ export class RaidSessionManager extends Service {
       await this.poolerManager.query(createTablesSQL, [], { poolType: PoolType.SESSION });
       logger.info("[RAID_MANAGER] Analytics tables initialized successfully");
     } catch (error) {
-      logger.error("[RAID_MANAGER] Failed to initialize analytics tables:", error);
+      logger.error("[RAID_MANAGER] Failed to initialize analytics tables:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -250,7 +250,7 @@ export class RaidSessionManager extends Service {
 
       logger.info(`[RAID_MANAGER] Monitoring started for raid: ${raidSession.raidId}`);
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to start monitoring for raid ${raidSession.raidId}:`, error);
+      logger.error(`[RAID_MANAGER] Failed to start monitoring for raid ${raidSession.raidId}:`, error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -321,7 +321,7 @@ export class RaidSessionManager extends Service {
       logger.debug(`[RAID_MANAGER] Recorded action: ${action.actionType} for raid ${raidId}`);
       return true;
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to record action for raid ${raidId}:`, error);
+      logger.error(`[RAID_MANAGER] Failed to record action for raid ${raidId}:`, error instanceof Error ? error.message : String(error));
       return false;
     }
   }
@@ -383,7 +383,7 @@ export class RaidSessionManager extends Service {
         ], { poolType: PoolType.TRANSACTION });
       }
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to update metrics for raid ${raidId}:`, error);
+      logger.error(`[RAID_MANAGER] Failed to update metrics for raid ${raidId}:`, error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -501,7 +501,7 @@ export class RaidSessionManager extends Service {
       logger.info(`[RAID_MANAGER] Raid ${raidId} completed successfully with status: ${status}`);
       return completionReport;
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to complete raid ${raidId}:`, error);
+      logger.error(`[RAID_MANAGER] Failed to complete raid ${raidId}:`, error instanceof Error ? error.message : String(error));
       return null;
     }
   }
@@ -540,7 +540,7 @@ export class RaidSessionManager extends Service {
         joinedAt: new Date(row.joined_at),
       }));
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to generate leaderboard for raid ${raidId}:`, error);
+      logger.error(`[RAID_MANAGER] Failed to generate leaderboard for raid ${raidId}:`, error instanceof Error ? error.message : String(error));
       return [];
     }
   }

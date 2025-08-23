@@ -10,7 +10,7 @@ import { MockRuntime } from "../test-utils";
 
 /**
  * Socket.IO Sessions Integration Tests
- * 
+ *
  * Tests real-time session management via WebSocket connections:
  * - Socket connection and authentication
  * - Real-time session events
@@ -29,25 +29,25 @@ describe("SocketIOSessionsService Integration Tests", () => {
 
   beforeEach(async () => {
     runtime = new MockRuntime();
-    
+
     // Initialize services in correct order
     sessionsService = new NUBISessionsService(runtime as IAgentRuntime);
     await sessionsService.start();
-    
+
     memoryService = await DatabaseMemoryService.start(runtime as IAgentRuntime);
-    
+
     raidManager = new RaidSessionManager(
       runtime as IAgentRuntime,
       sessionsService,
-      memoryService
+      memoryService,
     );
     await raidManager.start();
-    
+
     socketService = new SocketIOSessionsService(
       runtime as IAgentRuntime,
       sessionsService,
       raidManager,
-      TEST_PORT
+      TEST_PORT,
     );
     await socketService.start();
   });
@@ -62,7 +62,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
   describe("Service Initialization", () => {
     it("should initialize Socket.IO service correctly", async () => {
       expect(socketService).toBeDefined();
-      
+
       const stats = socketService.getConnectionStats();
       expect(stats.totalConnections).toBe(0);
       expect(stats.authenticatedConnections).toBe(0);
@@ -74,7 +74,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
   describe("Connection Management", () => {
     it("should track connection statistics", () => {
       const initialStats = socketService.getConnectionStats();
-      
+
       expect(initialStats).toEqual({
         totalConnections: 0,
         authenticatedConnections: 0,
@@ -86,7 +86,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
     it("should handle connection lifecycle", async () => {
       // This would require actual socket client connection
       // For unit testing, we test the internal methods
-      
+
       const mockSocketData = {
         isAuthenticated: false,
         connectedAt: new Date(),
@@ -112,7 +112,11 @@ describe("SocketIOSessionsService Integration Tests", () => {
 
       // Test that broadcast methods don't throw errors
       await expect(
-        socketService.sendSessionEvent(testSessionId, "test:event", testMessage)
+        socketService.sendSessionEvent(
+          testSessionId,
+          "test:event",
+          testMessage,
+        ),
       ).resolves.not.toThrow();
     });
 
@@ -131,7 +135,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
 
       // Test that broadcast methods work without connected clients
       await expect(
-        socketService.broadcastRaidUpdate(testRaidId, raidUpdate)
+        socketService.broadcastRaidUpdate(testRaidId, raidUpdate),
       ).resolves.not.toThrow();
     });
   });
@@ -147,7 +151,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
       };
 
       const session = await sessionsService.createSession(sessionConfig);
-      
+
       expect(session).toBeDefined();
       expect(session.id).toBeDefined();
       expect(session.agentId).toBe(sessionConfig.agentId);
@@ -174,7 +178,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
       };
 
       const raidSession = await sessionsService.createRaidSession(raidConfig);
-      
+
       expect(raidSession).toBeDefined();
       expect(raidSession.raidId).toBe("socket_test_raid");
       expect(raidSession.targetUrl).toBe(raidConfig.targetUrl);
@@ -194,7 +198,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
       };
 
       const raidSession = await sessionsService.createRaidSession(raidConfig);
-      
+
       // Join the raid
       const joinResult = await sessionsService.joinRaidSession(raidSession.id, {
         telegramId: "123456789",
@@ -203,12 +207,14 @@ describe("SocketIOSessionsService Integration Tests", () => {
       });
 
       expect(joinResult).toBe(true);
-      
+
       // Verify participant was added
       const updatedSession = await sessionsService.getSession(raidSession.id);
       const updatedRaidSession = updatedSession as any; // RaidSession type
       expect(updatedRaidSession.participants).toHaveLength(1);
-      expect(updatedRaidSession.participants[0].telegramUsername).toBe("testuser");
+      expect(updatedRaidSession.participants[0].telegramUsername).toBe(
+        "testuser",
+      );
     });
   });
 
@@ -222,18 +228,18 @@ describe("SocketIOSessionsService Integration Tests", () => {
       };
 
       const session = await sessionsService.createSession(sessionConfig);
-      
+
       // Simulate message processing
       const messageResult = await sessionsService.updateSessionActivity(
         session.id,
         {
           lastMessage: "Hello, NUBI!",
           messageType: "text",
-        }
+        },
       );
 
       expect(messageResult).toBe(true);
-      
+
       // Verify session was updated
       const updatedSession = await sessionsService.getSession(session.id);
       expect(updatedSession?.state.messages).toBe(1);
@@ -247,10 +253,10 @@ describe("SocketIOSessionsService Integration Tests", () => {
 
       const session = await sessionsService.createSession(sessionConfig);
       const initialActivity = session.lastActivity;
-      
+
       // Wait a bit to ensure timestamp difference
-      await new Promise(resolve => setTimeout(resolve, 10));
-      
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
       // Update activity
       await sessionsService.updateSessionActivity(session.id, {
         userAction: "button_click",
@@ -259,7 +265,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
 
       const updatedSession = await sessionsService.getSession(session.id);
       expect(updatedSession?.lastActivity.getTime()).toBeGreaterThan(
-        initialActivity.getTime()
+        initialActivity.getTime(),
       );
     });
   });
@@ -267,12 +273,15 @@ describe("SocketIOSessionsService Integration Tests", () => {
   describe("Error Handling", () => {
     it("should handle invalid session operations", async () => {
       const invalidSessionId = crypto.randomUUID();
-      
+
       // Try to join non-existent raid
-      const joinResult = await sessionsService.joinRaidSession(invalidSessionId, {
-        telegramId: "123456789",
-        telegramUsername: "testuser",
-      });
+      const joinResult = await sessionsService.joinRaidSession(
+        invalidSessionId,
+        {
+          telegramId: "123456789",
+          telegramUsername: "testuser",
+        },
+      );
 
       expect(joinResult).toBe(false);
     });
@@ -283,7 +292,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
 
       // Stop service
       await socketService.stop();
-      
+
       // Verify clean shutdown
       expect(socketService.getConnectionStats).toBeDefined();
     });
@@ -324,10 +333,10 @@ describe("SocketIOSessionsService Integration Tests", () => {
       };
 
       const raidSession = await sessionsService.createRaidSession(raidConfig);
-      
+
       // The raid manager should be able to start monitoring
       await raidManager.startRaidMonitoring(raidSession);
-      
+
       // Record some raid actions
       const actionResult = await raidManager.recordRaidAction(
         raidSession.raidId,
@@ -337,7 +346,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
           actionType: "like",
           targetId: "123456789",
           points: 10,
-        }
+        },
       );
 
       expect(actionResult).toBe(true);
@@ -355,16 +364,16 @@ describe("SocketIOSessionsService Integration Tests", () => {
       };
 
       const raidSession = await sessionsService.createRaidSession(raidConfig);
-      
+
       // Start monitoring
       await raidManager.startRaidMonitoring(raidSession);
-      
+
       // Complete the raid
       const completionReport = await raidManager.completeRaid(
         raidSession.raidId,
-        "completed"
+        "completed",
       );
-      
+
       expect(completionReport).toBeDefined();
       expect(completionReport?.raidId).toBe(raidSession.raidId);
       expect(completionReport?.status).toBe("completed");
@@ -381,7 +390,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
       };
 
       const session = await sessionsService.createSession(sessionConfig);
-      
+
       // The session should be stored in ElizaOS memory
       // This is handled automatically by the sessions service
       expect(session.id).toBeDefined();
@@ -391,13 +400,13 @@ describe("SocketIOSessionsService Integration Tests", () => {
     it("should retrieve enhanced context for sessions", async () => {
       const roomId = crypto.randomUUID() as UUID;
       const userId = crypto.randomUUID() as UUID;
-      
+
       // Get enhanced context (this tests the memory service integration)
       const context = await memoryService.getEnhancedContext(
         roomId,
         userId,
         "test session context",
-        10
+        10,
       );
 
       expect(context).toBeDefined();
@@ -416,11 +425,11 @@ describe("SocketIOSessionsService Integration Tests", () => {
           userId: crypto.randomUUID() as UUID,
           sessionType: "conversation",
           metadata: { index: i },
-        })
+        }),
       );
 
       const sessions = await Promise.all(sessionPromises);
-      
+
       expect(sessions).toHaveLength(5);
       sessions.forEach((session, i) => {
         expect(session.id).toBeDefined();
@@ -435,7 +444,7 @@ describe("SocketIOSessionsService Integration Tests", () => {
     it("should manage memory efficiently", async () => {
       // Create and cleanup sessions to test memory management
       const sessionIds = [];
-      
+
       for (let i = 0; i < 3; i++) {
         const session = await sessionsService.createSession({
           agentId: runtime.agentId,

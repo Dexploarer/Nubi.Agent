@@ -99,6 +99,14 @@ export { DatabaseMemoryService } from "./database-memory-service";
 export { NUBISessionsService } from "./nubi-sessions-service";
 export { RaidSessionManager } from "./raid-session-manager";
 export { SocketIOSessionsService } from "./socket-io-sessions-service";
+export { StreamingSessionsService } from "./streaming-sessions-service";
+export type {
+  StreamingConfig,
+  StreamChunk,
+  StreamingSession,
+  StreamContext,
+  ResponseStrategy,
+} from "./streaming-sessions-service";
 export type {
   SessionConfig,
   Session,
@@ -266,4 +274,5 @@ export const ACTIVE_SERVICES = [
   "NUBISessionsService",
   "RaidSessionManager", 
   "SocketIOSessionsService",
+  "StreamingSessionsService",
 ] as const;

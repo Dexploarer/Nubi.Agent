@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 NUBI's WebSocket API provides real-time bidirectional communication for raid coordination, live updates, and interactive features across all supported platforms.
 
@@ -26,26 +26,27 @@ const devSocket = io('ws://localhost:3000', {
 
 // Production
 const prodSocket = io('wss://api.anubis.chat', {
-  transports: ['websocket'],
-  secure: true,
-  rejectUnauthorized: true
+transports: ['websocket'],
+secure: true,
+rejectUnauthorized: true
 })
 
 // With authentication
 const authSocket = io('wss://api.anubis.chat', {
-  auth: {
-    token: 'your-jwt-token',
-    userId: 'user-id',
-    platform: 'telegram|discord|twitter|web'
-  },
-  query: {
-    version: '1.0',
-    features: ['raids', 'leaderboards', 'realtime']
-  }
+auth: {
+token: 'your-jwt-token',
+userId: 'user-id',
+platform: 'telegram|discord|twitter|web'
+},
+query: {
+version: '1.0',
+features: ['raids', 'leaderboards', 'realtime']
+}
 })
-```
+
+````
   </TabItem>
-  
+
   <TabItem label="Connection Events">
 ```typescript
 // Connection lifecycle events
@@ -56,7 +57,7 @@ socket.on('connect', () => {
 
 socket.on('disconnect', (reason) => {
   console.log('Disconnected:', reason)
-  // Reasons: 'io server disconnect', 'io client disconnect', 
+  // Reasons: 'io server disconnect', 'io client disconnect',
   //          'ping timeout', 'transport close', 'transport error'
 })
 
@@ -79,7 +80,8 @@ socket.on('authentication_error', (error) => {
   console.error('Authentication failed:', error)
   // Handle invalid tokens, expired sessions, etc.
 })
-```
+````
+
   </TabItem>
   
   <TabItem label="Client Configuration">
@@ -115,30 +117,31 @@ interface SocketConfig {
 
 // Example configuration
 const socketConfig: SocketConfig = {
-  url: process.env.WEBSOCKET_URL || 'ws://localhost:3000',
-  transports: ['websocket', 'polling'],
-  timeout: 20000,
-  forceNew: false,
-  
-  auth: {
-    token: await getAuthToken(),
-    userId: getCurrentUserId(),
-    platform: 'web',
-    permissions: ['raids:join', 'leaderboards:view']
-  },
-  
-  features: {
-    raids: true,
-    leaderboards: true,
-    realtime: true,
-    analytics: false
-  },
-  
-  reconnection: true,
-  reconnectionAttempts: 5,
-  reconnectionDelay: 1000
+url: process.env.WEBSOCKET_URL || 'ws://localhost:3000',
+transports: ['websocket', 'polling'],
+timeout: 20000,
+forceNew: false,
+
+auth: {
+token: await getAuthToken(),
+userId: getCurrentUserId(),
+platform: 'web',
+permissions: ['raids:join', 'leaderboards:view']
+},
+
+features: {
+raids: true,
+leaderboards: true,
+realtime: true,
+analytics: false
+},
+
+reconnection: true,
+reconnectionAttempts: 5,
+reconnectionDelay: 1000
 }
-```
+
+````
   </TabItem>
 </Tabs>
 
@@ -195,7 +198,8 @@ socket.on('raid:update', (update) => {
       break
   }
 })
-```
+````
+
   </TabItem>
   
   <TabItem label="Raid Execution">
@@ -213,48 +217,49 @@ socket.on('raid:countdown', (data) => {
 
 // Raid execution commands
 socket.on('raid:execute', (command) => {
-  switch (command.action) {
-    case 'engage_now':
-      executeEngagement(command.target, command.strategy)
-      break
-    case 'pause_engagement':
-      pauseCurrentEngagement()
-      break
-    case 'adjust_strategy':
-      updateEngagementStrategy(command.newStrategy)
-      break
-    case 'emergency_stop':
-      stopAllEngagement(command.reason)
-      break
-  }
+switch (command.action) {
+case 'engage_now':
+executeEngagement(command.target, command.strategy)
+break
+case 'pause_engagement':
+pauseCurrentEngagement()
+break
+case 'adjust_strategy':
+updateEngagementStrategy(command.newStrategy)
+break
+case 'emergency_stop':
+stopAllEngagement(command.reason)
+break
+}
 })
 
 // Report engagement completion
 socket.emit('raid:engagement_completed', {
-  raidId: 'raid_abc123',
-  userId: 'user_456',
-  engagement: {
-    platform: 'twitter',
-    targetId: 'tweet_123',
-    action: 'like_and_retweet',
-    timestamp: Date.now(),
-    success: true,
-    response: 'Successfully liked and retweeted'
-  }
+raidId: 'raid_abc123',
+userId: 'user_456',
+engagement: {
+platform: 'twitter',
+targetId: 'tweet_123',
+action: 'like_and_retweet',
+timestamp: Date.now(),
+success: true,
+response: 'Successfully liked and retweeted'
+}
 })
 
 // Receive engagement feedback
 socket.on('raid:engagement_feedback', (feedback) => {
-  const { score, quality, bonuses, nextAction } = feedback
-  updateUserScore(score)
-  displayQualityFeedback(quality)
-  if (nextAction) {
-    scheduleNextAction(nextAction)
-  }
+const { score, quality, bonuses, nextAction } = feedback
+updateUserScore(score)
+displayQualityFeedback(quality)
+if (nextAction) {
+scheduleNextAction(nextAction)
+}
 })
-```
+
+````
   </TabItem>
-  
+
   <TabItem label="Raid Monitoring">
 ```typescript
 // Real-time raid metrics
@@ -267,7 +272,7 @@ socket.on('raid:metrics', (metrics) => {
     timeRemaining,
     currentPhase
   } = metrics
-  
+
   updateRaidDashboard({
     participation: `${participationRate}%`,
     engagement: `${engagementRate}/min`,
@@ -288,7 +293,7 @@ socket.on('raid:performance_update', (performance) => {
     streakCount,
     achievements
   } = performance
-  
+
   if (userId === getCurrentUserId()) {
     updatePersonalStats({
       score: currentScore,
@@ -296,7 +301,7 @@ socket.on('raid:performance_update', (performance) => {
       quality: qualityRating,
       streak: streakCount
     })
-    
+
     // Handle new achievements
     achievements.forEach(achievement => {
       showAchievementUnlock(achievement)
@@ -314,7 +319,7 @@ socket.on('raid:completed', (results) => {
     rewards,
     summary
   } = results
-  
+
   displayRaidResults({
     success,
     metrics: finalMetrics,
@@ -323,7 +328,8 @@ socket.on('raid:completed', (results) => {
     summary
   })
 })
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -345,54 +351,55 @@ socket.emit('leaderboard:subscribe', {
 
 // Unsubscribe from updates
 socket.emit('leaderboard:unsubscribe', {
-  types: ['global'],
-  userId: 'user_456'
+types: ['global'],
+userId: 'user_456'
 })
 
 // Leaderboard update events
 socket.on('leaderboard:update', (update) => {
-  const { type, entries, userRank, changes } = update
-  
-  switch (type) {
-    case 'global':
-      updateGlobalLeaderboard(entries)
-      updateUserRank(userRank)
-      break
-    case 'weekly':
-      updateWeeklyLeaderboard(entries)
-      break
-    case 'seasonal':
-      updateSeasonalLeaderboard(entries)
-      break
-  }
-  
-  // Highlight ranking changes
-  changes.forEach(change => {
-    highlightRankingChange(change.userId, change.direction, change.positions)
-  })
+const { type, entries, userRank, changes } = update
+
+switch (type) {
+case 'global':
+updateGlobalLeaderboard(entries)
+updateUserRank(userRank)
+break
+case 'weekly':
+updateWeeklyLeaderboard(entries)
+break
+case 'seasonal':
+updateSeasonalLeaderboard(entries)
+break
+}
+
+// Highlight ranking changes
+changes.forEach(change => {
+highlightRankingChange(change.userId, change.direction, change.positions)
+})
 })
 
 // User-specific ranking events
 socket.on('ranking:changed', (rankingChange) => {
-  const {
-    oldRank,
-    newRank,
-    leaderboardType,
-    pointsGained,
-    cause
-  } = rankingChange
-  
-  showRankingNotification({
-    direction: newRank < oldRank ? 'up' : 'down',
-    positions: Math.abs(newRank - oldRank),
-    points: pointsGained,
-    reason: cause,
-    boardType: leaderboardType
-  })
+const {
+oldRank,
+newRank,
+leaderboardType,
+pointsGained,
+cause
+} = rankingChange
+
+showRankingNotification({
+direction: newRank < oldRank ? 'up' : 'down',
+positions: Math.abs(newRank - oldRank),
+points: pointsGained,
+reason: cause,
+boardType: leaderboardType
 })
-```
+})
+
+````
   </TabItem>
-  
+
   <TabItem label="Achievement Events">
 ```typescript
 // Achievement unlock events
@@ -407,7 +414,7 @@ socket.on('achievement:unlocked', (achievement) => {
     badge,
     rarity
   } = achievement
-  
+
   // Show achievement celebration
   showAchievementCelebration({
     title: name,
@@ -416,7 +423,7 @@ socket.on('achievement:unlocked', (achievement) => {
     rarity: `${rarity}% of users have this`,
     badge: badge?.iconUrl
   })
-  
+
   // Update user's achievement collection
   addToAchievementCollection(achievement)
 })
@@ -429,13 +436,13 @@ socket.on('achievement:progress', (progress) => {
     totalRequired,
     percentComplete
   } = progress
-  
+
   updateAchievementProgress(achievementId, {
     current: currentProgress,
     total: totalRequired,
     percent: percentComplete
   })
-  
+
   // Show progress milestone notifications
   if (percentComplete >= 50 && percentComplete < 75) {
     showProgressNotification(achievementId, 'halfway')
@@ -447,17 +454,18 @@ socket.on('achievement:progress', (progress) => {
 // Badge collection events
 socket.on('badge:earned', (badge) => {
   const { id, name, iconUrl, category, earnedAt } = badge
-  
+
   showBadgeEarned({
     name,
     icon: iconUrl,
     category,
     timestamp: earnedAt
   })
-  
+
   addToBadgeCollection(badge)
 })
-```
+````
+
   </TabItem>
   
   <TabItem label="Competition Events">
@@ -484,33 +492,34 @@ socket.on('tournament:started', (tournament) => {
 })
 
 socket.on('tournament:match_ready', (match) => {
-  const { tournamentId, matchId, opponent, deadline } = match
-  
-  showMatchNotification({
-    tournamentName: tournament.name,
-    opponent: opponent.username,
-    deadline: formatDeadline(deadline),
-    action: 'Join match room'
-  })
+const { tournamentId, matchId, opponent, deadline } = match
+
+showMatchNotification({
+tournamentName: tournament.name,
+opponent: opponent.username,
+deadline: formatDeadline(deadline),
+action: 'Join match room'
+})
 })
 
 // Seasonal competition events
 socket.on('season:phase_change', (phaseData) => {
-  const { season, newPhase, timeRemaining, rewards } = phaseData
-  
-  switch (newPhase) {
-    case 'final_week':
-      showSeasonAlert('Final week! Push for rewards!')
-      break
-    case 'playoffs':
-      showSeasonAlert('Playoffs begin! Elite competition starts now.')
-      break
-    case 'ended':
-      showSeasonEnded(season.results, rewards)
-      break
-  }
+const { season, newPhase, timeRemaining, rewards } = phaseData
+
+switch (newPhase) {
+case 'final_week':
+showSeasonAlert('Final week! Push for rewards!')
+break
+case 'playoffs':
+showSeasonAlert('Playoffs begin! Elite competition starts now.')
+break
+case 'ended':
+showSeasonEnded(season.results, rewards)
+break
+}
 })
-```
+
+````
   </TabItem>
 </Tabs>
 
@@ -542,7 +551,7 @@ socket.emit('message:broadcast', {
 // Message delivery confirmations
 socket.on('message:delivered', (delivery) => {
   const { messageId, platform, success, timestamp, response } = delivery
-  
+
   updateMessageStatus(messageId, platform, {
     status: success ? 'delivered' : 'failed',
     deliveredAt: timestamp,
@@ -558,14 +567,15 @@ socket.on('message:sync', (syncData) => {
     messageContent,
     conversationContext
   } = syncData
-  
+
   // Sync conversation across platforms
   syncConversationState(originalPlatform, targetPlatforms, {
     content: messageContent,
     context: conversationContext
   })
 })
-```
+````
+
   </TabItem>
   
   <TabItem label="Identity Linking">
@@ -580,51 +590,52 @@ socket.emit('identity:link', {
 
 // Identity linking confirmation
 socket.on('identity:linked', (linkData) => {
-  const {
-    userId,
-    platform,
-    platformUserId,
-    linkedAt,
-    totalPlatforms
-  } = linkData
-  
-  showIdentityLinked({
-    platform,
-    platformId: platformUserId,
-    totalConnected: totalPlatforms,
-    timestamp: linkedAt
-  })
-  
-  // Update user's connected platforms
-  updateConnectedPlatforms(linkData)
+const {
+userId,
+platform,
+platformUserId,
+linkedAt,
+totalPlatforms
+} = linkData
+
+showIdentityLinked({
+platform,
+platformId: platformUserId,
+totalConnected: totalPlatforms,
+timestamp: linkedAt
+})
+
+// Update user's connected platforms
+updateConnectedPlatforms(linkData)
 })
 
 // Identity verification events
 socket.on('identity:verification_required', (verification) => {
-  const { platform, verificationMethod, code, expiresAt } = verification
-  
-  showVerificationPrompt({
-    platform,
-    method: verificationMethod, // 'dm', 'mention', 'reaction'
-    code,
-    expiresIn: expiresAt - Date.now()
-  })
+const { platform, verificationMethod, code, expiresAt } = verification
+
+showVerificationPrompt({
+platform,
+method: verificationMethod, // 'dm', 'mention', 'reaction'
+code,
+expiresIn: expiresAt - Date.now()
 })
-```
+})
+
+````
   </TabItem>
-  
+
   <TabItem label="Platform Status">
 ```typescript
 // Platform connectivity status
 socket.on('platform:status_change', (statusUpdate) => {
   const { platform, status, lastSeen, capabilities } = statusUpdate
-  
+
   updatePlatformStatus(platform, {
     online: status === 'online',
     lastActive: lastSeen,
     features: capabilities
   })
-  
+
   // Show connectivity alerts
   if (status === 'offline') {
     showPlatformOfflineAlert(platform)
@@ -636,7 +647,7 @@ socket.on('platform:status_change', (statusUpdate) => {
 // Platform rate limit warnings
 socket.on('platform:rate_limit_warning', (warning) => {
   const { platform, limitType, usage, resetAt } = warning
-  
+
   showRateLimitWarning({
     platform,
     type: limitType, // 'messages', 'requests', 'actions'
@@ -648,13 +659,14 @@ socket.on('platform:rate_limit_warning', (warning) => {
 // Feature availability updates
 socket.on('platform:features_updated', (featureUpdate) => {
   const { platform, availableFeatures, disabledFeatures } = featureUpdate
-  
+
   updatePlatformFeatures(platform, {
     available: availableFeatures,
     disabled: disabledFeatures
   })
 })
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -676,48 +688,49 @@ socket.emit('analytics:subscribe', {
 
 // Real-time performance data
 socket.on('analytics:metrics', (metrics) => {
-  const {
-    responseTime,
-    successRate,
-    activeUsers,
-    raidEffectiveness,
-    systemHealth
-  } = metrics
-  
-  updatePerformanceDashboard({
-    avgResponseTime: `${responseTime}ms`,
-    successRate: `${successRate}%`,
-    activeUsers: activeUsers.count,
-    raidSuccess: `${raidEffectiveness}%`,
-    systemStatus: systemHealth.overall
-  })
+const {
+responseTime,
+successRate,
+activeUsers,
+raidEffectiveness,
+systemHealth
+} = metrics
+
+updatePerformanceDashboard({
+avgResponseTime: `${responseTime}ms`,
+successRate: `${successRate}%`,
+activeUsers: activeUsers.count,
+raidSuccess: `${raidEffectiveness}%`,
+systemStatus: systemHealth.overall
+})
 })
 
 // User activity analytics
 socket.on('analytics:user_activity', (activity) => {
-  const {
-    totalEngagements,
-    platformBreakdown,
-    qualityTrends,
-    performanceInsights
-  } = activity
-  
-  updateActivityDashboard({
-    engagements: totalEngagements,
-    platforms: platformBreakdown,
-    qualityTrend: qualityTrends.direction,
-    insights: performanceInsights
-  })
+const {
+totalEngagements,
+platformBreakdown,
+qualityTrends,
+performanceInsights
+} = activity
+
+updateActivityDashboard({
+engagements: totalEngagements,
+platforms: platformBreakdown,
+qualityTrend: qualityTrends.direction,
+insights: performanceInsights
 })
-```
+})
+
+````
   </TabItem>
-  
+
   <TabItem label="System Alerts">
 ```typescript
 // System health alerts
 socket.on('system:alert', (alert) => {
   const { level, component, message, timestamp, actionRequired } = alert
-  
+
   switch (level) {
     case 'critical':
       showCriticalAlert(message, actionRequired)
@@ -729,7 +742,7 @@ socket.on('system:alert', (alert) => {
       showInfoAlert(message)
       break
   }
-  
+
   // Log alert for debugging
   console[level](`[${component}] ${message}`, { timestamp, alert })
 })
@@ -737,7 +750,7 @@ socket.on('system:alert', (alert) => {
 // Maintenance notifications
 socket.on('system:maintenance', (maintenance) => {
   const { type, startTime, duration, affectedServices } = maintenance
-  
+
   showMaintenanceNotification({
     type, // 'scheduled', 'emergency', 'completed'
     when: startTime,
@@ -749,14 +762,15 @@ socket.on('system:maintenance', (maintenance) => {
 // Service availability updates
 socket.on('system:service_status', (serviceStatus) => {
   const { service, status, responseTime, errorRate } = serviceStatus
-  
+
   updateServiceIndicator(service, {
     online: status === 'operational',
     latency: responseTime,
     errors: errorRate
   })
 })
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -768,89 +782,90 @@ Robust error handling and automatic recovery mechanisms:
 
 ```typescript
 class WebSocketManager {
-  private socket: Socket
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
-  private eventQueue: QueuedEvent[] = []
-  
+  private socket: Socket;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private eventQueue: QueuedEvent[] = [];
+
   constructor(config: SocketConfig) {
-    this.initializeSocket(config)
-    this.setupErrorHandling()
-    this.setupReconnection()
+    this.initializeSocket(config);
+    this.setupErrorHandling();
+    this.setupReconnection();
   }
-  
+
   private setupErrorHandling(): void {
     // Handle connection errors
-    this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error)
-      this.handleConnectionError(error)
-    })
-    
+    this.socket.on("connect_error", (error) => {
+      console.error("Connection error:", error);
+      this.handleConnectionError(error);
+    });
+
     // Handle authentication errors
-    this.socket.on('authentication_error', (error) => {
-      console.error('Authentication failed:', error)
-      this.handleAuthError(error)
-    })
-    
+    this.socket.on("authentication_error", (error) => {
+      console.error("Authentication failed:", error);
+      this.handleAuthError(error);
+    });
+
     // Handle server errors
-    this.socket.on('error', (error) => {
-      console.error('Server error:', error)
-      this.handleServerError(error)
-    })
-    
+    this.socket.on("error", (error) => {
+      console.error("Server error:", error);
+      this.handleServerError(error);
+    });
+
     // Handle rate limiting
-    this.socket.on('rate_limited', (limitInfo) => {
-      console.warn('Rate limited:', limitInfo)
-      this.handleRateLimit(limitInfo)
-    })
+    this.socket.on("rate_limited", (limitInfo) => {
+      console.warn("Rate limited:", limitInfo);
+      this.handleRateLimit(limitInfo);
+    });
   }
-  
+
   private setupReconnection(): void {
-    this.socket.on('disconnect', (reason) => {
-      console.log('Disconnected:', reason)
-      
-      if (reason === 'io server disconnect') {
+    this.socket.on("disconnect", (reason) => {
+      console.log("Disconnected:", reason);
+
+      if (reason === "io server disconnect") {
         // Server disconnected us - don't reconnect automatically
-        this.handleServerDisconnect()
+        this.handleServerDisconnect();
       } else {
         // Network/client issues - attempt reconnection
-        this.attemptReconnection()
+        this.attemptReconnection();
       }
-    })
-    
-    this.socket.on('reconnect', (attemptNumber) => {
-      console.log(`Reconnected after ${attemptNumber} attempts`)
-      this.onSuccessfulReconnect()
-    })
-    
-    this.socket.on('reconnect_failed', () => {
-      console.error('Reconnection failed after maximum attempts')
-      this.handleReconnectionFailure()
-    })
+    });
+
+    this.socket.on("reconnect", (attemptNumber) => {
+      console.log(`Reconnected after ${attemptNumber} attempts`);
+      this.onSuccessfulReconnect();
+    });
+
+    this.socket.on("reconnect_failed", () => {
+      console.error("Reconnection failed after maximum attempts");
+      this.handleReconnectionFailure();
+    });
   }
-  
+
   private async onSuccessfulReconnect(): Promise<void> {
     // Re-authenticate if necessary
-    await this.reAuthenticate()
-    
+    await this.reAuthenticate();
+
     // Restore subscriptions
-    await this.restoreSubscriptions()
-    
+    await this.restoreSubscriptions();
+
     // Process queued events
-    await this.processEventQueue()
-    
+    await this.processEventQueue();
+
     // Sync any missed state
-    await this.syncMissedState()
+    await this.syncMissedState();
   }
-  
+
   private async processEventQueue(): Promise<void> {
     while (this.eventQueue.length > 0) {
-      const event = this.eventQueue.shift()
-      if (event && Date.now() - event.timestamp < 300000) { // 5 minutes
+      const event = this.eventQueue.shift();
+      if (event && Date.now() - event.timestamp < 300000) {
+        // 5 minutes
         try {
-          this.socket.emit(event.type, event.data)
+          this.socket.emit(event.type, event.data);
         } catch (error) {
-          console.error('Failed to replay queued event:', error)
+          console.error("Failed to replay queued event:", error);
         }
       }
     }

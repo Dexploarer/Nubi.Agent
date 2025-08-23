@@ -129,7 +129,7 @@ export class SessionContextProvider implements Provider {
         }
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to build context:", error);
+      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to build context:", error instanceof Error ? error.message : String(error));
       return {
         values: {
           sessionContext: "Session context unavailable"
@@ -183,7 +183,7 @@ export class SessionContextProvider implements Provider {
       const session = await this.sessionsService.getSession(sessionId);
       return session || undefined;
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get current session:", error);
+      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get current session:", error instanceof Error ? error.message : String(error));
       return undefined;
     }
   }
@@ -226,7 +226,7 @@ export class SessionContextProvider implements Provider {
 
       return sessionHistory;
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get session history:", error);
+      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get session history:", error instanceof Error ? error.message : String(error));
       return [];
     }
   }
@@ -279,7 +279,7 @@ export class SessionContextProvider implements Provider {
         lastInteractionTime,
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get conversation context:", error);
+      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get conversation context:", error instanceof Error ? error.message : String(error));
       return {
         recentMessages: [],
         topicFlow: [],
@@ -332,7 +332,7 @@ export class SessionContextProvider implements Provider {
         totalPointsEarned: this.calculateTotalPoints(raidContext.participants),
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get raid context:", error);
+      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get raid context:", error instanceof Error ? error.message : String(error));
       return undefined;
     }
   }
@@ -384,7 +384,7 @@ export class SessionContextProvider implements Provider {
         socialConnections,
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get community context:", error);
+      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get community context:", error instanceof Error ? error.message : String(error));
       return {
         userReputation: 0,
         communityRank: 'newcomer',
@@ -426,7 +426,7 @@ export class SessionContextProvider implements Provider {
         behaviorHistory,
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get memory context:", error);
+      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get memory context:", error instanceof Error ? error.message : String(error));
       return {
         relevantMemories: [],
         personalityTraits: {},

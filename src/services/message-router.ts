@@ -137,7 +137,7 @@ export class MessageRouter {
 
     try {
       // 1. Extract variables from message with context
-      const variables = this.extractVariables(message, userId, platform);
+      const variables = this.extractVariablesPrivate(message, userId, platform);
 
       // 2. Determine intent and prompt type with enhanced context
       const { intent, selectedPrompt, confidenceScore, reasoning } =
@@ -186,7 +186,7 @@ export class MessageRouter {
         selectedPrompt: "community-manager",
         confidenceScore: 0.1,
         reasoning: "Fallback due to classification error",
-        variables: this.extractVariables(message, userId, platform),
+        variables: this.extractVariablesPrivate(message, userId, platform),
       };
     }
   }
@@ -227,9 +227,16 @@ export class MessageRouter {
   }
 
   /**
+   * Public wrapper for test compatibility - extracts variables from text
+   */
+  extractVariables(text: string, context: any = {}): ExtractedVariables {
+    return this.extractVariablesPrivate(text, "test-user", "test");
+  }
+
+  /**
    * Extract variables from message content
    */
-  private extractVariables(
+  private extractVariablesPrivate(
     message: string,
     userId?: string,
     platform?: string,
@@ -502,6 +509,7 @@ export class MessageRouter {
     // Calculate final scores with all factors
     const scoredCandidates = candidates.map((candidate, index) => ({
       ...candidate,
+      continuityBoost: continuityBoosts[index],
       finalScore:
         candidate.confidenceScore +
         candidate.contextBoost +
@@ -516,7 +524,7 @@ export class MessageRouter {
       intent: selected.intent,
       selectedPrompt: selected.selectedPrompt,
       confidenceScore: Math.min(selected.finalScore, 0.99),
-      reasoning: `${selected.reasoning} (context boost: +${selected.contextBoost.toFixed(2)}, continuity: +${continuityBoosts[candidates.indexOf(selected)].toFixed(2)})`,
+      reasoning: `${selected.reasoning} (context boost: +${selected.contextBoost.toFixed(2)}, continuity: +${selected.continuityBoost.toFixed(2)})`,
     };
   }
 

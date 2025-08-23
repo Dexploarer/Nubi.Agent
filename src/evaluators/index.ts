@@ -4,6 +4,7 @@ export { personalityEvolutionEvaluator } from "./personality-evolution";
 export { communityTrackingEvaluator } from "./community-tracking-evaluator";
 export { securityEvaluator } from "./security-evaluator";
 export { raidSuccessEvaluator } from "./raid-success-evaluator";
+export { ResponseStrategyEvaluator } from "./response-strategy-evaluator";
 
 // Re-export default exports for backward compatibility
 export { default as securityEvaluatorDefault } from "./security-evaluator";

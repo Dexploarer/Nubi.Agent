@@ -3,12 +3,15 @@ import {
   IAgentRuntime,
   logger,
   UUID,
+  Memory,
 } from "@elizaos/core";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { createServer } from "http";
 import { NUBISessionsService, Session, RaidSession } from "./nubi-sessions-service";
 import { RaidSessionManager } from "./raid-session-manager";
 import { SessionsAPI } from "../api/sessions-api";
+import { StreamingSessionsService, StreamChunk } from "./streaming-sessions-service";
+import { ResponseStrategyEvaluator } from "../evaluators/response-strategy-evaluator";
 
 /**
  * Socket.IO Sessions Service
@@ -59,6 +62,8 @@ export class SocketIOSessionsService extends Service {
   private sessionsService: NUBISessionsService;
   private raidManager: RaidSessionManager;
   private sessionsAPI: SessionsAPI;
+  private streamingService?: StreamingSessionsService;
+  private strategyEvaluator?: ResponseStrategyEvaluator;
   private activeSockets: Map<string, SocketSessionData> = new Map();
   private sessionRooms: Map<string, Set<string>> = new Map(); // sessionId -> socketIds
   private raidRooms: Map<string, Set<string>> = new Map(); // raidId -> socketIds
@@ -104,6 +109,9 @@ export class SocketIOSessionsService extends Service {
     try {
       logger.info("[SOCKETIO_SESSIONS] Starting Socket.IO Sessions Service...");
 
+      // Initialize streaming services if available
+      await this.initializeStreamingServices();
+
       // Set up Socket.IO event handlers
       this.setupSocketHandlers();
 
@@ -112,7 +120,7 @@ export class SocketIOSessionsService extends Service {
 
       logger.info("[SOCKETIO_SESSIONS] Socket.IO Sessions Service started successfully");
     } catch (error) {
-      logger.error("[SOCKETIO_SESSIONS] Failed to start:", error);
+      logger.error("[SOCKETIO_SESSIONS] Failed to start:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -139,7 +147,7 @@ export class SocketIOSessionsService extends Service {
           await this.authenticateSocket(socket, data);
           callback({ success: true, socketId: socket.id });
         } catch (error) {
-          logger.error("[SOCKETIO_SESSIONS] Authentication failed:", error);
+          logger.error("[SOCKETIO_SESSIONS] Authentication failed:", error instanceof Error ? error.message : String(error));
           callback({ success: false, error: error instanceof Error ? error.message : 'Authentication failed' });
         }
       });
@@ -316,7 +324,7 @@ export class SocketIOSessionsService extends Service {
           await this.sessionsService.updateSessionActivity(data.sessionId, data.activity);
           this.updateSocketActivity(socket.id);
         } catch (error) {
-          logger.error("[SOCKETIO_SESSIONS] Failed to update activity:", error);
+          logger.error("[SOCKETIO_SESSIONS] Failed to update activity:", error instanceof Error ? error.message : String(error));
         }
       });
 
@@ -328,7 +336,7 @@ export class SocketIOSessionsService extends Service {
 
       // Error handler
       socket.on("error", (error) => {
-        logger.error(`[SOCKETIO_SESSIONS] Socket error for ${socket.id}:`, error);
+        logger.error(`[SOCKETIO_SESSIONS] Socket error for ${socket.id}:`, error instanceof Error ? error.message : String(error));
       });
     });
   }
@@ -529,6 +537,167 @@ export class SocketIOSessionsService extends Service {
     this.raidRooms.clear();
 
     logger.info("[SOCKETIO_SESSIONS] Socket.IO Sessions Service stopped");
+  }
+
+  /**
+   * Handle streaming message with progressive responses
+   */
+  private async handleStreamingMessage(
+    socket: Socket,
+    sessionId: string,
+    message: Memory,
+    callback: (result: any) => void
+  ): Promise<void> {
+    if (!this.streamingService) {
+      callback({ success: false, error: 'Streaming service not available' });
+      return;
+    }
+
+    try {
+      // Start streaming indicator
+      socket.emit("session:streamStart", {
+        sessionId,
+        messageId: message.id,
+        timestamp: new Date(),
+      });
+
+      // Setup chunk handler
+      const chunkHandler = (chunk: StreamChunk) => {
+        if (chunk.sessionId === sessionId) {
+          // Emit chunk to client
+          socket.emit("session:streamChunk", {
+            sessionId,
+            chunkId: chunk.chunkId,
+            content: chunk.content,
+            type: chunk.type,
+            sequenceNumber: chunk.sequenceNumber,
+            timestamp: chunk.timestamp,
+          });
+
+          // Broadcast to session room (except sender)
+          this.broadcastToSession(sessionId, "session:streamChunk", {
+            sessionId,
+            chunkId: chunk.chunkId,
+            content: chunk.content,
+            type: chunk.type,
+            sequenceNumber: chunk.sequenceNumber,
+            timestamp: chunk.timestamp,
+            fromUserId: this.activeSockets.get(socket.id)?.userId,
+          }, socket.id);
+        }
+      };
+
+      // Process message with streaming
+      const finalContent = await this.streamingService.processStreamingMessage(
+        sessionId,
+        message,
+        chunkHandler
+      );
+
+      // Emit stream complete
+      socket.emit("session:streamComplete", {
+        sessionId,
+        messageId: message.id,
+        finalContent,
+        timestamp: new Date(),
+      });
+
+      // Broadcast completion
+      this.broadcastToSession(sessionId, "session:streamComplete", {
+        sessionId,
+        messageId: message.id,
+        finalContent,
+        timestamp: new Date(),
+        fromUserId: this.activeSockets.get(socket.id)?.userId,
+      }, socket.id);
+
+      callback({
+        success: true,
+        data: {
+          response: finalContent,
+          sessionId,
+          streamed: true,
+          timestamp: new Date().toISOString(),
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error("[SOCKETIO_SESSIONS] Streaming error:", error instanceof Error ? error.message : String(error));
+      
+      // Emit error event
+      socket.emit("session:streamError", {
+        sessionId,
+        messageId: message.id,
+        error: error instanceof Error ? error.message : 'Stream failed',
+        timestamp: new Date(),
+      });
+
+      callback({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to stream message',
+      });
+    }
+  }
+
+  /**
+   * Handle batch message (non-streaming)
+   */
+  private async handleBatchMessage(
+    socket: Socket,
+    sessionId: string,
+    data: any,
+    callback: (result: any) => void
+  ): Promise<void> {
+    try {
+      // Send message through Sessions API
+      const result = await this.sessionsAPI.sendMessage(sessionId, {
+        content: data.content,
+        type: data.type,
+        metadata: data.metadata,
+      });
+
+      // Broadcast to session room
+      const message: SessionMessage = {
+        type: 'message',
+        content: data.content,
+        sessionId: sessionId,
+        userId: this.activeSockets.get(socket.id)?.userId,
+        metadata: data.metadata,
+        timestamp: new Date(),
+      };
+
+      this.broadcastToSession(sessionId, "session:message", message, socket.id);
+      
+      callback(result);
+    } catch (error) {
+      callback({ success: false, error: error instanceof Error ? error.message : 'Failed to send message' });
+    }
+  }
+
+  /**
+   * Initialize streaming service if runtime is available
+   */
+  private async initializeStreamingServices(): Promise<void> {
+    if (!this.runtime) return;
+
+    try {
+      // Get or create streaming service
+      this.streamingService = this.runtime.getService<StreamingSessionsService>("streaming_sessions");
+      if (!this.streamingService) {
+        this.streamingService = new StreamingSessionsService(
+          this.runtime,
+          this.sessionsService
+        );
+        await this.streamingService.start();
+      }
+
+      // Create strategy evaluator
+      this.strategyEvaluator = new ResponseStrategyEvaluator(this.streamingService);
+
+      logger.info("[SOCKETIO_SESSIONS] Streaming services initialized");
+    } catch (error) {
+      logger.warn("[SOCKETIO_SESSIONS] Failed to initialize streaming services:", error);
+    }
   }
 }
 

@@ -1,9 +1,15 @@
 import { IAgentRuntime, logger, UUID, Memory } from "@elizaos/core";
-import { NUBISessionsService, Session, SessionConfig, RaidSession, RaidSessionConfig } from "../services/nubi-sessions-service";
+import {
+  NUBISessionsService,
+  Session,
+  SessionConfig,
+  RaidSession,
+  RaidSessionConfig,
+} from "../services/nubi-sessions-service";
 
 /**
  * NUBI Sessions API
- * 
+ *
  * RESTful API wrapper around NUBISessionsService providing:
  * - ElizaOS Sessions API compatibility
  * - NUBI-specific raid session endpoints
@@ -28,7 +34,7 @@ export interface SessionCreateRequest {
   agentId: UUID;
   userId?: UUID;
   roomId?: UUID;
-  sessionType?: 'conversation' | 'raid' | 'community';
+  sessionType?: "conversation" | "raid" | "community";
   timeout?: number;
   autoRenewal?: boolean;
   metadata?: Record<string, any>;
@@ -38,7 +44,7 @@ export interface RaidSessionCreateRequest extends SessionCreateRequest {
   raidId: string;
   targetUrl: string;
   objectives: Array<{
-    type: 'like' | 'retweet' | 'reply' | 'quote' | 'follow';
+    type: "like" | "retweet" | "reply" | "quote" | "follow";
     target: string;
     count: number;
     points: number;
@@ -65,13 +71,13 @@ export class SessionsAPI {
   private config: SessionsAPIConfig;
 
   constructor(
-    runtime: IAgentRuntime, 
+    runtime: IAgentRuntime,
     sessionsService: NUBISessionsService,
     config: SessionsAPIConfig = {
-      basePath: '/api/sessions',
+      basePath: "/api/sessions",
       enableCORS: true,
-      authRequired: false
-    }
+      authRequired: false,
+    },
   ) {
     this.runtime = runtime;
     this.sessionsService = sessionsService;
@@ -86,15 +92,28 @@ export class SessionsAPI {
    * POST /api/sessions
    * Create a new session
    */
-  async createSession(request: SessionCreateRequest): Promise<APIResponse<Session>> {
+  async createSession(
+    request: SessionCreateRequest,
+  ): Promise<APIResponse<Session>> {
     try {
-      logger.info(`[SESSIONS_API] Creating session for agent: ${request.agentId}`);
+      // Validate required parameters
+      if (!request.agentId) {
+        return {
+          success: false,
+          error: "agentId is required",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      logger.info(
+        `[SESSIONS_API] Creating session for agent: ${request.agentId}`,
+      );
 
       const config: SessionConfig = {
         agentId: request.agentId,
         userId: request.userId,
         roomId: request.roomId,
-        sessionType: request.sessionType || 'conversation',
+        sessionType: request.sessionType || "conversation",
         timeout: request.timeout || 3600000, // 1 hour default
         autoRenewal: request.autoRenewal || false,
         metadata: request.metadata || {},
@@ -108,7 +127,10 @@ export class SessionsAPI {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to create session:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to create session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -124,11 +146,11 @@ export class SessionsAPI {
   async getSession(sessionId: string): Promise<APIResponse<Session>> {
     try {
       const session = await this.sessionsService.getSession(sessionId);
-      
+
       if (!session) {
         return {
           success: false,
-          error: 'Session not found',
+          error: "Session not found",
           timestamp: new Date().toISOString(),
         };
       }
@@ -139,7 +161,10 @@ export class SessionsAPI {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to get session:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to get session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error),
@@ -152,77 +177,112 @@ export class SessionsAPI {
    * POST /api/sessions/:sessionId/messages
    * Send message to session
    */
-  async sendMessage(sessionId: string, request: MessageRequest): Promise<APIResponse<any>> {
+  async sendMessage(
+    sessionId: string,
+    request: MessageRequest,
+  ): Promise<APIResponse<any>> {
     try {
-      // Update session activity
-      await this.sessionsService.updateSessionActivity(sessionId, {
-        lastMessage: request.content,
-        messageType: request.type || 'text',
-        metadata: request.metadata || {},
-      });
-
       // Process message with ElizaOS runtime
       const session = await this.sessionsService.getSession(sessionId);
       if (!session) {
         return {
           success: false,
-          error: 'Session not found',
+          error: "Session not found",
           timestamp: new Date().toISOString(),
         };
       }
 
-      // Create message memory
-      await this.runtime.createMemory({
-        id: crypto.randomUUID() as UUID,
-        agentId: session.agentId,
-        entityId: session.userId || session.agentId,
-        roomId: session.roomId || crypto.randomUUID() as UUID,
-        content: {
-          text: request.content,
-          type: 'user_message',
-          sessionId: sessionId,
-          metadata: request.metadata,
-        },
-        embedding: undefined,
-        createdAt: Date.now(),
-      }, "memories", false);
-
-      // Generate response using ElizaOS
-      // Note: processActions is the standard runtime method for message handling
-      const responses: Memory[] = [];
-      await this.runtime.processActions(
+      // Update session activity
+      const activityUpdated = await this.sessionsService.updateSessionActivity(
+        sessionId,
         {
-          id: crypto.randomUUID() as UUID,
-          agentId: session.agentId,
-          entityId: session.userId || session.agentId,
-          roomId: session.roomId || crypto.randomUUID() as UUID,
-          content: {
-            text: request.content,
-            type: request.type || 'text',
-          },
-          embedding: undefined,
-          createdAt: Date.now(),
+          lastMessage: request.content,
+          messageType: request.type || "text",
+          metadata: request.metadata || {},
         },
-        responses,
-        undefined
       );
-      
+
+      if (!activityUpdated) {
+        logger.warn(
+          "[SESSIONS_API] Failed to update session activity, but continuing",
+        );
+      }
+
+      // Create message memory (handle gracefully if not available)
+      try {
+        await this.runtime.createMemory(
+          {
+            id: crypto.randomUUID() as UUID,
+            agentId: session.agentId,
+            entityId: session.userId || session.agentId,
+            roomId: session.roomId || (crypto.randomUUID() as UUID),
+            content: {
+              text: request.content,
+              type: "user_message",
+              sessionId: sessionId,
+              metadata: request.metadata,
+            },
+            embedding: undefined,
+            createdAt: Date.now(),
+          },
+          "memories",
+          false,
+        );
+      } catch (memoryError) {
+        logger.warn(
+          "[SESSIONS_API] Failed to create memory, continuing:",
+          memoryError,
+        );
+      }
+
+      // Generate response using ElizaOS (handle gracefully if not available)
+      const responses: Memory[] = [];
+      try {
+        await this.runtime.processActions(
+          {
+            id: crypto.randomUUID() as UUID,
+            agentId: session.agentId,
+            entityId: session.userId || session.agentId,
+            roomId: session.roomId || (crypto.randomUUID() as UUID),
+            content: {
+              text: request.content,
+              type: request.type || "text",
+            },
+            embedding: undefined,
+            createdAt: Date.now(),
+          },
+          responses,
+          undefined,
+        );
+      } catch (processError) {
+        logger.warn(
+          "[SESSIONS_API] Failed to process actions, continuing:",
+          processError,
+        );
+      }
+
       const response = responses[0];
 
       return {
         success: true,
         data: {
-          response: (response as any)?.text || 'Message processed',
+          response: (response as any)?.text || "Message processed",
           sessionId: sessionId,
           timestamp: new Date().toISOString(),
         },
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to send message:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to send message:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error) || 'Failed to send message',
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error) || "Failed to send message",
         timestamp: new Date().toISOString(),
       };
     }
@@ -239,12 +299,12 @@ export class SessionsAPI {
       if (!session) {
         return {
           success: false,
-          error: 'Session not found',
+          error: "Session not found",
           timestamp: new Date().toISOString(),
         };
       }
 
-      session.state.status = 'expired';
+      session.state.status = "expired";
       session.expiresAt = new Date(); // Immediate expiration
 
       return {
@@ -253,10 +313,16 @@ export class SessionsAPI {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to delete session:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to delete session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error) || 'Failed to delete session',
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error) || "Failed to delete session",
         timestamp: new Date().toISOString(),
       };
     }
@@ -270,15 +336,75 @@ export class SessionsAPI {
    * POST /api/sessions/raids
    * Create a new raid session
    */
-  async createRaidSession(request: RaidSessionCreateRequest): Promise<APIResponse<RaidSession>> {
+  async createRaidSession(
+    request: RaidSessionCreateRequest,
+  ): Promise<APIResponse<RaidSession>> {
     try {
       logger.info(`[SESSIONS_API] Creating raid session: ${request.raidId}`);
+
+      // Validate required fields
+      if (!request.agentId) {
+        return {
+          success: false,
+          error: "agentId is required",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      if (!request.raidId) {
+        return {
+          success: false,
+          error: "raidId is required",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      if (!request.targetUrl) {
+        return {
+          success: false,
+          error: "targetUrl is required",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      if (!request.duration || request.duration <= 0) {
+        return {
+          success: false,
+          error: "duration is required and must be greater than 0",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      if (!request.objectives || !Array.isArray(request.objectives)) {
+        return {
+          success: false,
+          error: "objectives is required and must be an array",
+          timestamp: new Date().toISOString(),
+        };
+      }
+
+      // Validate objectives structure
+      for (const objective of request.objectives) {
+        if (
+          !objective.type ||
+          !objective.target ||
+          typeof objective.count !== "number" ||
+          typeof objective.points !== "number"
+        ) {
+          return {
+            success: false,
+            error:
+              "Each objective must have type, target, count, and points fields",
+            timestamp: new Date().toISOString(),
+          };
+        }
+      }
 
       const config: RaidSessionConfig = {
         agentId: request.agentId,
         userId: request.userId,
         roomId: request.roomId,
-        sessionType: 'raid',
+        sessionType: "raid",
         timeout: request.duration * 1000, // Convert to milliseconds
         autoRenewal: false,
         metadata: request.metadata || {},
@@ -297,10 +423,16 @@ export class SessionsAPI {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to create raid session:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to create raid session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error) || 'Failed to create raid session',
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error) || "Failed to create raid session",
         timestamp: new Date().toISOString(),
       };
     }
@@ -310,9 +442,14 @@ export class SessionsAPI {
    * POST /api/sessions/:sessionId/join
    * Join a raid session
    */
-  async joinRaidSession(sessionId: string, request: JoinRaidRequest): Promise<APIResponse<boolean>> {
+  async joinRaidSession(
+    sessionId: string,
+    request: JoinRaidRequest,
+  ): Promise<APIResponse<boolean>> {
     try {
-      logger.info(`[SESSIONS_API] User ${request.telegramUsername} joining raid session: ${sessionId}`);
+      logger.info(
+        `[SESSIONS_API] User ${request.telegramUsername} joining raid session: ${sessionId}`,
+      );
 
       const success = await this.sessionsService.joinRaidSession(sessionId, {
         telegramId: request.telegramId,
@@ -323,7 +460,7 @@ export class SessionsAPI {
       if (!success) {
         return {
           success: false,
-          error: 'Failed to join raid session',
+          error: "Failed to join raid session",
           timestamp: new Date().toISOString(),
         };
       }
@@ -334,10 +471,16 @@ export class SessionsAPI {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to join raid session:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to join raid session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error) || 'Failed to join raid session',
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error) || "Failed to join raid session",
         timestamp: new Date().toISOString(),
       };
     }
@@ -347,11 +490,13 @@ export class SessionsAPI {
    * GET /api/sessions/raids/:raidId
    * Get raid session by raid ID
    */
-  async getRaidSessionByRaidId(raidId: string): Promise<APIResponse<RaidSession | null>> {
+  async getRaidSessionByRaidId(
+    raidId: string,
+  ): Promise<APIResponse<RaidSession | null>> {
     try {
       // This would require an index lookup - simplified for now
       const stats = await this.sessionsService.getSessionStats();
-      
+
       // In a real implementation, you'd query by raid_id
       // For now, return a placeholder response
       return {
@@ -360,10 +505,16 @@ export class SessionsAPI {
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to get raid session:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to get raid session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error) || 'Failed to get raid session',
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error) || "Failed to get raid session",
         timestamp: new Date().toISOString(),
       };
     }
@@ -376,17 +527,23 @@ export class SessionsAPI {
   async getSessionStats(): Promise<APIResponse<any>> {
     try {
       const stats = await this.sessionsService.getSessionStats();
-      
+
       return {
         success: true,
         data: stats,
         timestamp: new Date().toISOString(),
       };
     } catch (error) {
-      logger.error("[SESSIONS_API] Failed to get session stats:", error);
+      logger.error(
+        "[SESSIONS_API] Failed to get session stats:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error) || 'Failed to get session stats',
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error) || "Failed to get session stats",
         timestamp: new Date().toISOString(),
       };
     }
@@ -429,7 +586,10 @@ export class SessionsAPI {
       },
 
       joinRaidSession: async (req: any, res: any) => {
-        const result = await this.joinRaidSession(req.params.sessionId, req.body);
+        const result = await this.joinRaidSession(
+          req.params.sessionId,
+          req.body,
+        );
         res.status(result.success ? 200 : 400).json(result);
       },
 
@@ -452,34 +612,49 @@ export class SessionsAPI {
   generateSocketIOHandlers() {
     return {
       // Session management
-      'session:create': async (data: SessionCreateRequest, callback: Function) => {
+      "session:create": async (
+        data: SessionCreateRequest,
+        callback: Function,
+      ) => {
         const result = await this.createSession(data);
         callback(result);
       },
 
-      'session:join': async (data: { sessionId: string }, callback: Function) => {
+      "session:join": async (
+        data: { sessionId: string },
+        callback: Function,
+      ) => {
         const result = await this.getSession(data.sessionId);
         callback(result);
       },
 
-      'session:message': async (data: { sessionId: string } & MessageRequest, callback: Function) => {
+      "session:message": async (
+        data: { sessionId: string } & MessageRequest,
+        callback: Function,
+      ) => {
         const result = await this.sendMessage(data.sessionId, data);
         callback(result);
       },
 
       // Raid sessions
-      'raid:create': async (data: RaidSessionCreateRequest, callback: Function) => {
+      "raid:create": async (
+        data: RaidSessionCreateRequest,
+        callback: Function,
+      ) => {
         const result = await this.createRaidSession(data);
         callback(result);
       },
 
-      'raid:join': async (data: { sessionId: string } & JoinRaidRequest, callback: Function) => {
+      "raid:join": async (
+        data: { sessionId: string } & JoinRaidRequest,
+        callback: Function,
+      ) => {
         const result = await this.joinRaidSession(data.sessionId, data);
         callback(result);
       },
 
       // Statistics
-      'session:stats': async (callback: Function) => {
+      "session:stats": async (callback: Function) => {
         const result = await this.getSessionStats();
         callback(result);
       },

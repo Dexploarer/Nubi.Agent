@@ -19,9 +19,7 @@ import * as observability from "./observability";
 import * as routes from "./routes";
 import * as schemas from "./schemas";
 
-// Remove explicit telegram plugin import to avoid duplicate registration
 // The character's plugins array handles telegram via `@elizaos/plugin-telegram`
-// import { ProjectStarterTestSuite } from "./__tests__/e2e/project-starter.e2e";
 
 const initCharacter = ({ runtime }: { runtime: IAgentRuntime }) => {
   try {

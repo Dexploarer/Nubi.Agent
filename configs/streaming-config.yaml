@@ -1,0 +1,195 @@
+# NUBI Streaming Configuration
+# Real-time LLM Response Streaming Settings
+
+streaming:
+  # Enable/disable streaming globally
+  enabled: true
+  
+  # Response delivery strategies
+  strategies:
+    # Token threshold for automatic streaming (estimated tokens)
+    streaming_threshold: 500
+    
+    # Maximum duration for batch responses (ms)
+    batch_timeout: 10000
+    
+    # Prefer streaming for these prompt types
+    streaming_prompts:
+      - technical-expert
+      - crypto-analyst
+      - raid-coordinator-strategic
+      - personality-core-philosophical
+      - code-generation
+      - analysis-deep
+    
+    # Always use batch for these prompt types
+    batch_prompts:
+      - meme-lord
+      - support-agent
+      - emergency-handler
+      - simple-query
+  
+  # Chunk configuration
+  chunking:
+    # Size of each chunk (characters)
+    chunk_size: 50
+    
+    # Delay between chunks (ms)
+    flush_interval: 100
+    
+    # Maximum chunk buffer size (characters)
+    max_buffer: 10000
+  
+  # SSE (Server-Sent Events) configuration
+  sse:
+    # Heartbeat interval (ms)
+    heartbeat_interval: 30000
+    
+    # Connection timeout (ms)
+    connection_timeout: 300000
+    
+    # Enable compression
+    compression: true
+    
+    # Maximum concurrent SSE connections per session
+    max_connections_per_session: 5
+  
+  # WebSocket streaming configuration
+  websocket:
+    # Enable WebSocket streaming
+    enabled: true
+    
+    # Maximum message size (bytes)
+    max_message_size: 1048576
+    
+    # Ping interval (ms)
+    ping_interval: 30000
+    
+    # Reconnection settings
+    reconnection:
+      enabled: true
+      max_attempts: 5
+      initial_delay: 1000
+      max_delay: 30000
+      multiplier: 1.5
+  
+  # Performance optimization
+  performance:
+    # Enable response caching
+    cache_responses: true
+    
+    # Cache TTL (seconds)
+    cache_ttl: 300
+    
+    # Maximum cache size (MB)
+    max_cache_size: 100
+    
+    # Enable parallel chunk processing
+    parallel_chunks: true
+    
+    # Maximum parallel streams
+    max_parallel_streams: 10
+  
+  # Network quality adaptation
+  network_adaptation:
+    # Enable adaptive streaming based on network quality
+    enabled: true
+    
+    # Quality thresholds
+    thresholds:
+      poor:
+        min_bandwidth: 0
+        max_bandwidth: 500000  # 500 Kbps
+        strategy: batch
+      fair:
+        min_bandwidth: 500001
+        max_bandwidth: 1000000  # 1 Mbps
+        strategy: hybrid
+      good:
+        min_bandwidth: 1000001
+        max_bandwidth: 5000000  # 5 Mbps
+        strategy: stream
+      excellent:
+        min_bandwidth: 5000001
+        max_bandwidth: 999999999
+        strategy: stream
+  
+  # User preference defaults
+  user_preferences:
+    # Default strategy for new users
+    default_strategy: auto
+    
+    # Allow user preference override
+    allow_override: true
+    
+    # Preference persistence (seconds)
+    preference_ttl: 86400  # 24 hours
+  
+  # Metrics and monitoring
+  metrics:
+    # Enable metrics collection
+    enabled: true
+    
+    # Metrics to track
+    track:
+      - stream_duration
+      - chunk_count
+      - bytes_sent
+      - completion_rate
+      - error_rate
+      - user_satisfaction
+    
+    # Reporting interval (seconds)
+    reporting_interval: 60
+    
+    # Store metrics in database
+    persist_metrics: true
+  
+  # Error handling
+  error_handling:
+    # Maximum retries for failed streams
+    max_retries: 3
+    
+    # Retry delay (ms)
+    retry_delay: 1000
+    
+    # Fallback to batch on streaming failure
+    fallback_to_batch: true
+    
+    # Error message streaming
+    stream_errors: false
+  
+  # Content filtering for streams
+  content_filtering:
+    # Enable content filtering for streamed responses
+    enabled: true
+    
+    # Filter sensitive information
+    filter_sensitive: true
+    
+    # Maximum content length per chunk
+    max_chunk_length: 1000
+    
+    # Sanitize HTML in streams
+    sanitize_html: true
+  
+  # Debug settings
+  debug:
+    # Enable debug logging
+    enabled: false
+    
+    # Log chunk details
+    log_chunks: false
+    
+    # Log strategy decisions
+    log_strategies: true
+    
+    # Log performance metrics
+    log_performance: true
+    
+    # Simulate network conditions
+    simulate_network:
+      enabled: false
+      latency: 100  # ms
+      jitter: 20    # ms
+      packet_loss: 0.01  # 1%

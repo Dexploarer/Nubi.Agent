@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 NUBI's plugin system provides a powerful extensibility framework built on ElizaOS, enabling developers to create custom actions, evaluators, providers, and complete plugin packages.
 
@@ -23,35 +23,35 @@ graph TB
         PR[Plugin Registry]
         PL[Plugin Loader]
     end
-    
+
     subgraph "Plugin Components"
         A[Actions]
         E[Evaluators]
         P[Providers]
         S[Services]
     end
-    
+
     subgraph "Runtime Environment"
         ER[ElizaOS Runtime]
         NR[NUBI Runtime]
         DB[Database]
         MB[Message Bus]
     end
-    
+
     PC --> A
     PC --> E
     PC --> P
     PC --> S
-    
+
     PM --> PL
     PM --> PR
     PL --> PC
-    
+
     A --> ER
     E --> ER
     P --> ER
     S --> NR
-    
+
     NR --> DB
     NR --> MB
 ```
@@ -62,71 +62,72 @@ graph TB
 import { Plugin } from "@elizaos/core"
 
 interface NubiPlugin extends Plugin {
-  // Standard ElizaOS plugin properties
-  name: string
-  description: string
-  version: string
-  
-  // NUBI-specific extensions
-  nubiVersion: string
-  category: PluginCategory
-  permissions: PluginPermission[]
-  dependencies: PluginDependency[]
-  
-  // Component definitions
-  actions?: Action[]
-  evaluators?: Evaluator[]
-  providers?: Provider[]
-  services?: Service[]
-  
-  // Lifecycle hooks
-  onLoad?(runtime: NubiRuntime): Promise<void>
-  onUnload?(runtime: NubiRuntime): Promise<void>
-  onConfigUpdate?(config: PluginConfig): Promise<void>
-  
-  // Health and monitoring
-  healthCheck?(): Promise<PluginHealth>
-  getMetrics?(): Promise<PluginMetrics>
+// Standard ElizaOS plugin properties
+name: string
+description: string
+version: string
+
+// NUBI-specific extensions
+nubiVersion: string
+category: PluginCategory
+permissions: PluginPermission[]
+dependencies: PluginDependency[]
+
+// Component definitions
+actions?: Action[]
+evaluators?: Evaluator[]
+providers?: Provider[]
+services?: Service[]
+
+// Lifecycle hooks
+onLoad?(runtime: NubiRuntime): Promise<void>
+onUnload?(runtime: NubiRuntime): Promise<void>
+onConfigUpdate?(config: PluginConfig): Promise<void>
+
+// Health and monitoring
+healthCheck?(): Promise<PluginHealth>
+getMetrics?(): Promise<PluginMetrics>
 }
 
 interface PluginMetadata {
-  author: string
-  license: string
-  repository?: string
-  homepage?: string
-  keywords: string[]
-  compatibility: {
-    elizaos: string
-    nubi: string
-    node: string
-  }
+author: string
+license: string
+repository?: string
+homepage?: string
+keywords: string[]
+compatibility: {
+elizaos: string
+nubi: string
+node: string
+}
 }
 
 enum PluginCategory {
-  COMMUNICATION = 'communication',
-  ANALYTICS = 'analytics',
-  AUTOMATION = 'automation',
-  SECURITY = 'security',
-  INTEGRATION = 'integration',
-  UTILITY = 'utility',
-  ENTERTAINMENT = 'entertainment'
+COMMUNICATION = 'communication',
+ANALYTICS = 'analytics',
+AUTOMATION = 'automation',
+SECURITY = 'security',
+INTEGRATION = 'integration',
+UTILITY = 'utility',
+ENTERTAINMENT = 'entertainment'
 }
-```
+
+````
   </TabItem>
-  
+
   <TabItem label="Plugin Example">
 ```typescript
-import { 
-  Plugin, 
-  Action, 
-  Evaluator, 
+import {
+  Plugin,
+  Action,
+  Evaluator,
   Provider,
-  elizaLogger as logger 
+  elizaLogger as logger
 } from "@elizaos/core"
-import type { 
-  NubiPlugin, 
-  NubiRuntime, 
-  PluginConfig 
+import type {
+  NubiPlugin,
+  NubiRuntime,
+  PluginConfig
 } from "../types"
 
 class CustomRaidPlugin implements NubiPlugin {
@@ -135,56 +136,56 @@ class CustomRaidPlugin implements NubiPlugin {
   version = "1.0.0"
   nubiVersion = "^2.0.0"
   category = PluginCategory.AUTOMATION
-  
+
   permissions = [
     'raids:create',
-    'raids:coordinate', 
+    'raids:coordinate',
     'messaging:broadcast',
     'analytics:read'
   ]
-  
+
   dependencies = [
     { name: 'nubi-core', version: '^2.0.0' },
     { name: 'message-bus', version: '^1.5.0' }
   ]
-  
+
   actions = [
     new CustomRaidAction(),
     new AdvancedCoordinationAction()
   ]
-  
+
   evaluators = [
     new RaidEffectivenessEvaluator(),
     new ParticipantQualityEvaluator()
   ]
-  
+
   providers = [
     new RaidStrategyProvider(),
     new CoordinationMetricsProvider()
   ]
-  
+
   private config: PluginConfig
   private runtime: NubiRuntime
-  
+
   async onLoad(runtime: NubiRuntime): Promise<void> {
     this.runtime = runtime
     this.config = await runtime.getPluginConfig(this.name)
-    
+
     // Initialize plugin services
     await this.initializeServices()
-    
+
     // Register event listeners
     this.registerEventListeners()
-    
+
     logger.info(`${this.name} v${this.version} loaded successfully`)
   }
-  
+
   async onUnload(runtime: NubiRuntime): Promise<void> {
     // Cleanup resources
     await this.cleanup()
     logger.info(`${this.name} unloaded`)
   }
-  
+
   async healthCheck(): Promise<PluginHealth> {
     return {
       status: 'healthy',
@@ -196,18 +197,18 @@ class CustomRaidPlugin implements NubiPlugin {
       timestamp: new Date().toISOString()
     }
   }
-  
+
   private async initializeServices(): Promise<void> {
     // Plugin-specific initialization logic
     await this.setupCustomCoordination()
     await this.initializeMetricsCollection()
   }
-  
+
   private registerEventListeners(): void {
     this.runtime.on('raid:created', this.handleRaidCreated.bind(this))
     this.runtime.on('raid:participant_joined', this.handleParticipantJoined.bind(this))
   }
-  
+
   private async handleRaidCreated(event: RaidCreatedEvent): Promise<void> {
     // Custom raid creation handling
     logger.info(`Custom raid coordination activated for ${event.raidId}`)
@@ -215,7 +216,8 @@ class CustomRaidPlugin implements NubiPlugin {
 }
 
 export default new CustomRaidPlugin()
-```
+````
+
   </TabItem>
   
   <TabItem label="Plugin Configuration">
@@ -290,82 +292,83 @@ import type {
 } from "@elizaos/core"
 
 interface CustomActionConfig {
-  name: string
-  description: string
-  examples: ActionExample[]
-  handler: Handler
-  validate: (runtime: IAgentRuntime, message: Message) => Promise<boolean>
+name: string
+description: string
+examples: ActionExample[]
+handler: Handler
+validate: (runtime: IAgentRuntime, message: Message) => Promise<boolean>
 }
 
 class AdvancedRaidAction implements Action {
-  name = "ADVANCED_RAID_COORDINATE"
-  description = "Coordinate complex multi-platform raids with advanced strategies"
-  
-  examples: ActionExample[] = [
-    [
-      {
-        user: "{{user1}}",
-        content: {
-          text: "Let's coordinate a strategic raid on that viral post about AI innovation"
-        }
-      },
-      {
-        user: "{{agent}}",
-        content: {
-          text: "I'll set up an advanced coordination strategy. Analyzing target engagement patterns and optimal timing windows...",
-          action: "ADVANCED_RAID_COORDINATE"
-        }
-      }
-    ]
-  ]
-  
-  async validate(
-    runtime: IAgentRuntime, 
-    message: Message,
-    state?: State
-  ): Promise<boolean> {
-    // Validate user permissions
-    const hasPermission = await this.checkUserPermissions(
-      runtime, 
-      message.userId, 
-      ['raids:coordinate', 'advanced:strategies']
-    )
-    
+name = "ADVANCED_RAID_COORDINATE"
+description = "Coordinate complex multi-platform raids with advanced strategies"
+
+examples: ActionExample[] = [
+[
+{
+user: "{{user1}}",
+content: {
+text: "Let's coordinate a strategic raid on that viral post about AI innovation"
+}
+},
+{
+user: "{{agent}}",
+content: {
+text: "I'll set up an advanced coordination strategy. Analyzing target engagement patterns and optimal timing windows...",
+action: "ADVANCED_RAID_COORDINATE"
+}
+}
+]
+]
+
+async validate(
+runtime: IAgentRuntime,
+message: Message,
+state?: State
+): Promise<boolean> {
+// Validate user permissions
+const hasPermission = await this.checkUserPermissions(
+runtime,
+message.userId,
+['raids:coordinate', 'advanced:strategies']
+)
+
     if (!hasPermission) {
       return false
     }
-    
+
     // Validate message contains raid coordination request
     const coordinationKeywords = [
       'coordinate raid', 'strategic raid', 'advanced raid',
       'multi-platform raid', 'synchronized attack'
     ]
-    
-    return coordinationKeywords.some(keyword => 
+
+    return coordinationKeywords.some(keyword =>
       message.content.text.toLowerCase().includes(keyword)
     )
-  }
-  
-  async handler(
-    runtime: IAgentRuntime,
-    message: Message,
-    state?: State,
-    options?: any,
-    callback?: HandlerCallback
-  ): Promise<boolean> {
-    try {
-      // Extract raid parameters from message
-      const raidParams = await this.extractRaidParameters(message.content.text)
-      
+
+}
+
+async handler(
+runtime: IAgentRuntime,
+message: Message,
+state?: State,
+options?: any,
+callback?: HandlerCallback
+): Promise<boolean> {
+try {
+// Extract raid parameters from message
+const raidParams = await this.extractRaidParameters(message.content.text)
+
       // Analyze target for optimal strategy
       const targetAnalysis = await this.analyzeTarget(raidParams.target)
-      
+
       // Generate advanced coordination strategy
       const strategy = await this.generateAdvancedStrategy(
-        targetAnalysis, 
+        targetAnalysis,
         raidParams
       )
-      
+
       // Create raid with advanced configuration
       const raid = await this.createAdvancedRaid({
         ...raidParams,
@@ -373,10 +376,10 @@ class AdvancedRaidAction implements Action {
         coordinator: message.userId,
         createdAt: new Date()
       })
-      
+
       // Send coordination response
       const response = await this.generateCoordinationResponse(raid, strategy)
-      
+
       if (callback) {
         callback({
           text: response,
@@ -389,46 +392,48 @@ class AdvancedRaidAction implements Action {
           }
         })
       }
-      
+
       return true
     } catch (error) {
       console.error('Advanced raid coordination failed:', error)
-      
+
       if (callback) {
         callback({
           text: "I encountered an issue setting up the advanced raid coordination. Let me try a simpler approach or check with the technical team.",
           error: error.message
         })
       }
-      
+
       return false
     }
-  }
-  
-  private async extractRaidParameters(text: string): Promise<RaidParameters> {
-    // Use NLP to extract raid parameters from natural language
-    const nlpService = await this.getNLPService()
-    return nlpService.extractRaidParams(text)
-  }
-  
-  private async analyzeTarget(target: RaidTarget): Promise<TargetAnalysis> {
-    // Advanced target analysis
-    const analysisService = await this.getAnalysisService()
-    return analysisService.deepAnalyze(target)
-  }
-  
-  private async generateAdvancedStrategy(
-    analysis: TargetAnalysis,
-    params: RaidParameters
-  ): Promise<AdvancedStrategy> {
-    // Generate sophisticated raid strategy
-    const strategyEngine = await this.getStrategyEngine()
-    return strategyEngine.generateAdvanced(analysis, params)
-  }
+
 }
-```
+
+private async extractRaidParameters(text: string): Promise<RaidParameters> {
+// Use NLP to extract raid parameters from natural language
+const nlpService = await this.getNLPService()
+return nlpService.extractRaidParams(text)
+}
+
+private async analyzeTarget(target: RaidTarget): Promise<TargetAnalysis> {
+// Advanced target analysis
+const analysisService = await this.getAnalysisService()
+return analysisService.deepAnalyze(target)
+}
+
+private async generateAdvancedStrategy(
+analysis: TargetAnalysis,
+params: RaidParameters
+): Promise<AdvancedStrategy> {
+// Generate sophisticated raid strategy
+const strategyEngine = await this.getStrategyEngine()
+return strategyEngine.generateAdvanced(analysis, params)
+}
+}
+
+````
   </TabItem>
-  
+
   <TabItem label="Action Registration">
 ```typescript
 // actions/index.ts
@@ -448,9 +453,9 @@ export class ActionPlugin implements NubiPlugin {
   name = "custom-actions"
   description = "Collection of advanced custom actions"
   version = "1.0.0"
-  
+
   actions = customActions
-  
+
   async onLoad(runtime: NubiRuntime): Promise<void> {
     // Register all actions with runtime
     for (const action of this.actions) {
@@ -465,7 +470,8 @@ import { ActionPlugin } from "./actions"
 
 const actionPlugin = new ActionPlugin()
 await runtime.loadPlugin(actionPlugin)
-```
+````
+
   </TabItem>
   
   <TabItem label="Action Testing">
@@ -476,58 +482,59 @@ import { AdvancedRaidAction } from '../advanced-raid-action'
 import { createMockRuntime, createMockMessage } from '../../test-utils'
 
 describe('AdvancedRaidAction', () => {
-  let action: AdvancedRaidAction
-  let mockRuntime: any
-  let mockMessage: any
-  
-  beforeEach(() => {
-    action = new AdvancedRaidAction()
-    mockRuntime = createMockRuntime()
-    mockMessage = createMockMessage({
-      content: { text: "Let's coordinate a strategic raid on this viral AI post" },
-      userId: "user_123"
-    })
-  })
-  
-  describe('validate', () => {
-    it('should validate valid coordination requests', async () => {
-      // Mock user permissions
-      mockRuntime.checkUserPermissions = jest.fn().mockResolvedValue(true)
-      
+let action: AdvancedRaidAction
+let mockRuntime: any
+let mockMessage: any
+
+beforeEach(() => {
+action = new AdvancedRaidAction()
+mockRuntime = createMockRuntime()
+mockMessage = createMockMessage({
+content: { text: "Let's coordinate a strategic raid on this viral AI post" },
+userId: "user_123"
+})
+})
+
+describe('validate', () => {
+it('should validate valid coordination requests', async () => {
+// Mock user permissions
+mockRuntime.checkUserPermissions = jest.fn().mockResolvedValue(true)
+
       const isValid = await action.validate(mockRuntime, mockMessage)
       expect(isValid).toBe(true)
     })
-    
+
     it('should reject requests without proper permissions', async () => {
       mockRuntime.checkUserPermissions = jest.fn().mockResolvedValue(false)
-      
+
       const isValid = await action.validate(mockRuntime, mockMessage)
       expect(isValid).toBe(false)
     })
-    
+
     it('should reject messages without coordination keywords', async () => {
       mockRuntime.checkUserPermissions = jest.fn().mockResolvedValue(true)
       mockMessage.content.text = "Just a regular message"
-      
+
       const isValid = await action.validate(mockRuntime, mockMessage)
       expect(isValid).toBe(false)
     })
-  })
-  
-  describe('handler', () => {
-    it('should successfully create advanced raid coordination', async () => {
-      // Mock all dependencies
-      const mockAnalysis = { viralityScore: 0.8, engagementPotential: 0.9 }
-      const mockStrategy = { name: 'viral_boost', platforms: ['telegram', 'twitter'] }
-      const mockRaid = { id: 'raid_123', status: 'created' }
-      
+
+})
+
+describe('handler', () => {
+it('should successfully create advanced raid coordination', async () => {
+// Mock all dependencies
+const mockAnalysis = { viralityScore: 0.8, engagementPotential: 0.9 }
+const mockStrategy = { name: 'viral_boost', platforms: ['telegram', 'twitter'] }
+const mockRaid = { id: 'raid_123', status: 'created' }
+
       action.analyzeTarget = jest.fn().mockResolvedValue(mockAnalysis)
       action.generateAdvancedStrategy = jest.fn().mockResolvedValue(mockStrategy)
       action.createAdvancedRaid = jest.fn().mockResolvedValue(mockRaid)
-      
+
       const callback = jest.fn()
       const result = await action.handler(mockRuntime, mockMessage, undefined, {}, callback)
-      
+
       expect(result).toBe(true)
       expect(callback).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -539,9 +546,11 @@ describe('AdvancedRaidAction', () => {
         })
       )
     })
-  })
+
 })
-```
+})
+
+````
   </TabItem>
 </Tabs>
 
@@ -555,16 +564,16 @@ Build intelligent evaluation systems for content and behavior analysis:
   <TabItem label="Evaluator Structure">
 ```typescript
 import { Evaluator } from "@elizaos/core"
-import type { 
-  Memory, 
-  IAgentRuntime, 
-  State 
+import type {
+  Memory,
+  IAgentRuntime,
+  State
 } from "@elizaos/core"
 
 class RaidQualityEvaluator implements Evaluator {
   name = "RAID_QUALITY_ASSESSMENT"
   description = "Evaluate raid participation quality and effectiveness"
-  
+
   // Evaluation examples for training
   examples = [
     {
@@ -588,7 +597,7 @@ class RaidQualityEvaluator implements Evaluator {
       outcome: "LOW_QUALITY - Generic, minimal effort engagement"
     }
   ]
-  
+
   async handler(
     runtime: IAgentRuntime,
     message: Memory,
@@ -597,28 +606,28 @@ class RaidQualityEvaluator implements Evaluator {
     try {
       // Extract engagement data from memory
       const engagement = await this.extractEngagementData(message)
-      
+
       if (!engagement) {
         return 0 // No raid engagement detected
       }
-      
+
       // Run comprehensive quality assessment
       const qualityMetrics = await this.assessQuality(engagement)
-      
+
       // Calculate composite quality score (0-1)
       const qualityScore = this.calculateQualityScore(qualityMetrics)
-      
+
       // Store evaluation results
       await this.storeEvaluationResults(message, qualityMetrics, qualityScore)
-      
+
       return qualityScore
-      
+
     } catch (error) {
       console.error('Raid quality evaluation failed:', error)
       return 0
     }
   }
-  
+
   private async assessQuality(engagement: EngagementData): Promise<QualityMetrics> {
     // Multi-dimensional quality assessment
     const [
@@ -634,7 +643,7 @@ class RaidQualityEvaluator implements Evaluator {
       this.assessRelevance(engagement.content, engagement.target),
       this.assessOriginality(engagement.content, engagement.user)
     ])
-    
+
     return {
       content: contentQuality,
       authenticity: authenticityScore,
@@ -650,7 +659,7 @@ class RaidQualityEvaluator implements Evaluator {
       })
     }
   }
-  
+
   private async assessContentQuality(content: string): Promise<number> {
     // Content quality assessment using multiple factors
     const factors = {
@@ -660,7 +669,7 @@ class RaidQualityEvaluator implements Evaluator {
       grammar: await this.assessGrammar(content),
       engagement: this.assessEngagementPotential(content)
     }
-    
+
     // Weighted average of quality factors
     return (
       factors.length * 0.15 +
@@ -670,9 +679,9 @@ class RaidQualityEvaluator implements Evaluator {
       factors.engagement * 0.20
     )
   }
-  
+
   private async assessAuthenticity(
-    content: string, 
+    content: string,
     user: UserProfile
   ): Promise<number> {
     // Check for human-like characteristics
@@ -683,12 +692,13 @@ class RaidQualityEvaluator implements Evaluator {
       contextualReferences: this.detectContextualReferences(content),
       variationFromPrevious: await this.checkVariationFromPrevious(content, user)
     }
-    
+
     // Calculate authenticity based on human-like factors
     return this.calculateAuthenticityScore(humanFactors)
   }
 }
-```
+````
+
   </TabItem>
   
   <TabItem label="Specialized Evaluators">
@@ -712,11 +722,11 @@ class CommunityImpactEvaluator implements Evaluator {
 
 // Security Risk Evaluator
 class SecurityRiskEvaluator implements Evaluator {
-  name = "SECURITY_RISK_ASSESSMENT"
-  
-  async handler(runtime: IAgentRuntime, message: Memory): Promise<number> {
-    const risks = await this.assessSecurityRisks(message)
-    
+name = "SECURITY_RISK_ASSESSMENT"
+
+async handler(runtime: IAgentRuntime, message: Memory): Promise<number> {
+const risks = await this.assessSecurityRisks(message)
+
     return {
       maliciousContent: risks.maliciousContentScore,
       privacyViolation: risks.privacyRiskScore,
@@ -724,27 +734,30 @@ class SecurityRiskEvaluator implements Evaluator {
       reputationRisk: risks.reputationDamageRisk,
       spamProbability: risks.spamLikelihood
     }
-  }
+
+}
 }
 
 // Performance Optimization Evaluator
 class PerformanceOptimizationEvaluator implements Evaluator {
-  name = "PERFORMANCE_OPTIMIZATION"
-  
-  async handler(runtime: IAgentRuntime, message: Memory): Promise<number> {
-    const performance = await this.assessPerformance(message)
-    
+name = "PERFORMANCE_OPTIMIZATION"
+
+async handler(runtime: IAgentRuntime, message: Memory): Promise<number> {
+const performance = await this.assessPerformance(message)
+
     return {
       responseTime: performance.responseTimeScore,
       resourceEfficiency: performance.resourceUsageScore,
       coordinationEffectiveness: performance.coordinationScore,
       outcomeQuality: performance.resultQualityScore
     }
-  }
+
 }
-```
+}
+
+````
   </TabItem>
-  
+
   <TabItem label="Evaluator Integration">
 ```typescript
 // evaluators/index.ts
@@ -762,22 +775,22 @@ export const customEvaluators: Evaluator[] = [
 // Evaluator orchestration service
 class EvaluatorOrchestrator {
   private evaluators: Map<string, Evaluator> = new Map()
-  
+
   constructor(evaluators: Evaluator[]) {
     evaluators.forEach(evaluator => {
       this.evaluators.set(evaluator.name, evaluator)
     })
   }
-  
+
   async runEvaluations(
-    runtime: IAgentRuntime, 
+    runtime: IAgentRuntime,
     message: Memory,
     evaluatorNames?: string[]
   ): Promise<EvaluationResults> {
-    const targetEvaluators = evaluatorNames 
+    const targetEvaluators = evaluatorNames
       ? evaluatorNames.map(name => this.evaluators.get(name)).filter(Boolean)
       : Array.from(this.evaluators.values())
-    
+
     const evaluationPromises = targetEvaluators.map(async evaluator => {
       try {
         const result = await evaluator.handler(runtime, message)
@@ -797,9 +810,9 @@ class EvaluatorOrchestrator {
         }
       }
     })
-    
+
     const results = await Promise.all(evaluationPromises)
-    
+
     return {
       messageId: message.id,
       evaluations: results,
@@ -808,7 +821,8 @@ class EvaluatorOrchestrator {
     }
   }
 }
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -829,47 +843,48 @@ import type {
 } from "@elizaos/core"
 
 class AdvancedRaidContextProvider implements Provider {
-  name = "ADVANCED_RAID_CONTEXT"
-  description = "Provide comprehensive context for advanced raid coordination"
-  
-  async get(
-    runtime: IAgentRuntime, 
-    message: Memory, 
-    state?: State
-  ): Promise<string> {
-    try {
-      // Gather comprehensive raid context
-      const context = await this.gatherRaidContext(runtime, message, state)
-      
+name = "ADVANCED_RAID_CONTEXT"
+description = "Provide comprehensive context for advanced raid coordination"
+
+async get(
+runtime: IAgentRuntime,
+message: Memory,
+state?: State
+): Promise<string> {
+try {
+// Gather comprehensive raid context
+const context = await this.gatherRaidContext(runtime, message, state)
+
       // Format context for AI consumption
       return this.formatContextForAI(context)
-      
+
     } catch (error) {
       console.error('Failed to get raid context:', error)
       return "Raid context temporarily unavailable."
     }
-  }
-  
-  private async gatherRaidContext(
-    runtime: IAgentRuntime,
-    message: Memory,
-    state?: State
-  ): Promise<RaidContextData> {
-    // Run parallel context gathering
-    const [
-      activeRaids,
-      userPerformance,
-      communityMetrics,
-      strategicInsights,
-      platformStatus
-    ] = await Promise.all([
-      this.getActiveRaids(runtime),
-      this.getUserPerformanceContext(message.userId),
-      this.getCommunityMetrics(),
-      this.getStrategicInsights(),
-      this.getPlatformStatus()
-    ])
-    
+
+}
+
+private async gatherRaidContext(
+runtime: IAgentRuntime,
+message: Memory,
+state?: State
+): Promise<RaidContextData> {
+// Run parallel context gathering
+const [
+activeRaids,
+userPerformance,
+communityMetrics,
+strategicInsights,
+platformStatus
+] = await Promise.all([
+this.getActiveRaids(runtime),
+this.getUserPerformanceContext(message.userId),
+this.getCommunityMetrics(),
+this.getStrategicInsights(),
+this.getPlatformStatus()
+])
+
     return {
       activeRaids,
       userPerformance,
@@ -878,20 +893,23 @@ class AdvancedRaidContextProvider implements Provider {
       platformStatus,
       timestamp: new Date()
     }
-  }
-  
-  private formatContextForAI(context: RaidContextData): string {
-    return `
+
+}
+
+private formatContextForAI(context: RaidContextData): string {
+return `
 RAID COORDINATION CONTEXT
 
 Current Active Raids: ${context.activeRaids.length}
 ${context.activeRaids.map(raid => `
+
 - ${raid.title}: ${raid.participants} participants, ${raid.effectiveness}% effective
   Platform: ${raid.platform}, Phase: ${raid.currentPhase}
   Quality Score: ${raid.qualityScore}, Time Remaining: ${raid.timeRemaining}
-`).join('')}
+  `).join('')}
 
 User Performance Context:
+
 - Total Raids: ${context.userPerformance.totalRaids}
 - Success Rate: ${context.userPerformance.successRate}%
 - Average Quality: ${context.userPerformance.averageQuality}
@@ -899,12 +917,14 @@ User Performance Context:
 - Preferred Platforms: ${context.userPerformance.preferredPlatforms.join(', ')}
 
 Community Metrics:
+
 - Active Users: ${context.communityMetrics.activeUsers}
 - Community Health: ${context.communityMetrics.healthScore}
 - Engagement Rate: ${context.communityMetrics.engagementRate}%
 - Quality Trend: ${context.communityMetrics.qualityTrend}
 
 Strategic Insights:
+
 - Peak Activity Hours: ${context.strategicInsights.peakHours.join(', ')}
 - Trending Topics: ${context.strategicInsights.trendingTopics.join(', ')}
 - Optimal Platforms: ${context.strategicInsights.optimalPlatforms.join(', ')}
@@ -912,42 +932,44 @@ Strategic Insights:
 
 Platform Status:
 ${Object.entries(context.platformStatus).map(([platform, status]) => `
+
 - ${platform}: ${status.online ? 'Online' : 'Offline'} (${status.responseTime}ms avg)
-`).join('')}
+  `).join('')}
 
 Recommendations for optimal raid coordination based on current conditions.
-    `
-  }
+`
 }
-```
+}
+
+````
   </TabItem>
-  
+
   <TabItem label="Intelligence Provider">
 ```typescript
 class IntelligenceProvider implements Provider {
   name = "NUBI_INTELLIGENCE"
   description = "Provide AI-powered insights and recommendations"
-  
+
   private aiModel: AIModel
   private analyticsService: AnalyticsService
-  
+
   async get(
-    runtime: IAgentRuntime, 
-    message: Memory, 
+    runtime: IAgentRuntime,
+    message: Memory,
     state?: State
   ): Promise<string> {
     // Analyze current context
     const contextAnalysis = await this.analyzeContext(message, state)
-    
+
     // Generate AI-powered insights
     const insights = await this.generateInsights(contextAnalysis)
-    
+
     // Format insights for decision-making
     return this.formatIntelligence(insights)
   }
-  
+
   private async analyzeContext(
-    message: Memory, 
+    message: Memory,
     state?: State
   ): Promise<ContextAnalysis> {
     // Multi-dimensional context analysis
@@ -958,15 +980,15 @@ class IntelligenceProvider implements Provider {
       marketConditions: await this.analyzeMarketConditions(),
       platformTrends: await this.analyzePlatformTrends()
     }
-    
+
     return analysis
   }
-  
+
   private async generateInsights(analysis: ContextAnalysis): Promise<AIInsights> {
     // Use AI model to generate actionable insights
     const prompt = this.constructInsightPrompt(analysis)
     const aiResponse = await this.aiModel.generate(prompt)
-    
+
     return {
       recommendations: aiResponse.recommendations,
       predictions: aiResponse.predictions,
@@ -975,7 +997,7 @@ class IntelligenceProvider implements Provider {
       confidence: aiResponse.confidence
     }
   }
-  
+
   private formatIntelligence(insights: AIInsights): string {
     return `
 NUBI INTELLIGENCE BRIEFING
@@ -996,7 +1018,8 @@ Overall Intelligence Confidence: ${insights.confidence}%
     `
   }
 }
-```
+````
+
   </TabItem>
   
   <TabItem label="Provider Registration">
@@ -1015,24 +1038,24 @@ export const customProviders: Provider[] = [
 
 // Provider management service
 class ProviderManager {
-  private providers: Map<string, Provider> = new Map()
-  private cache: Map<string, CachedProviderResult> = new Map()
-  
-  constructor(providers: Provider[]) {
-    providers.forEach(provider => {
-      this.providers.set(provider.name, provider)
-    })
-  }
-  
-  async getContext(
-    providerName: string,
-    runtime: IAgentRuntime,
-    message: Memory,
-    state?: State,
-    useCache: boolean = true
-  ): Promise<string> {
-    const cacheKey = `${providerName}-${message.id}`
-    
+private providers: Map<string, Provider> = new Map()
+private cache: Map<string, CachedProviderResult> = new Map()
+
+constructor(providers: Provider[]) {
+providers.forEach(provider => {
+this.providers.set(provider.name, provider)
+})
+}
+
+async getContext(
+providerName: string,
+runtime: IAgentRuntime,
+message: Memory,
+state?: State,
+useCache: boolean = true
+): Promise<string> {
+const cacheKey = `${providerName}-${message.id}`
+
     // Check cache first
     if (useCache && this.cache.has(cacheKey)) {
       const cached = this.cache.get(cacheKey)!
@@ -1040,45 +1063,48 @@ class ProviderManager {
         return cached.result
       }
     }
-    
+
     // Get fresh context
     const provider = this.providers.get(providerName)
     if (!provider) {
       throw new Error(`Provider ${providerName} not found`)
     }
-    
+
     const result = await provider.get(runtime, message, state)
-    
+
     // Cache result
     this.cache.set(cacheKey, {
       result,
       timestamp: Date.now()
     })
-    
+
     return result
-  }
-  
-  async getAllContext(
-    runtime: IAgentRuntime,
-    message: Memory,
-    state?: State
-  ): Promise<Map<string, string>> {
-    const contextPromises = Array.from(this.providers.entries()).map(
-      async ([name, provider]) => {
-        try {
-          const context = await provider.get(runtime, message, state)
-          return [name, context] as [string, string]
-        } catch (error) {
-          console.error(`Provider ${name} failed:`, error)
-          return [name, `Provider ${name} temporarily unavailable`] as [string, string]
-        }
-      }
-    )
-    
+
+}
+
+async getAllContext(
+runtime: IAgentRuntime,
+message: Memory,
+state?: State
+): Promise<Map<string, string>> {
+const contextPromises = Array.from(this.providers.entries()).map(
+async ([name, provider]) => {
+try {
+const context = await provider.get(runtime, message, state)
+return [name, context] as [string, string]
+} catch (error) {
+console.error(`Provider ${name} failed:`, error)
+return [name, `Provider ${name} temporarily unavailable`] as [string, string]
+}
+}
+)
+
     const results = await Promise.all(contextPromises)
     return new Map(results)
-  }
+
 }
+}
+
 ```
   </TabItem>
 </Tabs>
@@ -1092,31 +1118,33 @@ NUBI plugins follow a standardized package format for distribution:
 <Tabs>
   <TabItem label="Package Structure">
 ```
+
 my-nubi-plugin/
-├── package.json                 # NPM package configuration
-├── plugin.config.yaml          # Plugin configuration schema
-├── README.md                   # Plugin documentation
+├── package.json # NPM package configuration
+├── plugin.config.yaml # Plugin configuration schema
+├── README.md # Plugin documentation
 ├── src/
-│   ├── index.ts                # Main plugin export
-│   ├── actions/                # Custom actions
-│   │   ├── index.ts
-│   │   └── my-action.ts
-│   ├── evaluators/            # Custom evaluators
-│   │   ├── index.ts
-│   │   └── my-evaluator.ts
-│   ├── providers/             # Custom providers
-│   │   ├── index.ts
-│   │   └── my-provider.ts
-│   └── services/              # Custom services
-│       ├── index.ts
-│       └── my-service.ts
-├── dist/                      # Compiled output
-├── tests/                     # Test files
-├── docs/                      # Documentation
-└── examples/                  # Usage examples
-```
+│ ├── index.ts # Main plugin export
+│ ├── actions/ # Custom actions
+│ │ ├── index.ts
+│ │ └── my-action.ts
+│ ├── evaluators/ # Custom evaluators
+│ │ ├── index.ts
+│ │ └── my-evaluator.ts
+│ ├── providers/ # Custom providers
+│ │ ├── index.ts
+│ │ └── my-provider.ts
+│ └── services/ # Custom services
+│ ├── index.ts
+│ └── my-service.ts
+├── dist/ # Compiled output
+├── tests/ # Test files
+├── docs/ # Documentation
+└── examples/ # Usage examples
+
+````
   </TabItem>
-  
+
   <TabItem label="Package.json">
 ```json
 {
@@ -1167,7 +1195,8 @@ my-nubi-plugin/
     "README.md"
   ]
 }
-```
+````
+
   </TabItem>
   
   <TabItem label="Installation Commands">
@@ -1176,17 +1205,21 @@ my-nubi-plugin/
 npm install @nubi/my-plugin
 
 # Install from GitHub
+
 npm install github:username/my-nubi-plugin
 
 # Install locally for development
+
 npm install ./path/to/my-plugin
 
 # Using NUBI CLI (future feature)
+
 nubi plugin install @nubi/my-plugin
 nubi plugin install github:username/my-nubi-plugin
 nubi plugin install --local ./my-plugin
 
 # Plugin management
+
 nubi plugin list
 nubi plugin enable @nubi/my-plugin
 nubi plugin disable @nubi/my-plugin
@@ -1194,9 +1227,11 @@ nubi plugin update @nubi/my-plugin
 nubi plugin remove @nubi/my-plugin
 
 # Plugin configuration
+
 nubi plugin config @nubi/my-plugin --key api_endpoint --value "https://api.example.com"
 nubi plugin config @nubi/my-plugin --file ./custom-config.yaml
-```
+
+````
   </TabItem>
 </Tabs>
 
@@ -1232,6 +1267,6 @@ Results:
   }
 ]
 */
-```
+````
 
 NUBI's plugin system provides unlimited extensibility while maintaining security, performance, and compatibility standards, enabling the community to build powerful custom functionality on top of the core platform.

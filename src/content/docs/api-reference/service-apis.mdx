@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 NUBI exposes powerful HTTP REST APIs for programmatic access to all core functionalities, enabling integration with external systems and custom applications.
 
@@ -28,23 +28,26 @@ curl -X POST https://api.anubis.chat/auth/login \
   }'
 
 # Response
+
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expiresAt": "2024-01-01T12:00:00Z",
-  "refreshToken": "refresh-token-here",
-  "user": {
-    "id": "user_456",
-    "username": "your-username",
-    "permissions": ["raids:read", "raids:write", "leaderboards:read"]
-  }
+"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+"expiresAt": "2024-01-01T12:00:00Z",
+"refreshToken": "refresh-token-here",
+"user": {
+"id": "user_456",
+"username": "your-username",
+"permissions": ["raids:read", "raids:write", "leaderboards:read"]
+}
 }
 
 # Use token in subsequent requests
+
 curl -X GET https://api.anubis.chat/api/v1/raids \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-```
+ -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+````
   </TabItem>
-  
+
   <TabItem label="API Key">
 ```bash
 # Generate API key (requires JWT authentication)
@@ -70,7 +73,8 @@ curl -X POST https://api.anubis.chat/api/v1/auth/api-keys \
 # Use API key in requests
 curl -X GET https://api.anubis.chat/api/v1/raids \
   -H "X-API-Key: nubi_ak_1234567890abcdef"
-```
+````
+
   </TabItem>
   
   <TabItem label="Platform Integration">
@@ -99,22 +103,23 @@ interface PlatformAuth {
 
 // Register platform integration
 const response = await fetch('https://api.anubis.chat/api/v1/integrations', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-jwt-token',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    platform: 'telegram',
-    name: 'My Telegram Bot',
-    credentials: {
-      botToken: 'your-bot-token',
-      chatId: '@your-channel'
-    },
-    permissions: ['message:send', 'raids:coordinate']
-  })
+method: 'POST',
+headers: {
+'Authorization': 'Bearer your-jwt-token',
+'Content-Type': 'application/json'
+},
+body: JSON.stringify({
+platform: 'telegram',
+name: 'My Telegram Bot',
+credentials: {
+botToken: 'your-bot-token',
+chatId: '@your-channel'
+},
+permissions: ['message:send', 'raids:coordinate']
 })
-```
+})
+
+````
   </TabItem>
 </Tabs>
 
@@ -196,7 +201,8 @@ curl -X POST https://api.anubis.chat/api/v1/raids \
     "websocket": "Connect to coordination room and emit 'raid:join'"
   }
 }
-```
+````
+
   </TabItem>
   
   <TabItem label="Get Raids">
@@ -206,92 +212,96 @@ curl -X GET "https://api.anubis.chat/api/v1/raids?status=active&platform=twitter
   -H "Authorization: Bearer your-token"
 
 # Response
+
 {
-  "raids": [
-    {
-      "id": "raid_abc123",
-      "title": "Community Support Raid",
-      "status": "active",
-      "participants": 25,
-      "maxParticipants": 100,
-      "progress": {
-        "phase": "execution",
-        "completionPercent": 45,
-        "timeRemaining": 1800000
-      },
-      "metrics": {
-        "engagementRate": 0.85,
-        "qualityScore": 0.78,
-        "effectivenessScore": 0.82
-      }
-    }
-  ],
-  "pagination": {
-    "total": 150,
-    "limit": 20,
-    "offset": 0,
-    "hasNext": true,
-    "hasPrevious": false
-  }
+"raids": [
+{
+"id": "raid_abc123",
+"title": "Community Support Raid",
+"status": "active",
+"participants": 25,
+"maxParticipants": 100,
+"progress": {
+"phase": "execution",
+"completionPercent": 45,
+"timeRemaining": 1800000
+},
+"metrics": {
+"engagementRate": 0.85,
+"qualityScore": 0.78,
+"effectivenessScore": 0.82
+}
+}
+],
+"pagination": {
+"total": 150,
+"limit": 20,
+"offset": 0,
+"hasNext": true,
+"hasPrevious": false
+}
 }
 
 # Get specific raid details
+
 curl -X GET https://api.anubis.chat/api/v1/raids/raid_abc123 \
-  -H "Authorization: Bearer your-token"
+ -H "Authorization: Bearer your-token"
 
 # Detailed response with full raid information
+
 {
-  "raid": {
-    "id": "raid_abc123",
-    "title": "Community Support Raid",
-    "description": "Support our community member's project launch",
-    "status": "active",
-    "target": {
-      "url": "https://twitter.com/user/status/123456789",
-      "platform": "twitter",
-      "analysis": {
-        "engagementPotential": 0.85,
-        "viralityScore": 0.67,
-        "riskAssessment": "low"
-      }
-    },
-    "strategy": { /* full strategy object */ },
-    "participants": [
-      {
-        "userId": "user_456",
-        "username": "participant1",
-        "joinedAt": "2024-01-01T14:30:00Z",
-        "status": "active",
-        "performance": {
-          "engagements": 5,
-          "qualityScore": 0.82,
-          "currentRank": 3
-        }
-      }
-    ],
-    "metrics": {
-      "realtime": {
-        "activeParticipants": 23,
-        "engagementsPerMinute": 12,
-        "averageQuality": 0.78,
-        "successRate": 0.94
-      },
-      "cumulative": {
-        "totalEngagements": 145,
-        "totalReach": 12500,
-        "qualityDistribution": {
-          "excellent": 45,
-          "good": 78,
-          "average": 20,
-          "poor": 2
-        }
-      }
-    }
-  }
+"raid": {
+"id": "raid_abc123",
+"title": "Community Support Raid",
+"description": "Support our community member's project launch",
+"status": "active",
+"target": {
+"url": "https://twitter.com/user/status/123456789",
+"platform": "twitter",
+"analysis": {
+"engagementPotential": 0.85,
+"viralityScore": 0.67,
+"riskAssessment": "low"
 }
-```
+},
+"strategy": {/* full strategy object */},
+"participants": [
+{
+"userId": "user_456",
+"username": "participant1",
+"joinedAt": "2024-01-01T14:30:00Z",
+"status": "active",
+"performance": {
+"engagements": 5,
+"qualityScore": 0.82,
+"currentRank": 3
+}
+}
+],
+"metrics": {
+"realtime": {
+"activeParticipants": 23,
+"engagementsPerMinute": 12,
+"averageQuality": 0.78,
+"successRate": 0.94
+},
+"cumulative": {
+"totalEngagements": 145,
+"totalReach": 12500,
+"qualityDistribution": {
+"excellent": 45,
+"good": 78,
+"average": 20,
+"poor": 2
+}
+}
+}
+}
+}
+
+````
   </TabItem>
-  
+
   <TabItem label="Raid Participation">
 ```bash
 # Join a raid
@@ -371,7 +381,8 @@ curl -X POST https://api.anubis.chat/api/v1/raids/raid_abc123/engagements \
       }
     }
   }'
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -389,64 +400,67 @@ curl -X GET "https://api.anubis.chat/api/v1/leaderboards/global?timeframe=monthl
   -H "Authorization: Bearer your-token"
 
 # Response
+
 {
-  "leaderboard": {
-    "type": "global",
-    "timeframe": "monthly",
-    "generatedAt": "2024-01-01T12:00:00Z",
-    "entries": [
-      {
-        "rank": 1,
-        "userId": "user_123",
-        "username": "TopRaider",
-        "score": 15750,
-        "change": {
-          "direction": "up",
-          "positions": 2,
-          "since": "weekly"
-        },
-        "stats": {
-          "raidsParticipated": 45,
-          "averageQuality": 0.89,
-          "winRate": 0.78,
-          "achievements": 23
-        },
-        "badges": ["LEGENDARY_RAIDER", "QUALITY_MASTER", "STREAK_KING"],
-        "profile": {
-          "avatar": "https://cdn.anubis.chat/avatars/user123.jpg",
-          "title": "Raid Commander",
-          "joinedAt": "2023-06-15T10:00:00Z"
-        }
-      }
-      // ... more entries
-    ]
-  },
-  "userPosition": {
-    "rank": 15,
-    "score": 8425,
-    "percentile": 85,
-    "pointsToNextRank": 125
-  },
-  "pagination": {
-    "total": 500,
-    "limit": 50,
-    "offset": 0,
-    "hasNext": true
-  }
+"leaderboard": {
+"type": "global",
+"timeframe": "monthly",
+"generatedAt": "2024-01-01T12:00:00Z",
+"entries": [
+{
+"rank": 1,
+"userId": "user_123",
+"username": "TopRaider",
+"score": 15750,
+"change": {
+"direction": "up",
+"positions": 2,
+"since": "weekly"
+},
+"stats": {
+"raidsParticipated": 45,
+"averageQuality": 0.89,
+"winRate": 0.78,
+"achievements": 23
+},
+"badges": ["LEGENDARY_RAIDER", "QUALITY_MASTER", "STREAK_KING"],
+"profile": {
+"avatar": "https://cdn.anubis.chat/avatars/user123.jpg",
+"title": "Raid Commander",
+"joinedAt": "2023-06-15T10:00:00Z"
+}
+}
+// ... more entries
+]
+},
+"userPosition": {
+"rank": 15,
+"score": 8425,
+"percentile": 85,
+"pointsToNextRank": 125
+},
+"pagination": {
+"total": 500,
+"limit": 50,
+"offset": 0,
+"hasNext": true
+}
 }
 
 # Get specialized leaderboards
+
 curl -X GET https://api.anubis.chat/api/v1/leaderboards/quality \
-  -H "Authorization: Bearer your-token"
+ -H "Authorization: Bearer your-token"
 
 curl -X GET https://api.anubis.chat/api/v1/leaderboards/consistency \
-  -H "Authorization: Bearer your-token"
+ -H "Authorization: Bearer your-token"
 
 curl -X GET https://api.anubis.chat/api/v1/leaderboards/achievements \
-  -H "Authorization: Bearer your-token"
-```
+ -H "Authorization: Bearer your-token"
+
+````
   </TabItem>
-  
+
   <TabItem label="User Statistics">
 ```bash
 # Get user's detailed statistics
@@ -548,7 +562,8 @@ curl -X GET https://api.anubis.chat/api/v1/users/user_456/stats \
 # Compare users
 curl -X GET "https://api.anubis.chat/api/v1/users/compare?users=user_456,user_789" \
   -H "Authorization: Bearer your-token"
-```
+````
+
   </TabItem>
   
   <TabItem label="Achievements">
@@ -558,80 +573,84 @@ curl -X GET https://api.anubis.chat/api/v1/achievements \
   -H "Authorization: Bearer your-token"
 
 # Response
+
 {
-  "achievements": [
-    {
-      "id": "FIRST_RAID",
-      "name": "Welcome Aboard",
-      "description": "Complete your first raid successfully",
-      "category": "milestone",
-      "difficulty": "bronze",
-      "pointValue": 50,
-      "requirements": {
-        "type": "raids_completed",
-        "threshold": 1,
-        "conditions": ["success"]
-      },
-      "rarity": 0.95,
-      "unlockRate": "95% of users",
-      "badge": {
-        "iconUrl": "https://cdn.anubis.chat/badges/first_raid.svg",
-        "color": "#CD7F32"
-      }
-    }
-    // ... more achievements
-  ],
-  "categories": [
-    {
-      "name": "milestone",
-      "displayName": "Milestones",
-      "description": "Major accomplishment markers",
-      "achievementCount": 25
-    },
-    {
-      "name": "quality",
-      "displayName": "Quality Excellence",
-      "description": "Recognition for high-quality contributions",
-      "achievementCount": 15
-    }
-    // ... more categories
-  ]
+"achievements": [
+{
+"id": "FIRST_RAID",
+"name": "Welcome Aboard",
+"description": "Complete your first raid successfully",
+"category": "milestone",
+"difficulty": "bronze",
+"pointValue": 50,
+"requirements": {
+"type": "raids_completed",
+"threshold": 1,
+"conditions": ["success"]
+},
+"rarity": 0.95,
+"unlockRate": "95% of users",
+"badge": {
+"iconUrl": "https://cdn.anubis.chat/badges/first_raid.svg",
+"color": "#CD7F32"
+}
+}
+// ... more achievements
+],
+"categories": [
+{
+"name": "milestone",
+"displayName": "Milestones",
+"description": "Major accomplishment markers",
+"achievementCount": 25
+},
+{
+"name": "quality",
+"displayName": "Quality Excellence",
+"description": "Recognition for high-quality contributions",
+"achievementCount": 15
+}
+// ... more categories
+]
 }
 
 # Get user's achievement progress
+
 curl -X GET https://api.anubis.chat/api/v1/users/user_456/achievements \
-  -H "Authorization: Bearer your-token"
+ -H "Authorization: Bearer your-token"
 
 # Response includes unlocked achievements and progress toward locked ones
+
 {
-  "unlocked": [
-    {
-      "achievement": {
-        "id": "FIRST_RAID",
-        "name": "Welcome Aboard",
-        // ... full achievement details
-      },
-      "unlockedAt": "2023-08-20T15:45:00Z",
-      "rank": 1245 // Your unlock rank among all users
-    }
-  ],
-  "inProgress": [
-    {
-      "achievement": {
-        "id": "HUNDRED_RAIDS",
-        "name": "Century Mark",
-        "description": "Complete 100 successful raids"
-      },
-      "progress": {
-        "current": 87,
-        "required": 100,
-        "percentage": 87
-      },
-      "estimatedCompletion": "2024-02-15T00:00:00Z"
-    }
-  ]
+"unlocked": [
+{
+"achievement": {
+"id": "FIRST_RAID",
+"name": "Welcome Aboard",
+// ... full achievement details
+},
+"unlockedAt": "2023-08-20T15:45:00Z",
+"rank": 1245 // Your unlock rank among all users
 }
-```
+],
+"inProgress": [
+{
+"achievement": {
+"id": "HUNDRED_RAIDS",
+"name": "Century Mark",
+"description": "Complete 100 successful raids"
+},
+"progress": {
+"current": 87,
+"required": 100,
+"percentage": 87
+},
+"estimatedCompletion": "2024-02-15T00:00:00Z"
+}
+]
+}
+
+````
   </TabItem>
 </Tabs>
 
@@ -684,7 +703,8 @@ curl -X POST https://api.anubis.chat/api/v1/users/user_456/avatar \
   -H "Authorization: Bearer your-token" \
   -F "avatar=@/path/to/image.jpg" \
   -F "crop={\"x\":10,\"y\":10,\"width\":200,\"height\":200}"
-```
+````
+
   </TabItem>
   
   <TabItem label="Platform Connections">
@@ -694,55 +714,59 @@ curl -X GET https://api.anubis.chat/api/v1/users/user_456/platforms \
   -H "Authorization: Bearer your-token"
 
 # Response
+
 {
-  "connectedPlatforms": [
-    {
-      "platform": "telegram",
-      "platformUserId": "123456789",
-      "username": "@example_user",
-      "connectedAt": "2023-08-20T14:30:00Z",
-      "verified": true,
-      "permissions": ["message:receive", "raids:participate"],
-      "status": "active",
-      "lastActivity": "2024-01-01T11:45:00Z"
-    },
-    {
-      "platform": "twitter",
-      "platformUserId": "twitter_987654321",
-      "username": "@example_user_tw",
-      "connectedAt": "2023-09-01T10:15:00Z",
-      "verified": true,
-      "permissions": ["profile:read", "tweets:write", "raids:participate"],
-      "status": "active",
-      "lastActivity": "2024-01-01T12:30:00Z"
-    }
-  ],
-  "availablePlatforms": [
-    {
-      "platform": "discord",
-      "supported": true,
-      "connectionUrl": "https://api.anubis.chat/auth/discord/connect",
-      "features": ["raids", "coordination", "voice_chat"]
-    }
-  ]
+"connectedPlatforms": [
+{
+"platform": "telegram",
+"platformUserId": "123456789",
+"username": "@example_user",
+"connectedAt": "2023-08-20T14:30:00Z",
+"verified": true,
+"permissions": ["message:receive", "raids:participate"],
+"status": "active",
+"lastActivity": "2024-01-01T11:45:00Z"
+},
+{
+"platform": "twitter",
+"platformUserId": "twitter_987654321",
+"username": "@example_user_tw",
+"connectedAt": "2023-09-01T10:15:00Z",
+"verified": true,
+"permissions": ["profile:read", "tweets:write", "raids:participate"],
+"status": "active",
+"lastActivity": "2024-01-01T12:30:00Z"
+}
+],
+"availablePlatforms": [
+{
+"platform": "discord",
+"supported": true,
+"connectionUrl": "https://api.anubis.chat/auth/discord/connect",
+"features": ["raids", "coordination", "voice_chat"]
+}
+]
 }
 
 # Connect new platform
+
 curl -X POST https://api.anubis.chat/api/v1/users/user_456/platforms \
-  -H "Authorization: Bearer your-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "platform": "discord",
-    "authCode": "discord-oauth-code",
-    "permissions": ["message:receive", "raids:participate", "voice:join"]
-  }'
+ -H "Authorization: Bearer your-token" \
+ -H "Content-Type: application/json" \
+ -d '{
+"platform": "discord",
+"authCode": "discord-oauth-code",
+"permissions": ["message:receive", "raids:participate", "voice:join"]
+}'
 
 # Disconnect platform
+
 curl -X DELETE https://api.anubis.chat/api/v1/users/user_456/platforms/telegram \
-  -H "Authorization: Bearer your-token"
-```
+ -H "Authorization: Bearer your-token"
+
+````
   </TabItem>
-  
+
   <TabItem label="Notifications">
 ```bash
 # Get notification settings
@@ -801,7 +825,8 @@ curl -X PATCH https://api.anubis.chat/api/v1/users/user_456/notifications \
 # Get notification history
 curl -X GET "https://api.anubis.chat/api/v1/users/user_456/notifications/history?limit=20" \
   -H "Authorization: Bearer your-token"
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -819,52 +844,55 @@ curl -X GET https://api.anubis.chat/api/v1/analytics/system \
   -H "Authorization: Bearer admin-token"
 
 # Response
+
 {
-  "systemMetrics": {
-    "activeUsers": {
-      "realtime": 1250,
-      "last24h": 3400,
-      "last7d": 15600
-    },
-    "raids": {
-      "active": 12,
-      "completed_today": 45,
-      "success_rate": 0.89,
-      "average_participants": 28
-    },
-    "engagement": {
-      "total_interactions": 125000,
-      "quality_average": 0.81,
-      "platform_breakdown": {
-        "telegram": 0.45,
-        "twitter": 0.35,
-        "discord": 0.20
-      }
-    },
-    "performance": {
-      "response_time": {
-        "average": 120,
-        "p95": 280,
-        "p99": 450
-      },
-      "error_rate": 0.002,
-      "uptime": 0.9998
-    }
-  },
-  "trends": {
-    "user_growth": "steady",
-    "engagement_trend": "increasing",
-    "quality_trend": "stable",
-    "performance_trend": "improving"
-  }
+"systemMetrics": {
+"activeUsers": {
+"realtime": 1250,
+"last24h": 3400,
+"last7d": 15600
+},
+"raids": {
+"active": 12,
+"completed_today": 45,
+"success_rate": 0.89,
+"average_participants": 28
+},
+"engagement": {
+"total_interactions": 125000,
+"quality_average": 0.81,
+"platform_breakdown": {
+"telegram": 0.45,
+"twitter": 0.35,
+"discord": 0.20
+}
+},
+"performance": {
+"response_time": {
+"average": 120,
+"p95": 280,
+"p99": 450
+},
+"error_rate": 0.002,
+"uptime": 0.9998
+}
+},
+"trends": {
+"user_growth": "steady",
+"engagement_trend": "increasing",
+"quality_trend": "stable",
+"performance_trend": "improving"
+}
 }
 
 # Get platform-specific analytics
+
 curl -X GET https://api.anubis.chat/api/v1/analytics/platforms/telegram \
-  -H "Authorization: Bearer your-token"
-```
+ -H "Authorization: Bearer your-token"
+
+````
   </TabItem>
-  
+
   <TabItem label="User Analytics">
 ```bash
 # Get personal analytics dashboard
@@ -937,7 +965,8 @@ curl -X GET https://api.anubis.chat/api/v1/analytics/users/user_456 \
     }
   }
 }
-```
+````
+
   </TabItem>
   
   <TabItem label="Community Analytics">
@@ -947,56 +976,58 @@ curl -X GET https://api.anubis.chat/api/v1/analytics/community \
   -H "Authorization: Bearer your-token"
 
 # Response
+
 {
-  "community": {
-    "health_score": 0.87,
-    "activity_level": "high",
-    "growth_rate": 0.12,
-    "engagement_quality": 0.83
-  },
-  "demographics": {
-    "user_distribution": {
-      "new_users": 0.15,
-      "regular_users": 0.60,
-      "veteran_users": 0.25
-    },
-    "platform_preferences": {
-      "telegram_primary": 0.45,
-      "twitter_primary": 0.35,
-      "discord_primary": 0.15,
-      "multi_platform": 0.05
-    },
-    "activity_patterns": {
-      "peak_hours": [14, 18, 20],
-      "peak_days": ["tuesday", "wednesday", "saturday"],
-      "seasonal_trends": "winter_increase"
-    }
-  },
-  "content": {
-    "quality_distribution": {
-      "excellent": 0.25,
-      "good": 0.45,
-      "average": 0.25,
-      "poor": 0.05
-    },
-    "trending_topics": [
-      { "topic": "AI innovation", "mentions": 450, "sentiment": 0.82 },
-      { "topic": "Community growth", "mentions": 320, "sentiment": 0.89 }
-    ],
-    "engagement_types": {
-      "collaborative": 0.60,
-      "competitive": 0.30,
-      "educational": 0.10
-    }
-  },
-  "network": {
-    "connectivity_score": 0.76,
-    "influence_distribution": "balanced",
-    "collaboration_rate": 0.68,
-    "mentorship_activity": "active"
-  }
+"community": {
+"health_score": 0.87,
+"activity_level": "high",
+"growth_rate": 0.12,
+"engagement_quality": 0.83
+},
+"demographics": {
+"user_distribution": {
+"new_users": 0.15,
+"regular_users": 0.60,
+"veteran_users": 0.25
+},
+"platform_preferences": {
+"telegram_primary": 0.45,
+"twitter_primary": 0.35,
+"discord_primary": 0.15,
+"multi_platform": 0.05
+},
+"activity_patterns": {
+"peak_hours": [14, 18, 20],
+"peak_days": ["tuesday", "wednesday", "saturday"],
+"seasonal_trends": "winter_increase"
 }
-```
+},
+"content": {
+"quality_distribution": {
+"excellent": 0.25,
+"good": 0.45,
+"average": 0.25,
+"poor": 0.05
+},
+"trending_topics": [
+{ "topic": "AI innovation", "mentions": 450, "sentiment": 0.82 },
+{ "topic": "Community growth", "mentions": 320, "sentiment": 0.89 }
+],
+"engagement_types": {
+"collaborative": 0.60,
+"competitive": 0.30,
+"educational": 0.10
+}
+},
+"network": {
+"connectivity_score": 0.76,
+"influence_distribution": "balanced",
+"collaboration_rate": 0.68,
+"mentorship_activity": "active"
+}
+}
+
+````
   </TabItem>
 </Tabs>
 
@@ -1022,19 +1053,19 @@ All API errors follow a consistent format for easy handling:
     "documentation": "https://docs.anubis.chat/api/errors#validation-error"
   }
 }
-```
+````
 
 ### Common Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `AUTHENTICATION_REQUIRED` | 401 | No authentication token provided |
-| `INVALID_TOKEN` | 401 | Authentication token is invalid or expired |
-| `INSUFFICIENT_PERMISSIONS` | 403 | User lacks required permissions |
-| `RESOURCE_NOT_FOUND` | 404 | Requested resource does not exist |
-| `VALIDATION_ERROR` | 400 | Request data validation failed |
-| `RATE_LIMITED` | 429 | Too many requests in time window |
-| `INTERNAL_ERROR` | 500 | Unexpected server error |
-| `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
+| Code                       | HTTP Status | Description                                |
+| -------------------------- | ----------- | ------------------------------------------ |
+| `AUTHENTICATION_REQUIRED`  | 401         | No authentication token provided           |
+| `INVALID_TOKEN`            | 401         | Authentication token is invalid or expired |
+| `INSUFFICIENT_PERMISSIONS` | 403         | User lacks required permissions            |
+| `RESOURCE_NOT_FOUND`       | 404         | Requested resource does not exist          |
+| `VALIDATION_ERROR`         | 400         | Request data validation failed             |
+| `RATE_LIMITED`             | 429         | Too many requests in time window           |
+| `INTERNAL_ERROR`           | 500         | Unexpected server error                    |
+| `SERVICE_UNAVAILABLE`      | 503         | Service temporarily unavailable            |
 
 NUBI's Service APIs provide comprehensive programmatic access to all platform capabilities, enabling developers to build powerful integrations and custom applications on top of the NUBI ecosystem.

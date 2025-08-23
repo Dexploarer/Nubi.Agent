@@ -73,7 +73,7 @@ export class SessionsPlugin implements Plugin {
 
       logger.info("[SESSIONS_PLUGIN] NUBI Sessions Plugin initialized successfully");
     } catch (error) {
-      logger.error("[SESSIONS_PLUGIN] Failed to initialize:", error);
+      logger.error("[SESSIONS_PLUGIN] Failed to initialize:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -95,7 +95,7 @@ export class SessionsPlugin implements Plugin {
 
       logger.info("[SESSIONS_PLUGIN] NUBI Sessions Plugin cleanup completed");
     } catch (error) {
-      logger.error("[SESSIONS_PLUGIN] Failed to cleanup:", error);
+      logger.error("[SESSIONS_PLUGIN] Failed to cleanup:", error instanceof Error ? error.message : String(error));
     }
   }
 }

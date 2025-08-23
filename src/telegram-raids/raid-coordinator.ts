@@ -114,7 +114,7 @@ export class RaidCoordinator {
 
       logger.info("Raid configuration loaded successfully");
     } catch (error) {
-      logger.error("Failed to load raid configuration:", error as any);
+      logger.error("Failed to load raid configuration:", error instanceof Error ? error.message : String(error));
       this.config = this.getDefaultConfig();
     }
   }
@@ -234,7 +234,7 @@ ${announcement}`;
       logger.info(`Raid created successfully: ${raidId}`);
       return raidId;
     } catch (error) {
-      logger.error("Failed to create raid:", error as any);
+      logger.error("Failed to create raid:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -333,7 +333,7 @@ ${update}`;
         await this.telegramClient.editMessageText(channelId, messageId, text);
       }
     } catch (error) {
-      logger.error("Failed to edit Telegram message:", error as any);
+      logger.error("Failed to edit Telegram message:", error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -375,7 +375,7 @@ ${completion}`;
 
       logger.info(`Raid completed: ${raidId}`);
     } catch (error) {
-      logger.error("Failed to complete raid:", error as any);
+      logger.error("Failed to complete raid:", error instanceof Error ? error.message : String(error));
     }
   }
 
@@ -408,7 +408,7 @@ ${completion}`;
         return `You're already in this raid, @${username}! Keep raiding! 💪`;
       }
     } catch (error) {
-      logger.error("Failed to handle raid join:", error as any);
+      logger.error("Failed to handle raid join:", error instanceof Error ? error.message : String(error));
       return "Failed to join raid. Please try again.";
     }
   }
@@ -425,7 +425,7 @@ ${completion}`;
         `⏱️ Status: ${stats.status}`
       );
     } catch (error) {
-      logger.error("Failed to get raid stats:", error as any);
+      logger.error("Failed to get raid stats:", error instanceof Error ? error.message : String(error));
       return "Failed to retrieve stats. Please try again.";
     }
   }

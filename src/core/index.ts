@@ -79,3 +79,8 @@ export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 
 export type OptionalFields<T, K extends keyof T> = Omit<T, K> &
   Partial<Pick<T, K>>;
+
+// Export service management
+export { SupabaseServiceManager } from "./supabase-service-manager";
+export { SERVICE_DEFINITIONS } from "./service-definitions";
+export type { ServiceDefinition, SystemInfo } from "./supabase-service-manager";

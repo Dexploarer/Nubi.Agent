@@ -4,6 +4,7 @@
  * Provides comprehensive metrics, monitoring, and observability capabilities
  */
 
+import { logger } from "@elizaos/core";
 import {
   metricsIncrementMessageReceived,
   metricsIncrementErrors,
@@ -31,7 +32,7 @@ export const observabilityUtils = {
     return {
       end: () => {
         const duration = Date.now() - startTime;
-        console.log(`[PERF] ${name}: ${duration}ms`);
+        logger.debug(`[PERF] ${name}: ${duration}ms`);
         return duration;
       },
       getElapsed: () => Date.now() - startTime,
@@ -71,13 +72,12 @@ export const observabilityUtils = {
    * Log structured metrics
    */
   logMetrics: (metrics: Record<string, any>) => {
-    console.log(
-      JSON.stringify({
+    logger.info(
+      `[METRICS] ${JSON.stringify({
         timestamp: new Date().toISOString(),
-        level: "info",
         type: "metrics",
         ...metrics,
-      }),
+      })}`
     );
   },
 };

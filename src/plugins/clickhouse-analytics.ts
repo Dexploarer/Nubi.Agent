@@ -1,4 +1,4 @@
-import { Plugin } from "@elizaos/core";
+import { Plugin, logger } from "@elizaos/core";
 import { v4 as uuidv4 } from "uuid";
 
 interface ClickHouseConfig {
@@ -90,16 +90,16 @@ class ClickHouseAnalytics {
       );
 
       if (!response.ok) {
-        console.error(
-          `ClickHouse insert failed: ${response.status} - ${response.statusText}`,
+        logger.error(
+          `ClickHouse insert failed: ${response.status} - ${response.statusText}`
         );
         // Re-queue events for retry with exponential backoff
         this.requeueEvents(events);
       } else {
-        console.log(`✅ Flushed ${events.length} events to ClickHouse`);
+        logger.info(`✅ Flushed ${events.length} events to ClickHouse`);
       }
     } catch (error) {
-      console.error("ClickHouse connection error:", error);
+      logger.error("ClickHouse connection error:", error instanceof Error ? error.message : String(error));
       // Re-queue events for retry with exponential backoff
       this.requeueEvents(events);
     }
@@ -112,7 +112,7 @@ class ClickHouseAnalytics {
     // If queue is getting too large, drop oldest events
     if (this.eventQueue.length > this.config.batchSize! * 10) {
       const dropped = this.eventQueue.splice(this.config.batchSize! * 5);
-      console.warn(
+      logger.warn(
         `Dropped ${dropped.length} old events due to queue overflow`,
       );
     }

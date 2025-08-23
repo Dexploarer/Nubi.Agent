@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from "bun:test";
 import { IAgentRuntime, Memory, UUID } from "@elizaos/core";
-import { NUBISessionsService, SessionConfig, RaidSessionConfig } from "../../services/nubi-sessions-service";
+import {
+  NUBISessionsService,
+  SessionConfig,
+  RaidSessionConfig,
+} from "../../services/nubi-sessions-service";
 import { SessionsAPI } from "../../api/sessions-api";
 import { MockRuntime } from "../test-utils";
 
 /**
  * Sessions API Integration Tests
- * 
+ *
  * Tests the full Sessions API functionality including:
  * - Session creation and management
  * - Raid session coordination
@@ -23,16 +27,12 @@ describe("SessionsAPI Integration Tests", () => {
     runtime = new MockRuntime();
     sessionsService = new NUBISessionsService(runtime as IAgentRuntime);
     await sessionsService.start();
-    
-    sessionsAPI = new SessionsAPI(
-      runtime as IAgentRuntime,
-      sessionsService,
-      {
-        basePath: "/api/sessions",
-        enableCORS: true,
-        authRequired: false,
-      }
-    );
+
+    sessionsAPI = new SessionsAPI(runtime as IAgentRuntime, sessionsService, {
+      basePath: "/api/sessions",
+      enableCORS: true,
+      authRequired: false,
+    });
   });
 
   afterEach(async () => {
@@ -128,7 +128,10 @@ describe("SessionsAPI Integration Tests", () => {
         metadata: { test: true },
       };
 
-      const messageResponse = await sessionsAPI.sendMessage(sessionId, messageRequest);
+      const messageResponse = await sessionsAPI.sendMessage(
+        sessionId,
+        messageRequest,
+      );
 
       expect(messageResponse.success).toBe(true);
       expect(messageResponse.data?.response).toBeDefined();
@@ -146,7 +149,10 @@ describe("SessionsAPI Integration Tests", () => {
         type: "text",
       };
 
-      const response = await sessionsAPI.sendMessage(nonExistentId, messageRequest);
+      const response = await sessionsAPI.sendMessage(
+        nonExistentId,
+        messageRequest,
+      );
 
       expect(response.success).toBe(false);
       expect(response.error).toBe("Session not found");
@@ -215,7 +221,10 @@ describe("SessionsAPI Integration Tests", () => {
         twitterUsername: "testuser_twitter",
       };
 
-      const joinResponse = await sessionsAPI.joinRaidSession(sessionId, joinRequest);
+      const joinResponse = await sessionsAPI.joinRaidSession(
+        sessionId,
+        joinRequest,
+      );
 
       expect(joinResponse.success).toBe(true);
       expect(joinResponse.data).toBe(true);
@@ -234,7 +243,10 @@ describe("SessionsAPI Integration Tests", () => {
         telegramUsername: "testuser",
       };
 
-      const response = await sessionsAPI.joinRaidSession(nonExistentId, joinRequest);
+      const response = await sessionsAPI.joinRaidSession(
+        nonExistentId,
+        joinRequest,
+      );
 
       expect(response.success).toBe(false);
     });
@@ -346,7 +358,7 @@ describe("SessionsAPI Integration Tests", () => {
           data: expect.objectContaining({
             agentId: runtime.agentId,
           }),
-        })
+        }),
       );
     });
   });
@@ -373,7 +385,7 @@ describe("SessionsAPI Integration Tests", () => {
           agentId: runtime.agentId,
           sessionType: "conversation",
           metadata: { index: i },
-        })
+        }),
       );
 
       const responses = await Promise.all(promises);
@@ -403,13 +415,13 @@ describe("SessionsAPI Integration Tests", () => {
           telegramId: `user_${i}`,
           telegramUsername: `testuser_${i}`,
           twitterUsername: `twitter_${i}`,
-        })
+        }),
       );
 
       const responses = await Promise.all(promises);
 
       expect(responses).toHaveLength(5);
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.success).toBe(true);
       });
 

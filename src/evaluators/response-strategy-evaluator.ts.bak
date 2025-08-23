@@ -1,0 +1,458 @@
+import {
+  Evaluator,
+  IAgentRuntime,
+  Memory,
+  State,
+  logger,
+  UUID,
+  ModelType,
+} from "@elizaos/core";
+import { StreamingSessionsService, ResponseStrategy } from "../services/streaming-sessions-service";
+import { MessageRouter, MessageClassification } from "../services/message-router";
+
+/**
+ * Response Strategy Evaluator
+ * 
+ * ElizaOS Evaluator that determines the optimal response delivery method:
+ * - Analyzes message complexity and context
+ * - Evaluates user preferences and session history
+ * - Decides between batch, streaming, or hybrid responses
+ * - Provides routing recommendations to the runtime
+ */
+
+export interface StrategyEvaluation {
+  shouldStream: boolean;
+  strategy: ResponseStrategy;
+  contextFactors: ContextFactors;
+  historicalPerformance: PerformanceMetrics;
+}
+
+export interface ContextFactors {
+  messageComplexity: number; // 0-1 scale
+  userPreference: 'batch' | 'stream' | 'auto';
+  sessionType: string;
+  networkQuality: 'poor' | 'fair' | 'good' | 'excellent';
+  deviceCapabilities: 'mobile' | 'desktop' | 'unknown';
+  previousInteractions: number;
+  averageResponseTime: number;
+}
+
+export interface PerformanceMetrics {
+  streamingSuccessRate: number;
+  batchSuccessRate: number;
+  averageStreamDuration: number;
+  averageBatchDuration: number;
+  userSatisfactionScore: number;
+}
+
+export class ResponseStrategyEvaluator implements Evaluator {
+  name = "response_strategy";
+  description = "Evaluates and determines optimal response delivery strategy";
+  
+  private streamingService?: StreamingSessionsService;
+  private messageRouter: MessageRouter;
+  private performanceHistory: Map<string, PerformanceMetrics> = new Map();
+
+  constructor(
+    streamingService?: StreamingSessionsService,
+    messageRouter?: MessageRouter
+  ) {
+    this.streamingService = streamingService;
+    this.messageRouter = messageRouter || new MessageRouter();
+  }
+
+  /**
+   * Validate if streaming should be used for this message
+   */
+  async validate(
+    runtime: IAgentRuntime,
+    message: Memory,
+    state?: State
+  ): Promise<boolean> {
+    try {
+      // Quick validation - should we even consider streaming?
+      const evaluation = await this.evaluate(runtime, message, state);
+      return evaluation.shouldStream;
+    } catch (error) {
+      logger.error("[RESPONSE_STRATEGY_EVALUATOR] Validation error:", error);
+      return false; // Default to batch on error
+    }
+  }
+
+  /**
+   * Handle the response strategy decision
+   */
+  async handler(
+    runtime: IAgentRuntime,
+    message: Memory,
+    state?: State
+  ): Promise<StrategyEvaluation> {
+    return this.evaluate(runtime, message, state);
+  }
+
+  /**
+   * Core evaluation logic
+   */
+  private async evaluate(
+    runtime: IAgentRuntime,
+    message: Memory,
+    state?: State
+  ): Promise<StrategyEvaluation> {
+    // Get or initialize streaming service
+    if (!this.streamingService) {
+      this.streamingService = runtime.getService<StreamingSessionsService>("streaming_sessions");
+    }
+
+    // Gather context factors
+    const contextFactors = await this.gatherContextFactors(runtime, message, state);
+    
+    // Get historical performance for this user/session
+    const historicalPerformance = this.getHistoricalPerformance(
+      message.entityId || 'unknown'
+    );
+
+    // Classify the message
+    const classification = await this.messageRouter.classifyMessage(
+      (message.content as any)?.text || '',
+      message.entityId
+    );
+
+    // Calculate complexity score
+    const complexityScore = await this.calculateComplexityScore(
+      message,
+      classification,
+      contextFactors
+    );
+
+    // Determine strategy based on all factors
+    const strategy = await this.determineOptimalStrategy(
+      complexityScore,
+      contextFactors,
+      historicalPerformance,
+      classification
+    );
+
+    // Determine if we should stream
+    const shouldStream = strategy.method === 'stream' || strategy.method === 'hybrid';
+
+    return {
+      shouldStream,
+      strategy,
+      contextFactors,
+      historicalPerformance,
+    };
+  }
+
+  /**
+   * Gather contextual factors for decision making
+   */
+  private async gatherContextFactors(
+    runtime: IAgentRuntime,
+    message: Memory,
+    state?: State
+  ): Promise<ContextFactors> {
+    // Extract user preferences from state or session
+    const userPreference = state?.userPreference || 
+                          (message.content as any)?.metadata?.preferStreaming === true ? 'stream' :
+                          (message.content as any)?.metadata?.preferBatch === true ? 'batch' : 'auto';
+
+    // Get session type from state
+    const sessionType = state?.sessionType || 'conversation';
+
+    // Analyze network quality (would be provided by client in production)
+    const networkQuality = (message.content as any)?.metadata?.networkQuality || 'good';
+
+    // Detect device capabilities
+    const deviceCapabilities = (message.content as any)?.metadata?.device || 'desktop';
+
+    // Count previous interactions
+    const previousInteractions = await this.countPreviousInteractions(
+      runtime,
+      message.roomId,
+      message.entityId
+    );
+
+    // Calculate average response time
+    const averageResponseTime = await this.calculateAverageResponseTime(
+      runtime,
+      message.entityId
+    );
+
+    // Calculate message complexity (0-1 scale)
+    const messageComplexity = this.calculateMessageComplexity(message);
+
+    return {
+      messageComplexity,
+      userPreference,
+      sessionType,
+      networkQuality,
+      deviceCapabilities,
+      previousInteractions,
+      averageResponseTime,
+    };
+  }
+
+  /**
+   * Calculate message complexity score
+   */
+  private calculateMessageComplexity(message: Memory): number {
+    const text = (message.content as any)?.text || '';
+    
+    // Factors that increase complexity
+    let complexity = 0;
+    
+    // Length factor
+    const words = text.split(/\s+/).length;
+    complexity += Math.min(words / 100, 0.3); // Max 0.3 for length
+    
+    // Question complexity
+    const complexQuestions = /analyze|explain|compare|evaluate|implement|design|architect/i;
+    if (complexQuestions.test(text)) {
+      complexity += 0.2;
+    }
+    
+    // Multiple parts
+    const parts = text.split(/[.?!]/).filter(p => p.trim().length > 0).length;
+    complexity += Math.min(parts / 10, 0.2); // Max 0.2 for multiple parts
+    
+    // Technical terms
+    const technicalTerms = /algorithm|implementation|architecture|protocol|framework|optimization/i;
+    if (technicalTerms.test(text)) {
+      complexity += 0.15;
+    }
+    
+    // Code-related
+    if (/code|function|class|implement|debug/.test(text)) {
+      complexity += 0.15;
+    }
+    
+    return Math.min(complexity, 1.0); // Cap at 1.0
+  }
+
+  /**
+   * Calculate complexity score combining all factors
+   */
+  private async calculateComplexityScore(
+    message: Memory,
+    classification: MessageClassification,
+    contextFactors: ContextFactors
+  ): Promise<number> {
+    let score = 0;
+    
+    // Message complexity (40% weight)
+    score += contextFactors.messageComplexity * 0.4;
+    
+    // Classification confidence (20% weight)
+    score += (1 - classification.confidenceScore) * 0.2; // Lower confidence = higher complexity
+    
+    // Prompt type complexity (20% weight)
+    const complexPrompts = [
+      'technical-expert',
+      'crypto-analyst',
+      'raid-coordinator-strategic',
+      'personality-core-philosophical'
+    ];
+    if (complexPrompts.includes(classification.selectedPrompt)) {
+      score += 0.2;
+    }
+    
+    // Session type (10% weight)
+    if (contextFactors.sessionType === 'raid' || contextFactors.sessionType === 'analysis') {
+      score += 0.1;
+    }
+    
+    // Historical response time (10% weight)
+    if (contextFactors.averageResponseTime > 5000) { // > 5 seconds average
+      score += 0.1;
+    }
+    
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * Determine optimal response strategy
+   */
+  private async determineOptimalStrategy(
+    complexityScore: number,
+    contextFactors: ContextFactors,
+    historicalPerformance: PerformanceMetrics,
+    classification: MessageClassification
+  ): Promise<ResponseStrategy> {
+    let method: 'batch' | 'stream' | 'hybrid' = 'batch';
+    let reasoning = '';
+    
+    // User preference override
+    if (contextFactors.userPreference !== 'auto') {
+      method = contextFactors.userPreference;
+      reasoning = `User preference: ${contextFactors.userPreference}`;
+    }
+    // High complexity - use streaming
+    else if (complexityScore > 0.7) {
+      method = 'stream';
+      reasoning = `High complexity score: ${complexityScore.toFixed(2)}`;
+    }
+    // Medium complexity with good network - use hybrid
+    else if (complexityScore > 0.4 && contextFactors.networkQuality === 'excellent') {
+      method = 'hybrid';
+      reasoning = `Medium complexity with excellent network`;
+    }
+    // Poor network - always batch
+    else if (contextFactors.networkQuality === 'poor') {
+      method = 'batch';
+      reasoning = `Poor network quality detected`;
+    }
+    // Mobile device with medium+ complexity - stream for better UX
+    else if (contextFactors.deviceCapabilities === 'mobile' && complexityScore > 0.3) {
+      method = 'stream';
+      reasoning = `Mobile device benefits from progressive loading`;
+    }
+    // Historical performance check
+    else if (historicalPerformance.streamingSuccessRate > 0.9 && 
+             historicalPerformance.streamingSuccessRate > historicalPerformance.batchSuccessRate) {
+      method = 'stream';
+      reasoning = `Historical streaming success rate: ${(historicalPerformance.streamingSuccessRate * 100).toFixed(0)}%`;
+    }
+    
+    // Estimate tokens and duration
+    const text = (classification.variables.keywords || []).join(' ');
+    const estimatedTokens = Math.max(100, text.split(/\s+/).length * 50); // Rough estimate
+    const estimatedDuration = method === 'stream' ? estimatedTokens * 15 : estimatedTokens * 10;
+    
+    return {
+      method,
+      reasoning,
+      estimatedDuration,
+      estimatedTokens,
+      confidence: classification.confidenceScore * (1 - complexityScore * 0.2), // Adjust confidence by complexity
+    };
+  }
+
+  /**
+   * Count previous interactions in the session
+   */
+  private async countPreviousInteractions(
+    runtime: IAgentRuntime,
+    roomId?: UUID,
+    userId?: UUID
+  ): Promise<number> {
+    if (!roomId) return 0;
+    
+    try {
+      const memories = await runtime.getMemories({
+        roomId,
+        count: 100,
+        unique: false,
+        tableName: "memories",
+      });
+      
+      return memories.filter(m => m.entityId === userId).length;
+    } catch (error) {
+      logger.error("[RESPONSE_STRATEGY_EVALUATOR] Failed to count interactions:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Calculate average response time for user
+   */
+  private async calculateAverageResponseTime(
+    runtime: IAgentRuntime,
+    userId?: UUID
+  ): Promise<number> {
+    if (!userId) return 1000; // Default 1 second
+    
+    try {
+      // Search for response time metrics in memories
+      const embedding = await runtime.useModel(ModelType.TEXT_EMBEDDING, {
+        text: `response time metrics user ${userId}`,
+      });
+
+      const metrics = await runtime.searchMemories({
+        embedding,
+        count: 10,
+        match_threshold: 0.7,
+        tableName: "memories",
+      });
+
+      if (metrics.length === 0) return 1000;
+
+      // Extract response times from metrics
+      const responseTimes = metrics
+        .map(m => (m.content as any)?.responseTime)
+        .filter(t => typeof t === 'number');
+
+      if (responseTimes.length === 0) return 1000;
+
+      return responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+    } catch (error) {
+      logger.error("[RESPONSE_STRATEGY_EVALUATOR] Failed to calculate average response time:", error);
+      return 1000;
+    }
+  }
+
+  /**
+   * Get historical performance metrics for a user
+   */
+  private getHistoricalPerformance(userId: string): PerformanceMetrics {
+    // Check cache
+    if (this.performanceHistory.has(userId)) {
+      return this.performanceHistory.get(userId)!;
+    }
+
+    // Default metrics for new users
+    const defaultMetrics: PerformanceMetrics = {
+      streamingSuccessRate: 0.85,
+      batchSuccessRate: 0.95,
+      averageStreamDuration: 3000,
+      averageBatchDuration: 1500,
+      userSatisfactionScore: 0.8,
+    };
+
+    this.performanceHistory.set(userId, defaultMetrics);
+    return defaultMetrics;
+  }
+
+  /**
+   * Update performance metrics after response completion
+   */
+  async updatePerformanceMetrics(
+    userId: string,
+    method: 'batch' | 'stream' | 'hybrid',
+    duration: number,
+    success: boolean,
+    satisfactionScore?: number
+  ): Promise<void> {
+    const current = this.getHistoricalPerformance(userId);
+    
+    // Update success rates (exponential moving average)
+    const alpha = 0.1; // Smoothing factor
+    if (method === 'stream' || method === 'hybrid') {
+      current.streamingSuccessRate = (1 - alpha) * current.streamingSuccessRate + 
+                                     alpha * (success ? 1 : 0);
+      current.averageStreamDuration = (1 - alpha) * current.averageStreamDuration + 
+                                      alpha * duration;
+    } else {
+      current.batchSuccessRate = (1 - alpha) * current.batchSuccessRate + 
+                                alpha * (success ? 1 : 0);
+      current.averageBatchDuration = (1 - alpha) * current.averageBatchDuration + 
+                                     alpha * duration;
+    }
+    
+    // Update satisfaction score if provided
+    if (satisfactionScore !== undefined) {
+      current.userSatisfactionScore = (1 - alpha) * current.userSatisfactionScore + 
+                                     alpha * satisfactionScore;
+    }
+    
+    this.performanceHistory.set(userId, current);
+    
+    logger.info(`[RESPONSE_STRATEGY_EVALUATOR] Updated metrics for ${userId}:`, {
+      method,
+      duration,
+      success,
+      newMetrics: current,
+    });
+  }
+}
+
+export default ResponseStrategyEvaluator;

@@ -72,7 +72,7 @@ export function createSessionsRoutes(
 
           res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to create session:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to create session:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -99,7 +99,7 @@ export function createSessionsRoutes(
           
           res.status(result.success ? 200 : 404).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get session:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to get session:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -140,7 +140,7 @@ export function createSessionsRoutes(
 
           res.status(result.success ? 200 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to send message:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to send message:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -194,7 +194,7 @@ export function createSessionsRoutes(
             }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to renew session:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to renew session:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -221,7 +221,7 @@ export function createSessionsRoutes(
           
           res.status(result.success ? 200 : 404).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to delete session:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to delete session:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -271,7 +271,7 @@ export function createSessionsRoutes(
             }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get messages:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to get messages:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -325,7 +325,7 @@ export function createSessionsRoutes(
             }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get WebSocket info:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to get WebSocket info:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -382,7 +382,7 @@ export function createSessionsRoutes(
 
           res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to create raid session:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to create raid session:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -423,7 +423,7 @@ export function createSessionsRoutes(
 
           res.status(result.success ? 200 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to join raid:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to join raid:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -484,7 +484,7 @@ export function createSessionsRoutes(
             });
           }
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to record action:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to record action:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -536,7 +536,7 @@ export function createSessionsRoutes(
             data: { leaderboard }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get leaderboard:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to get leaderboard:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -584,7 +584,7 @@ export function createSessionsRoutes(
             data: { metrics }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get metrics:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to get metrics:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -625,7 +625,7 @@ export function createSessionsRoutes(
             }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to list sessions:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to list sessions:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -649,7 +649,7 @@ export function createSessionsRoutes(
           const result = await sessionsAPI.getSessionStats();
           res.status(result.success ? 200 : 500).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get stats:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to get stats:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -685,7 +685,7 @@ export function createSessionsRoutes(
             }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Health check failed:", error);
+          logger.error("[SESSIONS_ROUTES] Health check failed:", error instanceof Error ? error.message : String(error));
           res.status(503).json({
             success: false,
             error: "Service unhealthy",
@@ -725,7 +725,7 @@ export function createSessionsRoutes(
 
           res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to create community session:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to create community session:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -758,7 +758,7 @@ export function createSessionsRoutes(
             }
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get user sessions:", error);
+          logger.error("[SESSIONS_ROUTES] Failed to get user sessions:", error instanceof Error ? error.message : String(error));
           res.status(500).json({
             success: false,
             error: "Internal server error",
@@ -771,6 +771,9 @@ export function createSessionsRoutes(
 }
 
 /**
- * Export sessions routes for plugin registration
+ * Export empty sessions routes array for plugin registration
+ * Routes are created dynamically when the plugin initializes
  */
-export const sessionsRoutes: SessionRoute[] = [];
+const sessionsRoutes: SessionRoute[] = [];
+
+export default sessionsRoutes;

@@ -13,10 +13,9 @@ import {
   logger,
   DatabaseAdapter,
   EventHandler,
+  SupabaseServiceManager,
+  SERVICE_DEFINITIONS,
 } from "../core";
-// import { SupabaseServiceManager } from "./core/supabase-service-manager";
-// import { SERVICE_DEFINITIONS } from "./core/service-definitions";
-// Legacy imports removed - using only clean ElizaOS-compliant components
 import { nubiProviders } from "./nubi-providers";
 import { MessageBusService } from "../messaging";
 import { StrategicActionOrchestrator } from "../orchestration";
@@ -43,6 +42,7 @@ import {
 import { antiDetectionPostProcessor } from "../evaluators/anti-detection-post-processor";
 import { communityTrackingEvaluator } from "../evaluators/community-tracking-evaluator";
 import { raidSuccessEvaluator } from "../evaluators/raid-success-evaluator";
+import { ResponseStrategyEvaluator } from "../evaluators/response-strategy-evaluator";
 
 // Import database schemas for auto-migration
 import { allSchemas } from "../schemas";
@@ -71,6 +71,7 @@ import { SocketIOAnalyticsService } from "../services";
 import { NUBISessionsService } from "../services";
 import { RaidSessionManager } from "../services";
 import { SocketIOSessionsService } from "../services";
+import { StreamingSessionsService } from "../services";
 
 // Enhanced Telegram Raids functionality
 import { EnhancedTelegramRaidsService } from "../telegram-raids/elizaos-enhanced-telegram-raids";
@@ -374,6 +375,7 @@ const nubiPlugin: Plugin = {
     sessionStateEvaluator,
     personalityEvolutionEvaluator,
     raidSuccessEvaluator, // Raid metrics tracking and participant management
+    new ResponseStrategyEvaluator(), // Response strategy evaluation for streaming/batch decisions
     antiDetectionPostProcessor,
     communityTrackingEvaluator,
   ],
@@ -545,6 +547,7 @@ const nubiPlugin: Plugin = {
     NUBISessionsService, // Full ElizaOS Sessions API implementation
     RaidSessionManager, // Advanced raid session management
     SocketIOSessionsService, // Real-time session WebSocket integration
+    StreamingSessionsService, // Real-time LLM response streaming
 
     // Personality and emotional systems
     EmotionalStateService, // NUBI emotional state management
@@ -574,15 +577,48 @@ const nubiPlugin: Plugin = {
     logger.info("🚀 Initializing NUBI Plugin...");
 
     try {
-      //       // Initialize infra aligned with @elizaos/plugin-sql (DatabaseAdapter on runtime)
-      //       const manager = new SupabaseServiceManager(runtime);
-      //       for (const def of SERVICE_DEFINITIONS) manager.registerService(def);
-      //       (runtime as any).serviceManager = manager;
-      //       try {
-      //         await manager.initialize();
-      //       } catch (infraError) {
-      //         logger.warn("⚠️ Infrastructure initialization degraded:", infraError);
-      //       }
+      // Initialize infrastructure service manager
+      const manager = new SupabaseServiceManager(runtime);
+      for (const def of SERVICE_DEFINITIONS) {
+        manager.registerService(def);
+      }
+      (runtime as any).serviceManager = manager;
+      
+      try {
+        await manager.initialize();
+        logger.info("✅ Infrastructure services initialized successfully");
+      } catch (infraError) {
+        logger.warn("⚠️ Infrastructure initialization degraded:", infraError);
+        // Continue with degraded functionality
+      }
+
+      // Register the plugin's main services with runtime
+      const mainServices = [
+        SecurityFilter,
+        EnhancedResponseGenerator,
+        SessionsService,
+        DatabaseMemoryService,
+        DatabasePoolerManager,
+        PersonalityEvolutionService,
+        EmotionalStateService,
+        CommunityManagementService,
+        CrossPlatformIdentityService,
+        UserIdentityService,
+      ];
+
+      for (const ServiceClass of mainServices) {
+        try {
+          const service = new ServiceClass();
+          if (typeof service.initialize === 'function') {
+            await service.initialize(runtime);
+          }
+          if (runtime.registerService) {
+            await runtime.registerService(service);
+          }
+        } catch (error) {
+          logger.warn(`Failed to register service ${ServiceClass.name}:`, error);
+        }
+      }
 
       // Load and validate environment configuration
       const envConfig = loadEnvironmentConfig();
@@ -639,10 +675,19 @@ const nubiPlugin: Plugin = {
       const finalConfig = mergeConfiguration(config);
       applyEnvironmentConfig(finalConfig);
 
+      // Log system info if service manager is available
       try {
-        //         const sys = manager.getSystemInfo();
-        //         logger.info(`🩺 Infra: db=${sys.databaseConnected} redis=${sys.redisConnected} services=${sys.servicesInitialized}/${sys.totalServices}`);
-      } catch {}
+        const manager = (runtime as any).serviceManager as SupabaseServiceManager;
+        if (manager) {
+          const sys = manager.getSystemInfo();
+          logger.info(`🩺 Infrastructure Status:`);
+          logger.info(`  - Database: ${sys.databaseConnected ? '✅ Connected' : '❌ Disconnected'}`);
+          logger.info(`  - Redis: ${sys.redisConnected ? '✅ Connected' : '⚠️ Not configured'}`);
+          logger.info(`  - Services: ${sys.servicesInitialized}/${sys.totalServices} initialized`);
+        }
+      } catch (error) {
+        logger.debug("Could not retrieve system info:", error);
+      }
 
       logger.info("✨ Anubis Plugin initialization complete");
       logger.info(`  - Services: ${nubiPlugin.services?.length || 0}`);
