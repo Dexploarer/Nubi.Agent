@@ -457,15 +457,35 @@ export class RaidTracker {
     }
   }
 
-  async getParticipantPosition(
-    raidId: string,
+  private async getParticipantPosition(
+    tweetId: string,
     userId: string,
   ): Promise<number> {
-    const participant = await this.getQuery(
-      `SELECT position FROM raid_participants WHERE raid_id = ? AND user_id = ?`,
-      [raidId, userId],
-    );
-    return participant?.position || 999;
+    // Input validation to prevent SQL injection
+    if (!tweetId || !userId || typeof tweetId !== 'string' || typeof userId !== 'string') {
+      logger.warn('Invalid input parameters for getParticipantPosition');
+      return 999; // Return high number to avoid bonus
+    }
+
+    // Sanitize inputs - remove any potentially dangerous characters
+    const sanitizedTweetId = tweetId.replace(/[^a-zA-Z0-9_-]/g, '');
+    const sanitizedUserId = userId.replace(/[^a-zA-Z0-9_-]/g, '');
+
+    try {
+      // Use parameterized query to prevent SQL injection
+      const result = await this.getQuery(
+        `SELECT position FROM raid_participants 
+         WHERE raid_id IN (
+           SELECT id FROM raids WHERE tweet_id = ?
+         ) AND user_id = ?`,
+        [sanitizedTweetId, sanitizedUserId]
+      );
+      
+      return result?.position || 999;
+    } catch (error) {
+      logger.error('Error getting participant position:', error instanceof Error ? error.message : String(error));
+      return 999; // Return high number to avoid bonus
+    }
   }
 
   async getRaid(raidId: string): Promise<RaidSession | null> {
