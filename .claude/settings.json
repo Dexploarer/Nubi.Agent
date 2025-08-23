@@ -1,0 +1,57 @@
+{
+  "model": "claude-3-5-sonnet-20241022",
+  "permissions": {
+    "bash": "allow",
+    "edit": "allow",
+    "multiEdit": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "read": "allow",
+    "write": "allow",
+    "webFetch": "allow",
+    "webSearch": "allow",
+    "task": "allow"
+  },
+  "environment": {
+    "NODE_ENV": "development",
+    "ELIZAOS_MODE": "enhanced",
+    "NUBI_DEBUG": "true",
+    "RAID_ANALYTICS": "enabled"
+  },
+  "hooks": {
+    "user-prompt-submit": {
+      "script": "./.claude/hooks/validate-prompt.sh",
+      "description": "Validate user prompts for ElizaOS patterns and best practices"
+    },
+    "tool-call-start": {
+      "script": "./.claude/hooks/tool-start.sh",
+      "description": "Log tool usage and validate permissions"
+    },
+    "tool-call-end": {
+      "script": "./.claude/hooks/tool-end.sh", 
+      "description": "Clean up tool execution and log results"
+    }
+  },
+  "statusLine": {
+    "enabled": true,
+    "format": "🔮 NUBI | {cwd} | ElizaOS:{elizaStatus} | Raids:{raidStatus} | DB:{dbStatus}",
+    "refreshInterval": 5000
+  },
+  "outputStyle": "nubi-enhanced",
+  "maxTurns": 50,
+  "thinking": {
+    "enabledByDefault": false,
+    "deepThinkingTriggers": ["complex", "architecture", "debugging", "optimization"]
+  },
+  "memory": {
+    "projectContextFiles": [
+      "CLAUDE.md",
+      "MODULAR_ARCHITECTURE.md", 
+      "configs/nubi-config.yaml",
+      "src/plugins/nubi-plugin.ts",
+      "src/evaluators/raid-success-evaluator.ts"
+    ],
+    "maxTokens": 100000,
+    "retainConversations": true
+  }
+}

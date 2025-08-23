@@ -1,0 +1,694 @@
+---
+title: Installation Guide
+description: Comprehensive installation guide for NUBI across different environments and deployment scenarios.
+---
+
+import {
+  Card,
+  CardGrid,
+  Aside,
+  Code,
+  Tabs,
+  TabItem,
+} from "@astrojs/starlight/components";
+
+# Installation Guide
+
+This comprehensive guide covers installing **NUBI - The Symbiotic Essence of Anubis** across different environments, from development to production deployment.
+
+## 📋 System Requirements
+
+<CardGrid>
+  <Card title="💻 Hardware" icon="setting">
+    **Minimum system specifications** - **CPU**: 2+ cores (4+ recommended) -
+    **RAM**: 2GB minimum (4GB+ recommended) - **Storage**: 5GB free space -
+    **Network**: Stable internet connection
+  </Card>
+
+<Card title="🔧 Software" icon="approve-check">
+  **Required runtime dependencies** - **Node.js**: 18.0.0 or higher - **Git**:
+  For source code management - **Database**: PostgreSQL 14+ (production) -
+  **Optional**: Docker, PM2, Redis
+</Card>
+
+<Card title="☁️ Platform Support" icon="rocket">
+  **Supported operating systems** - **Linux**: Ubuntu 20.04+, CentOS 8+ -
+  **macOS**: 11.0+ (Big Sur and later) - **Windows**: 10/11 with WSL2 -
+  **Docker**: All platforms
+</Card>
+
+  <Card title="🔑 External Services" icon="warning">
+    **Required API integrations** - **AI Models**: OpenAI, Anthropic, or local -
+    **Telegram**: Bot API token - **Twitter**: Developer account (optional) -
+    **Supabase**: Database hosting (optional)
+  </Card>
+</CardGrid>
+
+## 🛠️ Development Installation
+
+### Option 1: Automated Setup (Recommended)
+
+<div style="background: linear-gradient(135deg, var(--nubi-jackal-gold) 0%, #f39c12 100%); padding: 2rem; border-radius: 12px; color: var(--nubi-shadow-black); margin: 2rem 0;">
+  <h4 style="margin: 0 0 1rem 0;">🚀 One-Command Install</h4>
+  
+  <pre style="background: rgba(0,0,0,0.1); padding: 1rem; border-radius: 8px; margin: 0;">
+<code># Download and run the installation script
+curl -fsSL https://raw.githubusercontent.com/anubis-chat/nubi/main/scripts/install.sh | bash
+
+# Or with wget
+
+wget -qO- https://raw.githubusercontent.com/anubis-chat/nubi/main/scripts/install.sh | bash</code>
+
+  </pre>
+  
+  <p style="margin: 1rem 0 0 0; font-size: 0.9rem; opacity: 0.8;">
+    This script automatically detects your system, installs dependencies, and sets up NUBI for development.
+  </p>
+</div>
+
+### Option 2: Manual Installation
+
+<Tabs>
+  <TabItem label="Linux/macOS">
+```bash
+# 1. Install Node.js (using Node Version Manager)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install 20
+nvm use 20
+
+# 2. Install Bun (recommended package manager)
+
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+
+# 3. Clone NUBI repository
+
+git clone https://github.com/anubis-chat/nubi.git
+cd nubi
+
+# 4. Install dependencies
+
+bun install
+
+# 5. Verify installation
+
+bun run type-check
+bun test
+
+````
+  </TabItem>
+
+  <TabItem label="Windows (WSL2)">
+```powershell
+# 1. Enable WSL2 and install Ubuntu
+wsl --install -d Ubuntu
+wsl
+
+# 2. Inside WSL2, install Node.js
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+source ~/.bashrc
+nvm install 20
+
+# 3. Install Bun
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+
+# 4. Clone and setup
+git clone https://github.com/anubis-chat/nubi.git
+cd nubi
+bun install
+bun run type-check
+````
+
+  </TabItem>
+  
+  <TabItem label="Docker">
+```bash
+# 1. Clone repository
+git clone https://github.com/anubis-chat/nubi.git
+cd nubi
+
+# 2. Build development container
+
+docker build -t nubi:dev -f Dockerfile.dev .
+
+# 3. Run with development setup
+
+docker run -it --rm \
+ -p 3001:3001 \
+ -v $(pwd):/app \
+ -e NODE_ENV=development \
+ nubi:dev
+
+# 4. Or use Docker Compose
+
+docker-compose up -d development
+
+````
+  </TabItem>
+</Tabs>
+
+### Development Environment Setup
+
+<Tabs>
+  <TabItem label="Basic Setup">
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit configuration (minimal for development)
+cat > .env << 'EOF'
+NODE_ENV=development
+OPENAI_API_KEY=sk-your-openai-key
+PGLITE_DATA_DIR=./.eliza/.elizadb
+
+# Optional: Enhanced features
+TELEGRAM_BOT_TOKEN=your-bot-token
+TWITTER_API_KEY=your-twitter-key
+EOF
+
+# Start development server
+bun run dev
+````
+
+  </TabItem>
+  
+  <TabItem label="Advanced Setup">
+```bash
+# Full development environment with all features
+cat > .env << 'EOF'
+# Environment
+NODE_ENV=development
+LOG_LEVEL=debug
+
+# AI Models
+
+OPENAI_API_KEY=sk-your-openai-key
+ANTHROPIC_API_KEY=sk-ant-your-key
+
+# Database (development)
+
+PGLITE_DATA_DIR=./.eliza/.elizadb
+
+# Telegram Integration
+
+TELEGRAM_BOT_TOKEN=your-bot-token
+TELEGRAM_WEBHOOK_URL=https://your-domain.com/webhook
+
+# Twitter/X Integration
+
+TWITTER_API_KEY=your-api-key
+TWITTER_API_SECRET=your-api-secret
+TWITTER_ACCESS_TOKEN=your-access-token
+TWITTER_ACCESS_TOKEN_SECRET=your-access-secret
+
+# Server Configuration
+
+NUBI_SERVER_PORT=3001
+SOCKET_IO_PORT=3001
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001
+
+# Security
+
+JWT_SECRET=your-secure-jwt-secret
+ENCRYPTION_KEY=your-32-char-encryption-key
+
+# Analytics (optional)
+
+CLICKHOUSE_URL=http://localhost:8123
+CLICKHOUSE_DATABASE=nubi_analytics
+EOF
+
+# Install additional development tools
+
+bun add -D @types/node cypress
+bun run setup:telegram # Setup Telegram bot
+
+````
+  </TabItem>
+</Tabs>
+
+## 🌐 Production Installation
+
+### Prerequisites for Production
+
+<CardGrid>
+  <Card title="🗄️ Database" icon="setting">
+    **PostgreSQL 14+ with extensions**
+
+    ```sql
+    -- Required PostgreSQL extensions
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "vector";
+    CREATE EXTENSION IF NOT EXISTS "pg_trgm";
+    ```
+  </Card>
+
+  <Card title="🔒 Security" icon="warning">
+    **SSL certificates and firewalls**
+
+    - SSL/TLS certificates for HTTPS
+    - Firewall rules for ports 443, 80
+    - API key rotation strategy
+    - Environment variable encryption
+  </Card>
+
+  <Card title="📊 Monitoring" icon="chart">
+    **Observability stack**
+
+    - Process manager (PM2, systemd)
+    - Log aggregation (ELK, Grafana)
+    - Health checks and alerts
+    - Performance monitoring
+  </Card>
+
+  <Card title="🚀 Infrastructure" icon="rocket">
+    **Scalability components**
+
+    - Load balancer (Nginx, Cloudflare)
+    - Redis for caching/sessions
+    - CDN for static assets
+    - Database connection pooling
+  </Card>
+</CardGrid>
+
+### Production Deployment Options
+
+<Tabs>
+  <TabItem label="Traditional Server">
+```bash
+# 1. Server preparation (Ubuntu 22.04 LTS)
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y nodejs npm postgresql-14 nginx redis-server
+
+# 2. User and directory setup
+sudo useradd -m -s /bin/bash nubi
+sudo mkdir -p /opt/nubi
+sudo chown nubi:nubi /opt/nubi
+
+# 3. Switch to nubi user
+sudo su - nubi
+
+# 4. Install production dependencies
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+
+# 5. Clone and build
+cd /opt/nubi
+git clone https://github.com/anubis-chat/nubi.git .
+bun install --production
+bun run build
+
+# 6. Environment configuration
+cp .env.production.example .env.production
+# Edit .env.production with production values
+
+# 7. Database setup
+createdb nubi_production
+bun run db:migrate
+
+# 8. Process manager setup
+npm install -g pm2
+pm2 start ecosystem.config.js --env production
+pm2 startup
+pm2 save
+````
+
+  </TabItem>
+  
+  <TabItem label="Docker Production">
+```bash
+# 1. Multi-stage production build
+cat > Dockerfile.prod << 'EOF'
+FROM oven/bun:1-slim as base
+WORKDIR /app
+
+# Install dependencies
+
+FROM base as deps
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile --production
+
+# Build stage
+
+FROM base as build  
+COPY . .
+COPY --from=deps /app/node_modules ./node_modules
+RUN bun run build
+
+# Production runtime
+
+FROM base as runtime
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY package.json ./
+
+EXPOSE 3001
+CMD ["bun", "start"]
+EOF
+
+# 2. Build production image
+
+docker build -f Dockerfile.prod -t nubi:prod .
+
+# 3. Production compose stack
+
+cat > docker-compose.prod.yml << 'EOF'
+version: '3.8'
+services:
+nubi:
+image: nubi:prod
+restart: unless-stopped
+ports: - "3001:3001"
+environment: - NODE_ENV=production - POSTGRES_URL=postgresql://user:pass@postgres:5432/nubi
+depends_on: - postgres - redis
+
+postgres:
+image: postgres:15-alpine
+restart: unless-stopped
+volumes: - postgres_data:/var/lib/postgresql/data
+environment:
+POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+redis:
+image: redis:7-alpine
+restart: unless-stopped
+volumes: - redis_data:/data
+
+nginx:
+image: nginx:alpine
+restart: unless-stopped
+ports: - "80:80" - "443:443"
+volumes: - ./nginx.conf:/etc/nginx/nginx.conf - ./ssl:/etc/nginx/ssl
+
+volumes:
+postgres_data:
+redis_data:
+EOF
+
+# 4. Deploy with compose
+
+docker-compose -f docker-compose.prod.yml up -d
+
+````
+  </TabItem>
+
+  <TabItem label="Kubernetes">
+```yaml
+# nubi-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nubi-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nubi
+  template:
+    metadata:
+      labels:
+        app: nubi
+    spec:
+      containers:
+      - name: nubi
+        image: nubi:prod
+        ports:
+        - containerPort: 3001
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: POSTGRES_URL
+          valueFrom:
+            secretKeyRef:
+              name: nubi-secrets
+              key: postgres-url
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nubi-service
+spec:
+  selector:
+    app: nubi
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3001
+  type: LoadBalancer
+````
+
+  </TabItem>
+</Tabs>
+
+## 🔐 Security Hardening
+
+### Essential Security Configuration
+
+<Tabs>
+  <TabItem label="Environment Security">
+```bash
+# 1. Secure environment variables
+sudo mkdir -p /etc/nubi
+sudo chmod 700 /etc/nubi
+
+# 2. Create secure .env file
+
+sudo cat > /etc/nubi/.env << 'EOF'
+NODE_ENV=production
+JWT_SECRET=$(openssl rand -base64 32)
+ENCRYPTION_KEY=$(openssl rand -base64 32)
+DB_ENCRYPTION_KEY=$(openssl rand -base64 32)
+
+# AI Provider Keys (encrypted at rest)
+
+OPENAI_API_KEY=sk-encrypted-key
+ANTHROPIC_API_KEY=sk-encrypted-key
+
+# Database with SSL
+
+POSTGRES_URL=postgresql://user:pass@localhost:5432/nubi?sslmode=require
+
+# Redis with AUTH
+
+REDIS_URL=redis://user:pass@localhost:6379
+
+# Telegram with webhook validation
+
+TELEGRAM_BOT_TOKEN=encrypted-token
+TELEGRAM_WEBHOOK_SECRET=$(openssl rand -base64 16)
+EOF
+
+sudo chown nubi:nubi /etc/nubi/.env
+sudo chmod 600 /etc/nubi/.env
+
+````
+  </TabItem>
+
+  <TabItem label="Network Security">
+```bash
+# 1. Configure firewall (UFW)
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow ssh
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow from 10.0.0.0/8 to any port 5432  # Database access
+sudo ufw enable
+
+# 2. Nginx security configuration
+sudo cat > /etc/nginx/sites-available/nubi << 'EOF'
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-RSA-AES256-GCM-SHA512:DHE-RSA-AES256-GCM-SHA512;
+
+    # Security headers
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Strict-Transport-Security "max-age=63072000";
+
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Rate limiting
+        limit_req zone=api burst=20 nodelay;
+    }
+}
+EOF
+
+sudo ln -s /etc/nginx/sites-available/nubi /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+````
+
+  </TabItem>
+  
+  <TabItem label="Database Security">
+```sql
+-- PostgreSQL security configuration
+
+-- 1. Create dedicated user
+CREATE USER nubi_app WITH PASSWORD 'secure-random-password';
+
+-- 2. Create database with proper ownership
+CREATE DATABASE nubi_production OWNER nubi_app;
+
+-- 3. Grant minimal required privileges
+GRANT CONNECT ON DATABASE nubi_production TO nubi_app;
+GRANT CREATE, USAGE ON SCHEMA public TO nubi_app;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO nubi_app;
+
+-- 4. Enable Row Level Security
+ALTER DATABASE nubi_production SET row_security = on;
+
+-- 5. Configure connection limits
+ALTER USER nubi_app CONNECTION LIMIT 20;
+
+-- 6. SSL-only connections
+ALTER SYSTEM SET ssl = on;
+ALTER SYSTEM SET ssl_cert_file = '/path/to/server.crt';
+ALTER SYSTEM SET ssl_key_file = '/path/to/server.key';
+
+````
+  </TabItem>
+</Tabs>
+
+## 🧪 Verification & Testing
+
+### Installation Verification
+
+<Tabs>
+  <TabItem label="Health Checks">
+```bash
+# 1. System health check
+bun run health-check
+
+# Expected output:
+# ✅ Node.js version: 20.x.x
+# ✅ Database connection: OK
+# ✅ AI model access: OK
+# ✅ Telegram bot: OK
+# ✅ Memory usage: < 500MB
+# ✅ All services ready
+
+# 2. API endpoint tests
+curl http://localhost:3001/health
+# Expected: {"status": "healthy", "timestamp": "..."}
+
+curl http://localhost:3001/api/status
+# Expected: {"nubi": "ready", "version": "1.0.0"}
+````
+
+  </TabItem>
+  
+  <TabItem label="Integration Tests">
+```bash
+# 1. Run full test suite
+bun test
+
+# 2. Run integration tests specifically
+
+bun run test:integration
+
+# 3. Test Telegram integration
+
+bun run test:telegram
+
+# 4. Test database connections
+
+bun run test:database
+
+# 5. Performance baseline test
+
+bun run test:performance
+
+# Expected: All tests passing with performance metrics
+
+````
+  </TabItem>
+
+  <TabItem label="Load Testing">
+```bash
+# 1. Install load testing tools
+npm install -g autocannon
+
+# 2. Test API endpoints
+autocannon -c 10 -d 30 http://localhost:3001/health
+
+# 3. Test message processing
+autocannon -c 5 -d 60 \
+  -m POST \
+  -H 'Content-Type: application/json' \
+  -b '{"message":"Hello NUBI","userId":"test","roomId":"test"}' \
+  http://localhost:3001/api/messages
+
+# 4. Monitor during load test
+bun run monitor-performance
+````
+
+  </TabItem>
+</Tabs>
+
+## 🚨 Troubleshooting
+
+<CardGrid>
+  <Card title="🗄️ Database Issues" icon="warning">
+    **Connection and migration problems** ```bash # Check database status
+    systemctl status postgresql # Test connection psql -h localhost -U nubi_app
+    -d nubi_production # Reset migrations bun run db:reset bun run db:migrate
+    ```
+  </Card>
+
+<Card title="🔑 API Key Issues" icon="setting">
+  **Authentication and service access** ```bash # Validate API keys bun run
+  validate:api-keys # Test AI model access curl https://api.openai.com/v1/models
+  \ -H "Authorization: Bearer $OPENAI_API_KEY" ```
+</Card>
+
+<Card title="🚀 Performance Issues" icon="chart">
+  **Memory and CPU optimization** ```bash # Check memory usage ps aux | grep
+  node # Optimize Node.js settings export
+  NODE_OPTIONS="--max-old-space-size=4096" # Enable performance monitoring bun
+  run dev --inspect ```
+</Card>
+
+  <Card title="🌐 Network Issues" icon="rocket">
+    **Connectivity and port conflicts** ```bash # Check port usage netstat
+    -tulpn | grep 3001 # Test external connectivity curl -I
+    https://api.openai.com # Validate webhooks curl -X POST
+    https://your-domain.com/webhook ```
+  </Card>
+</CardGrid>
+
+---
+
+<div class="nubi-note">
+  <strong>🎯 Installation Complete!</strong> NUBI is now ready to serve your
+  community with ancient wisdom and modern AI capabilities. Continue with{" "}
+  <a href="/getting-started/configuration/">Configuration</a> to customize your
+  deployment.
+</div>
+
+<Aside type="tip">
+  **Next Steps**: After installation, configure your specific use case with our
+  detailed [Configuration Guide](/getting-started/configuration/) or jump into
+  [Architecture Overview](/architecture/overview/) to understand NUBI's
+  sophisticated design.
+</Aside>

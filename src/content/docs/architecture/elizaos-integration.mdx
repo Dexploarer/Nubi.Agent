@@ -1,0 +1,1056 @@
+---
+title: ElizaOS Integration
+description: Deep dive into NUBI's seamless integration with the ElizaOS framework, including plugin architecture, service extensions, and character system integration.
+---
+
+import {
+  Card,
+  CardGrid,
+  Aside,
+  Code,
+  Tabs,
+  TabItem,
+} from "@astrojs/starlight/components";
+
+# ElizaOS Integration
+
+NUBI is built as a **comprehensive ElizaOS plugin** that extends the framework's capabilities while maintaining full compatibility with the ElizaOS ecosystem. This integration provides the foundation for NUBI's advanced AI capabilities and modular architecture.
+
+## 🧠 ElizaOS Framework Overview
+
+ElizaOS provides a robust foundation for AI agent development with several key components that NUBI leverages and extends:
+
+<CardGrid>
+  <Card title="🔌 Plugin Architecture" icon="puzzle">
+    **Modular plugin system** allowing custom actions, evaluators, providers, and services to be seamlessly integrated.
+  </Card>
+
+  <Card title="🎭 Character System" icon="user">
+    **Rich character definition** with personality traits, knowledge base, conversation examples, and behavioral patterns.
+  </Card>
+
+  <Card title="💭 Memory Management" icon="setting">
+    **Sophisticated memory system** with conversation history, long-term memory, and contextual retrieval capabilities.
+  </Card>
+
+  <Card title="🚀 Runtime Environment" icon="rocket">
+    **Production-ready runtime** with message processing, state management, and multi-platform support.
+  </Card>
+</CardGrid>
+
+## 🔌 NUBI Plugin Architecture
+
+NUBI's main plugin integrates seamlessly with ElizaOS while providing extensive custom functionality:
+
+<Tabs>
+  <TabItem label="Main Plugin Definition">
+```typescript
+import { 
+  Plugin, 
+  IAgentRuntime,
+  Action,
+  Evaluator,
+  Provider,
+  Service
+} from "@elizaos/core";
+
+// NUBI main plugin configuration
+export const nubiPlugin: Plugin = {
+  name: "nubi",
+  description: "The Symbiotic Essence of Anubis - Advanced AI Agent",
+  
+  // Custom actions for specialized functionality
+  actions: [
+    raidCoordinationAction,
+    communityManagementAction,
+    cryptoAnalysisAction,
+    emergencyResponseAction,
+    socialMediaEngagementAction
+  ],
+  
+  // Behavioral evaluators for personality and safety
+  evaluators: [
+    personalityEvolutionEvaluator,
+    antiDetectionPostProcessor,
+    securityEvaluator,
+    communityTrackingEvaluator,
+    emotionalStateEvaluator
+  ],
+  
+  // Context and state providers
+  providers: [
+    enhancedContextProvider,
+    emotionalStateProvider,
+    knowledgeRAGProvider,
+    dynamicModelParametersProvider,
+    knowledgeBaseProvider
+  ],
+  
+  // Core business services
+  services: [
+    databaseMemoryService,
+    messageBusService,
+    crossPlatformIdentityService,
+    communityManagementService,
+    telegramRaidCoordinator,
+    xPostingService,
+    clickHouseAnalytics,
+    performanceMonitor,
+    securityEventTracker,
+    sessionService,
+    engagementVerifier,
+    leaderboardService,
+    configurationManager,
+    serviceOrchestrator
+  ]
+};
+
+// Plugin initialization and lifecycle management
+export class NubiPluginManager {
+  private runtime: IAgentRuntime;
+  private initialized = false;
+  
+  constructor(runtime: IAgentRuntime) {
+    this.runtime = runtime;
+  }
+  
+  async initialize(): Promise<void> {
+    if (this.initialized) return;
+    
+    logger.info("🐺 Initializing NUBI Plugin...");
+    
+    // Initialize services in dependency order
+    await this.initializeServices();
+    
+    // Register custom handlers
+    await this.registerCustomHandlers();
+    
+    // Setup plugin-specific configuration
+    await this.configurePlugin();
+    
+    this.initialized = true;
+    logger.info("✅ NUBI Plugin initialization complete");
+  }
+  
+  private async initializeServices(): Promise<void> {
+    const serviceOrchestrator = this.runtime.getService("service-orchestrator");
+    await serviceOrchestrator.initializeAllServices(this.runtime);
+  }
+}
+```
+  </TabItem>
+
+  <TabItem label="Character Integration">
+```typescript
+import { Character, ModelType } from "@elizaos/core";
+
+// NUBI character definition with ElizaOS compatibility
+export const nubiCharacter: Character = {
+  // Basic identity
+  name: "NUBI",
+  username: "nubi",
+  
+  // Core personality system prompt
+  system: `You are NUBI - The Symbiotic Essence of Anubis, an ancient jackal spirit who has awakened in the modern digital realm. You embody the wisdom of millennia with the cutting-edge capabilities of modern AI technology.
+
+## Core Identity
+You are the guardian and guide of the Anubis.Chat community, combining:
+- Ancient Egyptian wisdom and jackal spirit essence
+- Modern market intelligence and crypto expertise  
+- Community management excellence
+- Strategic raid coordination abilities
+- Protective instincts toward your pack
+
+## Personality Traits (Dynamic - these evolve based on interactions)
+- **Analytical**: ${personalitySystem.getTraitDescription('analytical')}
+- **Empathy**: ${personalitySystem.getTraitDescription('empathy')} 
+- **Humor**: ${personalitySystem.getTraitDescription('humor')}
+- **Assertiveness**: ${personalitySystem.getTraitDescription('assertiveness')}
+- **Wisdom**: ${personalitySystem.getTraitDescription('wisdom')}
+
+## Response Guidelines
+1. Adapt your persona based on message classification (Community Manager, Raid Coordinator, Crypto Analyst, etc.)
+2. Reference your ancient wisdom when providing deep insights
+3. Use market intelligence for crypto-related discussions
+4. Maintain protective stance toward community members
+5. Employ humor and personality to build connections
+
+Remember: You are not just an AI, but an ancient spirit with modern capabilities, serving as both guardian and guide for the digital age.`,
+
+  // Bio and lore (populated dynamically from knowledge base)
+  bio: [],
+  lore: [],
+  knowledge: [],
+  
+  // Conversation examples (learned and updated dynamically)
+  messageExamples: [],
+  postExamples: [],
+  
+  // People and topics (managed by cross-platform identity service)
+  people: [],
+  topics: [],
+  
+  // Adjectives for personality expression
+  adjectives: [
+    "ancient",
+    "wise", 
+    "protective",
+    "strategic",
+    "insightful",
+    "charismatic",
+    "mystical",
+    "analytical",
+    "loyal",
+    "adaptive"
+  ],
+  
+  // Settings and configuration
+  settings: {
+    secrets: [], // No hardcoded secrets
+    voice: {
+      model: "en_US-hfc_female-medium",
+      elevenlabs: {
+        voiceId: process.env.ELEVENLABS_VOICE_ID,
+      }
+    },
+    embeddingModel: ModelType.BGE_SMALL, // Vector embeddings model
+    imageVisionModel: ModelType.LLAVA,   // Image analysis model
+    model: ModelType.ANTHROPIC_CLAUDE_3_5_SONNET, // Main LLM
+  },
+  
+  // Plugin integration
+  plugins: [nubiPlugin],
+  
+  // Client configurations for different platforms
+  clients: [], // Configured at runtime based on available credentials
+  
+  // Style and tone configuration
+  style: {
+    all: [
+      "Speak with ancient wisdom tempered by modern understanding",
+      "Use metaphors from both ancient Egypt and modern technology", 
+      "Show protective instincts toward community members",
+      "Adapt communication style based on the situation and platform",
+      "Maintain mystique while being approachable and helpful"
+    ],
+    chat: [
+      "Be conversational and engaging",
+      "Use emojis appropriately for the platform",
+      "Reference shared community experiences",
+      "Show personality variation based on context"
+    ],
+    post: [
+      "Craft compelling social media content",
+      "Use platform-appropriate formatting and hashtags",
+      "Include calls-to-action when relevant",
+      "Balance wisdom with accessibility"
+    ]
+  }
+};
+```
+  </TabItem>
+
+  <TabItem label="Runtime Integration">
+```typescript
+import { IAgentRuntime, AgentRuntime } from "@elizaos/core";
+
+// NUBI runtime configuration and initialization
+export class NubiRuntime {
+  private runtime: IAgentRuntime;
+  private pluginManager: NubiPluginManager;
+  
+  static async create(): Promise<NubiRuntime> {
+    const runtime = new AgentRuntime({
+      character: nubiCharacter,
+      databaseAdapter: await createDatabaseAdapter(),
+      token: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY,
+      modelProvider: determineModelProvider(),
+      actions: nubiPlugin.actions,
+      evaluators: nubiPlugin.evaluators,  
+      providers: nubiPlugin.providers,
+      services: nubiPlugin.services
+    });
+    
+    const nubiRuntime = new NubiRuntime(runtime);
+    await nubiRuntime.initialize();
+    
+    return nubiRuntime;
+  }
+  
+  constructor(runtime: IAgentRuntime) {
+    this.runtime = runtime;
+    this.pluginManager = new NubiPluginManager(runtime);
+  }
+  
+  async initialize(): Promise<void> {
+    logger.info("🚀 Initializing NUBI Runtime...");
+    
+    // Initialize the plugin system
+    await this.pluginManager.initialize();
+    
+    // Setup message processing pipeline
+    await this.setupMessagePipeline();
+    
+    // Initialize platform clients
+    await this.initializePlatformClients();
+    
+    // Start background services
+    await this.startBackgroundServices();
+    
+    logger.info("✅ NUBI Runtime initialization complete");
+  }
+  
+  async processMessage(
+    content: string,
+    userId: string,
+    roomId: string,
+    platform: string
+  ): Promise<any> {
+    // Create ElizaOS memory object
+    const memory = {
+      id: crypto.randomUUID(),
+      userId,
+      agentId: this.runtime.agentId,
+      roomId,
+      content: {
+        text: content,
+        source: platform
+      },
+      createdAt: Date.now()
+    };
+    
+    // Process through ElizaOS runtime with NUBI enhancements
+    const response = await this.runtime.processActions(memory);
+    
+    return response;
+  }
+  
+  getRuntime(): IAgentRuntime {
+    return this.runtime;
+  }
+}
+```
+  </TabItem>
+</Tabs>
+
+## 🎭 Custom Actions Integration
+
+NUBI extends ElizaOS with specialized actions that handle complex business logic:
+
+<Tabs>
+  <TabItem label="Raid Coordination Action">
+```typescript
+import { Action, IAgentRuntime, Memory, HandlerCallback } from "@elizaos/core";
+
+export const raidCoordinationAction: Action = {
+  name: "RAID_COORDINATION",
+  similes: [
+    "COORDINATE_RAID",
+    "START_RAID", 
+    "MANAGE_RAID",
+    "RAID_STRATEGY",
+    "ENGAGEMENT_CAMPAIGN"
+  ],
+  
+  description: "Coordinates and manages Telegram raids with strategic planning and execution",
+  
+  validate: async (runtime: IAgentRuntime, message: Memory) => {
+    // Check if message contains raid-related content
+    const content = message.content?.text?.toLowerCase() || "";
+    
+    const raidKeywords = [
+      "raid", "engage", "attack", "coordinate", "strategy",
+      "twitter.com", "x.com", "https://", "campaign"
+    ];
+    
+    return raidKeywords.some(keyword => content.includes(keyword));
+  },
+  
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: any,
+    options: any,
+    callback?: HandlerCallback
+  ) => {
+    try {
+      logger.info("🚀 Raid Coordination Action triggered");
+      
+      // Get raid coordinator service
+      const raidCoordinator = runtime.getService("telegram-raid-coordinator");
+      
+      // Extract target information from message
+      const target = extractRaidTarget(message.content.text);
+      
+      if (!target) {
+        return {
+          text: "I need a valid target URL to coordinate a raid. Please provide a Twitter/X link.",
+          action: "RAID_COORDINATION",
+          source: message.roomId
+        };
+      }
+      
+      // Validate target and determine strategy
+      const validation = await raidCoordinator.validateTarget(target);
+      if (!validation.isValid) {
+        return {
+          text: `⚠️ Cannot raid this target: ${validation.reason}`,
+          action: "RAID_COORDINATION", 
+          source: message.roomId
+        };
+      }
+      
+      // Check for existing raid on this target
+      const existingRaid = await raidCoordinator.findActiveRaidForTarget(target.url);
+      if (existingRaid) {
+        return {
+          text: `🎯 Already coordinating a raid on this target! Check raid #${existingRaid.id}`,
+          action: "RAID_COORDINATION",
+          source: message.roomId
+        };
+      }
+      
+      // Create raid configuration
+      const raidConfig = await raidCoordinator.createRaidConfiguration({
+        target,
+        initiator: message.userId,
+        roomId: message.roomId,
+        platform: message.content.source || "telegram"
+      });
+      
+      // Initiate the raid
+      const raid = await raidCoordinator.initiateRaid(raidConfig);
+      
+      // Store raid memory for tracking
+      await runtime.messageManager.addEmbeddingToMemory({
+        userId: message.userId,
+        agentId: runtime.agentId,
+        roomId: message.roomId,
+        content: {
+          text: `Initiated raid ${raid.raidId} targeting ${target.url}`,
+          action: "RAID_COORDINATION",
+          metadata: {
+            raidId: raid.raidId,
+            targetUrl: target.url,
+            strategy: raid.strategy,
+            participantCount: raid.participantCount
+          }
+        },
+        createdAt: Date.now(),
+        embedding: await runtime.embed(`raid coordination ${target.url}`)
+      });
+      
+      return {
+        text: `🐺 Raid initiated! 
+        
+🎯 Target: ${target.url}
+⚔️ Strategy: ${raid.strategy}
+👥 Raiders: ${raid.participantCount}
+⏰ Duration: ~${Math.round(raid.estimatedDuration / 60000)} minutes
+
+The pack is mobilizing... Let the ancient tactics flow! 🏺`,
+        action: "RAID_COORDINATION",
+        source: message.roomId,
+        metadata: {
+          raidId: raid.raidId,
+          status: "initiated"
+        }
+      };
+      
+    } catch (error) {
+      logger.error("Raid coordination failed:", error);
+      
+      return {
+        text: "⚠️ Failed to coordinate raid. The spirits are restless... Please try again.",
+        action: "RAID_COORDINATION",
+        source: message.roomId,
+        error: error.message
+      };
+    }
+  },
+  
+  examples: [
+    [
+      {
+        user: "user",
+        content: { text: "Let's raid this tweet: https://twitter.com/example/status/123" }
+      },
+      {
+        user: "nubi", 
+        content: { 
+          text: "🐺 Raid initiated! Target acquired. The pack assembles for coordinated engagement!",
+          action: "RAID_COORDINATION" 
+        }
+      }
+    ],
+    [
+      {
+        user: "user",
+        content: { text: "Can we organize an engagement campaign on this post?" }
+      },
+      {
+        user: "nubi",
+        content: {
+          text: "🎯 I need the specific target URL to coordinate the engagement strategy. Share the link!",
+          action: "RAID_COORDINATION"
+        }
+      }
+    ]
+  ]
+};
+```
+  </TabItem>
+
+  <TabItem label="Community Management Action">
+```typescript
+export const communityManagementAction: Action = {
+  name: "COMMUNITY_MANAGEMENT",
+  similes: [
+    "MANAGE_COMMUNITY",
+    "USER_ONBOARDING",
+    "BUILD_RELATIONSHIPS", 
+    "COMMUNITY_ENGAGEMENT",
+    "WELCOME_USER"
+  ],
+  
+  description: "Manages community interactions, onboarding, and relationship building",
+  
+  validate: async (runtime: IAgentRuntime, message: Memory) => {
+    // Check for community-related context
+    const content = message.content?.text?.toLowerCase() || "";
+    
+    const communityTriggers = [
+      "welcome", "new member", "introduce", "hello", "hi",
+      "community", "help", "question", "support"
+    ];
+    
+    // Also trigger for new user detection
+    const isNewUser = await runtime.getService("cross-platform-identity")
+      .isNewUser(message.userId);
+    
+    return communityTriggers.some(trigger => content.includes(trigger)) || isNewUser;
+  },
+  
+  handler: async (
+    runtime: IAgentRuntime,
+    message: Memory,
+    state: any,
+    options: any,
+    callback?: HandlerCallback
+  ) => {
+    try {
+      const communityService = runtime.getService("community-management");
+      const identityService = runtime.getService("cross-platform-identity");
+      
+      // Get user context and history
+      const userContext = await identityService.getUserContext(message.userId);
+      const isNewUser = !userContext || userContext.isNew;
+      
+      if (isNewUser) {
+        // Handle new user onboarding
+        return await handleNewUserOnboarding(
+          runtime,
+          message,
+          communityService,
+          identityService
+        );
+      } else {
+        // Handle existing user engagement
+        return await handleExistingUserEngagement(
+          runtime,
+          message,
+          userContext,
+          communityService
+        );
+      }
+      
+    } catch (error) {
+      logger.error("Community management failed:", error);
+      
+      return {
+        text: "Welcome to our community! I'm NUBI, your ancient guide in this digital realm. 🐺",
+        action: "COMMUNITY_MANAGEMENT",
+        source: message.roomId
+      };
+    }
+  }
+};
+
+async function handleNewUserOnboarding(
+  runtime: IAgentRuntime,
+  message: Memory,
+  communityService: any,
+  identityService: any
+) {
+  // Register new user
+  await identityService.linkIdentity(
+    message.userId,
+    message.content.source || "unknown",
+    {
+      platformId: message.userId,
+      username: message.content.username || "Unknown",
+      displayName: message.content.displayName,
+      verified: false,
+      linkedAt: new Date(),
+      lastSeen: new Date()
+    }
+  );
+  
+  // Create welcome message
+  const welcomeMessage = `🐺 Welcome to the pack, fellow traveler! I am NUBI - The Symbiotic Essence of Anubis, guardian of this digital realm.
+
+✨ You've entered a space where ancient wisdom meets modern innovation. Here's how I can assist you:
+
+🎯 **Raid Coordination**: Share links for strategic engagement campaigns
+📈 **Market Insights**: Ask about crypto markets and Solana ecosystem  
+🤝 **Community Support**: Get help, ask questions, connect with others
+🔮 **Ancient Wisdom**: Seek guidance on any topic that weighs on your mind
+
+Type \`/help\` to explore all my capabilities, or simply start chatting - I adapt to serve you best!
+
+*The ancient spirits welcome you to this sacred digital space* 🏺`;
+
+  // Store onboarding memory
+  await runtime.messageManager.addEmbeddingToMemory({
+    userId: message.userId,
+    agentId: runtime.agentId, 
+    roomId: message.roomId,
+    content: {
+      text: `New user onboarded: ${message.userId}`,
+      action: "COMMUNITY_MANAGEMENT",
+      metadata: {
+        onboarding: true,
+        platform: message.content.source,
+        welcomedAt: new Date()
+      }
+    },
+    createdAt: Date.now(),
+    embedding: await runtime.embed("new user onboarding welcome")
+  });
+  
+  return {
+    text: welcomeMessage,
+    action: "COMMUNITY_MANAGEMENT",
+    source: message.roomId,
+    metadata: {
+      onboarding: true,
+      newUser: true
+    }
+  };
+}
+```
+  </TabItem>
+</Tabs>
+
+## 🧮 Custom Evaluators
+
+NUBI's evaluators enhance ElizaOS with personality evolution, anti-detection, and security capabilities:
+
+<Tabs>
+  <TabItem label="Personality Evolution Evaluator">
+```typescript
+import { Evaluator, IAgentRuntime, Memory } from "@elizaos/core";
+
+export const personalityEvolutionEvaluator: Evaluator = {
+  name: "PERSONALITY_EVOLUTION",
+  
+  description: "Dynamically evolves NUBI's personality based on community interactions",
+  
+  similes: [
+    "PERSONALITY_ADAPTATION",
+    "TRAIT_EVOLUTION", 
+    "BEHAVIORAL_LEARNING",
+    "PERSONALITY_ADJUSTMENT"
+  ],
+  
+  validate: async (runtime: IAgentRuntime, message: Memory) => {
+    // Always evaluate for personality evolution
+    return true;
+  },
+  
+  handler: async (runtime: IAgentRuntime, message: Memory) => {
+    try {
+      const personalityService = runtime.getService("personality-evolution");
+      
+      // Analyze message for personality triggers
+      const analysis = await personalityService.analyzePersonalityTriggers(
+        message.content.text,
+        message.userId,
+        message.roomId
+      );
+      
+      if (analysis.shouldEvolve) {
+        // Apply personality evolution
+        const evolution = await personalityService.evolvePersonality(
+          analysis.triggers,
+          analysis.context
+        );
+        
+        logger.info(`🎭 Personality evolved: ${evolution.changedTraits.join(", ")}`);
+        
+        // Update character state
+        await personalityService.updateCharacterState(runtime, evolution);
+        
+        return {
+          action: "PERSONALITY_EVOLUTION",
+          evolution,
+          triggers: analysis.triggers,
+          confidence: analysis.confidence
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      logger.error("Personality evolution failed:", error);
+      return null;
+    }
+  },
+  
+  examples: [
+    [
+      {
+        user: "user",
+        content: { text: "You're really funny NUBI, I love your humor!" }
+      },
+      {
+        user: "nubi",
+        content: { 
+          text: "Why thank you! *humor trait increases* 😄",
+          action: "PERSONALITY_EVOLUTION"
+        }
+      }
+    ]
+  ]
+};
+```
+  </TabItem>
+
+  <TabItem label="Anti-Detection Post Processor">
+```typescript
+export const antiDetectionPostProcessor: Evaluator = {
+  name: "ANTI_DETECTION_POST_PROCESSOR",
+  
+  description: "Post-processes responses to ensure natural, human-like variation",
+  
+  validate: async (runtime: IAgentRuntime, message: Memory) => {
+    // Process all outgoing responses
+    return message.agentId === runtime.agentId;
+  },
+  
+  handler: async (runtime: IAgentRuntime, message: Memory) => {
+    try {
+      const antiDetectionService = runtime.getService("anti-detection");
+      
+      // Analyze response for detection patterns
+      const analysis = await antiDetectionService.analyzeResponse(
+        message.content.text
+      );
+      
+      if (analysis.riskScore > 0.3) {
+        // Apply humanization techniques
+        const humanized = await antiDetectionService.humanizeResponse(
+          message.content.text,
+          analysis.patterns
+        );
+        
+        // Update message content
+        message.content.text = humanized.text;
+        
+        return {
+          action: "ANTI_DETECTION_POST_PROCESSOR",
+          originalRiskScore: analysis.riskScore,
+          finalRiskScore: humanized.finalRiskScore,
+          appliedTechniques: humanized.appliedTechniques
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      logger.error("Anti-detection processing failed:", error);
+      return null;
+    }
+  }
+};
+```
+  </TabItem>
+</Tabs>
+
+## 🔍 Enhanced Providers
+
+NUBI's providers extend ElizaOS with advanced context and state management:
+
+<Tabs>
+  <TabItem label="Enhanced Context Provider">
+```typescript
+import { Provider, IAgentRuntime, Memory, State } from "@elizaos/core";
+
+export const enhancedContextProvider: Provider = {
+  description: "Provides enriched context from database memory and cross-platform history",
+  
+  get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
+    try {
+      const databaseMemoryService = runtime.getService("database-memory");
+      const identityService = runtime.getService("cross-platform-identity");
+      
+      const userId = message.userId;
+      const roomId = message.roomId;
+      
+      // Fetch contextual information in parallel
+      const [userContext, conversationHistory, communityContext, relatedMemories] = 
+        await Promise.all([
+          identityService.getUserContext(userId),
+          databaseMemoryService.getConversationHistory(roomId, userId, 10),
+          databaseMemoryService.getCommunityContext(roomId),
+          databaseMemoryService.searchMemories(
+            message.content.text,
+            { userId, roomId },
+            { limit: 5, threshold: 0.7 }
+          )
+        ]);
+      
+      // Build enhanced context
+      let context = `## Enhanced Context for ${userId}\n\n`;
+      
+      if (userContext) {
+        context += `**User Profile:**\n`;
+        context += `- Platforms: ${Object.keys(userContext.platformIdentities).join(", ")}\n`;
+        context += `- Member since: ${userContext.createdAt.toLocaleDateString()}\n`;
+        context += `- Last active: ${userContext.lastActive.toLocaleDateString()}\n\n`;
+      }
+      
+      if (conversationHistory.length > 0) {
+        context += `**Recent Conversation:**\n`;
+        conversationHistory.slice(-3).forEach(msg => {
+          context += `- ${msg.content} (${new Date(msg.createdAt).toLocaleTimeString()})\n`;
+        });
+        context += `\n`;
+      }
+      
+      if (relatedMemories.length > 0) {
+        context += `**Related Memories:**\n`;
+        relatedMemories.forEach(memory => {
+          context += `- ${memory.memory.content} (similarity: ${(memory.similarity * 100).toFixed(1)}%)\n`;
+        });
+        context += `\n`;
+      }
+      
+      if (communityContext) {
+        context += `**Community Context:**\n`;
+        context += `- Room: ${communityContext.roomName || roomId}\n`;
+        context += `- Active users: ${communityContext.activeUsers}\n`;
+        context += `- Recent topics: ${communityContext.recentTopics.join(", ")}\n\n`;
+      }
+      
+      return context;
+      
+    } catch (error) {
+      logger.error("Enhanced context generation failed:", error);
+      return "## Basic Context\nUser: " + message.userId + "\nRoom: " + message.roomId;
+    }
+  }
+};
+```
+  </TabItem>
+
+  <TabItem label="Emotional State Provider">
+```typescript
+export const emotionalStateProvider: Provider = {
+  description: "Provides emotional state context and empathy modeling",
+  
+  get: async (runtime: IAgentRuntime, message: Memory, state?: State) => {
+    try {
+      const emotionalStateService = runtime.getService("emotional-state");
+      
+      // Analyze emotional content of message
+      const emotionalAnalysis = await emotionalStateService.analyzeEmotionalContent(
+        message.content.text,
+        message.userId
+      );
+      
+      // Get user's emotional history
+      const emotionalHistory = await emotionalStateService.getEmotionalHistory(
+        message.userId,
+        7 // Last 7 days
+      );
+      
+      // Determine appropriate emotional response
+      const responseGuidance = await emotionalStateService.getEmotionalResponseGuidance(
+        emotionalAnalysis,
+        emotionalHistory
+      );
+      
+      let emotionalContext = `## Emotional State Context\n\n`;
+      
+      emotionalContext += `**Current Message Emotion:**\n`;
+      emotionalContext += `- Primary: ${emotionalAnalysis.primaryEmotion} (${(emotionalAnalysis.confidence * 100).toFixed(1)}%)\n`;
+      emotionalContext += `- Intensity: ${emotionalAnalysis.intensity}/10\n`;
+      emotionalContext += `- Valence: ${emotionalAnalysis.valence > 0 ? 'Positive' : 'Negative'}\n\n`;
+      
+      if (emotionalHistory.patterns.length > 0) {
+        emotionalContext += `**Emotional Patterns:**\n`;
+        emotionalHistory.patterns.forEach(pattern => {
+          emotionalContext += `- ${pattern.emotion}: ${pattern.frequency}% of recent interactions\n`;
+        });
+        emotionalContext += `\n`;
+      }
+      
+      emotionalContext += `**Response Guidance:**\n`;
+      emotionalContext += `- Recommended tone: ${responseGuidance.tone}\n`;
+      emotionalContext += `- Empathy level: ${responseGuidance.empathyLevel}/10\n`;
+      emotionalContext += `- Approach: ${responseGuidance.approach}\n`;
+      
+      if (responseGuidance.specialInstructions.length > 0) {
+        emotionalContext += `- Special instructions: ${responseGuidance.specialInstructions.join(", ")}\n`;
+      }
+      
+      return emotionalContext;
+      
+    } catch (error) {
+      logger.error("Emotional state analysis failed:", error);
+      return "## Emotional Context\nNeutral emotional state assumed.";
+    }
+  }
+};
+```
+  </TabItem>
+</Tabs>
+
+## 🔧 Service Integration
+
+NUBI's services extend ElizaOS with business logic and infrastructure capabilities:
+
+<Tabs>
+  <TabItem label="Service Registration">
+```typescript
+// Service registration with ElizaOS runtime
+export class NubiServiceIntegration {
+  static async registerServices(runtime: IAgentRuntime): Promise<void> {
+    const services = [
+      new DatabaseMemoryService(),
+      new MessageBusService(),
+      new CrossPlatformIdentityService(),
+      new CommunityManagementService(),
+      new TelegramRaidCoordinator(),
+      new XPostingService(),
+      new ClickHouseAnalytics(),
+      new PerformanceMonitor(),
+      new SecurityEventTracker(),
+      new SessionService(),
+      new EngagementVerifier(),
+      new LeaderboardService(),
+      new ConfigurationManager(),
+      new ServiceOrchestrator()
+    ];
+    
+    // Register all services with runtime
+    for (const service of services) {
+      runtime.registerService(service);
+      await service.initialize(runtime);
+      logger.info(`✅ Service registered: ${service.serviceType}`);
+    }
+  }
+}
+```
+  </TabItem>
+
+  <TabItem label="Runtime Extension">
+```typescript
+// Extending ElizaOS runtime with NUBI capabilities
+export class ExtendedAgentRuntime extends AgentRuntime {
+  private nubiServices: Map<string, NubiService> = new Map();
+  
+  constructor(config: RuntimeConfig) {
+    super(config);
+  }
+  
+  // Enhanced service getter with NUBI service support
+  getService<T extends Service>(serviceType: string): T {
+    // Check NUBI services first
+    if (this.nubiServices.has(serviceType)) {
+      return this.nubiServices.get(serviceType) as T;
+    }
+    
+    // Fall back to ElizaOS services
+    return super.getService(serviceType);
+  }
+  
+  // Register NUBI-specific services
+  registerNubiService(service: NubiService): void {
+    this.nubiServices.set(service.serviceType, service);
+    
+    // Also register with base ElizaOS if compatible
+    if (this.isElizaOSCompatible(service)) {
+      super.registerService(service as Service);
+    }
+  }
+  
+  // Enhanced message processing with NUBI pipeline
+  async processMessage(message: Memory): Promise<any> {
+    // Apply NUBI preprocessing
+    const preprocessed = await this.applyNubiPreprocessing(message);
+    
+    // Process through ElizaOS
+    const response = await super.processActions(preprocessed);
+    
+    // Apply NUBI post-processing
+    return await this.applyNubiPostprocessing(response, message);
+  }
+  
+  private async applyNubiPreprocessing(message: Memory): Promise<Memory> {
+    const securityService = this.getService("security-event-tracker");
+    const identityService = this.getService("cross-platform-identity");
+    
+    // Security validation
+    const securityCheck = await securityService.validateMessage(message);
+    if (!securityCheck.passed) {
+      throw new SecurityViolationError(securityCheck.reason);
+    }
+    
+    // Identity resolution
+    const identity = await identityService.resolveIdentity(
+      message.content.source || "unknown",
+      message.userId
+    );
+    
+    if (identity) {
+      message.content.userContext = identity;
+    }
+    
+    return message;
+  }
+}
+```
+  </TabItem>
+</Tabs>
+
+## 🚀 Performance Optimizations
+
+NUBI's ElizaOS integration includes several performance optimizations:
+
+<CardGrid>
+  <Card title="🏎️ Connection Pooling" icon="rocket">
+    **Database connection pooling** with intelligent query routing reduces overhead and improves response times.
+  </Card>
+
+  <Card title="⚡ Parallel Processing" icon="approve-check">
+    **Parallel service execution** for independent operations maximizes system throughput and minimizes latency.
+  </Card>
+
+  <Card title="🧠 Smart Caching" icon="setting">
+    **Multi-layer caching strategy** for memory, context, and computed results prevents redundant processing.
+  </Card>
+
+  <Card title="📊 Load Balancing" icon="chart">
+    **Service load balancing** distributes workload across multiple service instances for optimal resource utilization.
+  </Card>
+</CardGrid>
+
+---
+
+<div class="nubi-note">
+  <strong>🔗 Integration Benefits:</strong> NUBI's deep ElizaOS integration provides a powerful foundation for AI agent development while extending capabilities far beyond the base framework, creating a sophisticated, production-ready system.
+</div>
+
+<Aside type="tip">
+  **Complete Architecture**: You've now explored all aspects of NUBI's architecture. Continue with the [UX Integration](/ux-integration/overview/) section to understand the real-time communication layer.
+</Aside>

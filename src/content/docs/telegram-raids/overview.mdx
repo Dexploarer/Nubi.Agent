@@ -1,0 +1,813 @@
+---
+title: Telegram Raids System Overview
+description: Comprehensive guide to NUBI's advanced Telegram raid coordination system with engagement verification, leaderboards, and cross-platform integration.
+---
+
+import {
+  Card,
+  CardGrid,
+  Aside,
+  Code,
+  Tabs,
+  TabItem,
+} from "@astrojs/starlight/components";
+
+# Telegram Raids System Overview
+
+NUBI's **Telegram Raids System** is a sophisticated engagement coordination platform that transforms social media campaigns into gamified, strategic operations with military precision while maintaining community fun and authenticity.
+
+## 🎯 What is a Telegram Raid?
+
+<div class="interactive-demo">
+  <h3>⚔️ Raid Definition</h3>
+  <div style="background: linear-gradient(135deg, var(--nubi-shadow-black) 0%, var(--nubi-jackal-gold) 100%); padding: 2rem; border-radius: 12px; color: white; margin: 2rem 0;">
+    <p style="font-size: 1.2rem; margin: 0 0 1rem 0; text-align: center;">
+      A <strong>Telegram Raid</strong> is a coordinated social media engagement
+      campaign where community members simultaneously engage with target content
+      to boost visibility, demonstrate support, and drive organic growth.
+    </p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 2rem;">
+      <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px;">
+        <strong>🎯 Target</strong>
+        <br />
+        <small>Twitter posts, announcements, AMAs</small>
+      </div>
+      <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px;">
+        <strong>⚡ Action</strong>
+        <br />
+        <small>Like, RT, comment, follow</small>
+      </div>
+      <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px;">
+        <strong>🏆 Reward</strong>
+        <br />
+        <small>Points, leaderboards, recognition</small>
+      </div>
+      <div style="text-align: center; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px;">
+        <strong>📊 Analytics</strong>
+        <br />
+        <small>Engagement tracking, success metrics</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+## 🏗️ System Architecture
+
+NUBI's raid system implements a **comprehensive architecture** with multiple specialized components:
+
+<CardGrid>
+  <Card title="🎮 Raid Coordinator" icon="rocket">
+    **Central orchestrator** managing raid lifecycle and participant
+    coordination - Raid creation and configuration - Participant recruitment and
+    tracking - Real-time progress monitoring - Success metrics calculation
+  </Card>
+
+<Card title="🔍 Engagement Verifier" icon="approve-check">
+  **Intelligent verification** system ensuring authentic engagement - Twitter
+  API integration for verification - Action completion detection - Anti-gaming
+  measures - Quality score calculation
+</Card>
+
+<Card title="🏆 Leaderboard Service" icon="chart">
+  **Gamification engine** driving competition and motivation - Real-time point
+  calculations - Multi-dimensional rankings - Achievement system - Seasonal
+  competitions
+</Card>
+
+  <Card title="🛡️ Moderation System" icon="warning">
+    **Safety and quality** controls maintaining community standards - Automated
+    spam detection - Content quality assessment - Participant behavior
+    monitoring - Violation handling
+  </Card>
+</CardGrid>
+
+## 🎮 Raid Types & Strategies
+
+<Tabs>
+  <TabItem label="Engagement Raids">
+```typescript
+interface EngagementRaid {
+  type: 'engagement';
+  target: {
+    platform: 'twitter' | 'instagram' | 'tiktok';
+    url: string;
+    expectedActions: ('like' | 'retweet' | 'comment' | 'follow')[];
+  };
+  requirements: {
+    minParticipants: number;
+    timeLimit: number; // minutes
+    qualityThreshold: number; // 0-1
+  };
+  rewards: {
+    basePoints: number;
+    bonusMultipliers: RewardMultiplier[];
+    specialRewards: string[];
+  };
+}
+
+// Example engagement raid configuration
+const twitterEngagementRaid: EngagementRaid = {
+type: 'engagement',
+target: {
+platform: 'twitter',
+url: 'https://twitter.com/AnubisChat/status/1234567890',
+expectedActions: ['like', 'retweet', 'comment']
+},
+requirements: {
+minParticipants: 50,
+timeLimit: 30, // 30 minutes
+qualityThreshold: 0.8
+},
+rewards: {
+basePoints: 100,
+bonusMultipliers: [
+{ condition: 'early_participant', multiplier: 1.5 },
+{ condition: 'quality_comment', multiplier: 2.0 }
+],
+specialRewards: ['Raid Champion NFT', 'Community Recognition']
+}
+};
+
+````
+  </TabItem>
+
+  <TabItem label="Growth Raids">
+```typescript
+interface GrowthRaid {
+  type: 'growth';
+  objective: 'follower_growth' | 'community_expansion' | 'brand_awareness';
+  targets: {
+    primaryAccounts: string[]; // Main accounts to follow
+    communityAccounts: string[]; // Community members to support
+    contentToShare: string[]; // Specific content to amplify
+  };
+  metrics: {
+    followerTarget: number;
+    engagementRate: number;
+    reachGoal: number;
+    hashtagTrending: string[];
+  };
+}
+
+// Example growth raid for community expansion
+const communityGrowthRaid: GrowthRaid = {
+  type: 'growth',
+  objective: 'community_expansion',
+  targets: {
+    primaryAccounts: ['@AnubisChat', '@NUBI_Agent'],
+    communityAccounts: ['@CommunityMember1', '@Holder2'],
+    contentToShare: [
+      'https://twitter.com/AnubisChat/post1',
+      'https://twitter.com/NUBI_Agent/post2'
+    ]
+  },
+  metrics: {
+    followerTarget: 1000,
+    engagementRate: 0.15, // 15% engagement rate goal
+    reachGoal: 50000,
+    hashtagTrending: ['#NUBI', '#AnubisChat', '#CommunityPower']
+  }
+};
+````
+
+  </TabItem>
+  
+  <TabItem label="Defense Raids">
+```typescript
+interface DefenseRaid {
+  type: 'defense';
+  threat: 'fud_campaign' | 'coordinated_attack' | 'misinformation';
+  targets: {
+    threateningContent: string[]; // Content to counter
+    supportContent: string[]; // Positive content to boost
+    protectedAccounts: string[]; // Accounts to defend
+  };
+  strategy: {
+    counterNarrative: string;
+    factualRebuttals: string[];
+    communityResponse: 'unified' | 'distributed' | 'stealth';
+    escalationProtocol: EscalationLevel[];
+  };
+}
+
+// Example defense raid against FUD
+const fudDefenseRaid: DefenseRaid = {
+type: 'defense',
+threat: 'fud_campaign',
+targets: {
+threateningContent: [
+'https://twitter.com/fudder/status/malicious-post'
+],
+supportContent: [
+'https://twitter.com/AnubisChat/status/truth-post'
+],
+protectedAccounts: ['@AnubisChat', '@NUBI_Agent']
+},
+strategy: {
+counterNarrative: 'NUBI represents innovation and community strength',
+factualRebuttals: [
+'Technical audit confirms security',
+'Community growth metrics are public',
+'Partnership announcements are verified'
+],
+communityResponse: 'unified',
+escalationProtocol: ['community_response', 'influencer_support', 'official_statement']
+}
+};
+
+````
+  </TabItem>
+</Tabs>
+
+## ⚡ Real-time Coordination Flow
+
+<div class="interactive-demo">
+  <h3>📱 Telegram Bot Interaction Flow</h3>
+  <div style="background: var(--nubi-shadow-black); color: var(--nubi-jackal-gold); padding: 2rem; border-radius: 8px; font-family: monospace; margin: 2rem 0;">
+    <div style="margin-bottom: 1rem;"><strong>1.</strong> 🎯 <span style="color: white;">NUBI:</span> "🚀 NEW RAID ALERT! Target: Twitter engagement"</div>
+    <div style="margin-bottom: 1rem;"><strong>2.</strong> 👤 <span style="color: white;">User:</span> "/join" </div>
+    <div style="margin-bottom: 1rem;"><strong>3.</strong> 🎯 <span style="color: white;">NUBI:</span> "✅ Joined! Your mission: Like + RT + comment"</div>
+    <div style="margin-bottom: 1rem;"><strong>4.</strong> 👤 <span style="color: white;">User:</span> "/complete https://twitter.com/target/post"</div>
+    <div style="margin-bottom: 1rem;"><strong>5.</strong> 🔍 <span style="color: white;">System:</span> "Verifying engagement..." </div>
+    <div style="margin-bottom: 1rem;"><strong>6.</strong> 🎯 <span style="color: white;">NUBI:</span> "🏆 VERIFIED! +150 points. Rank: #12"</div>
+  </div>
+</div>
+
+### Command System
+
+<CardGrid>
+  <Card title="🎯 Raid Commands" icon="rocket">
+    **Core raid interaction** commands for participants
+
+    ```bash
+    /raids - List active raids
+    /join <raid_id> - Join a raid
+    /leave <raid_id> - Leave a raid
+    /complete <proof_url> - Submit completion
+    /status - Check your progress
+    ```
+  </Card>
+
+  <Card title="🏆 Leaderboard Commands" icon="chart">
+    **Competition and ranking** commands for gamification
+
+    ```bash
+    /leaderboard - Show top participants
+    /rank - Your current ranking
+    /points - Your point balance
+    /achievements - Earned badges
+    /history - Your raid history
+    ```
+  </Card>
+
+  <Card title="👑 Admin Commands" icon="warning">
+    **Management commands** for raid coordinators
+
+    ```bash
+    /create_raid - Create new raid
+    /end_raid <raid_id> - End raid early
+    /verify_manual <user> - Manual verification
+    /ban <user> - Remove participant
+    /analytics <raid_id> - View metrics
+    ```
+  </Card>
+
+  <Card title="ℹ️ Info Commands" icon="approve-check">
+    **Information and help** commands for users
+
+    ```bash
+    /help - Show all commands
+    /rules - Raid participation rules
+    /about - System information
+    /support - Get help
+    /feedback - Submit feedback
+    ```
+  </Card>
+</CardGrid>
+
+## 🏆 Advanced Leaderboard System
+
+NUBI implements a **multi-dimensional ranking system** that rewards different types of participation:
+
+<Tabs>
+  <TabItem label="Ranking Categories">
+```typescript
+interface LeaderboardMetrics {
+  // Primary metrics
+  totalPoints: number;
+  raidsCompleted: number;
+  verificationRate: number; // Percentage of successful verifications
+  avgResponseTime: number; // Speed of participation
+
+  // Quality metrics
+  commentQuality: number; // AI-assessed comment value
+  engagementValue: number; // Influence-weighted engagement
+  consistencyScore: number; // Regular participation
+  teamworkBonus: number; // Collaboration with others
+
+  // Special achievements
+  raidLeader: number; // Times led a raid
+  firstParticipant: number; // Early bird bonus count
+  mvpRaids: number; // Most valuable participant awards
+  streakDays: number; // Consecutive participation days
+}
+
+// Example leaderboard calculation
+class LeaderboardCalculator {
+  calculateCompositeScore(metrics: LeaderboardMetrics): number {
+    return (
+      metrics.totalPoints * 0.3 +
+      metrics.raidsCompleted * 10 * 0.2 +
+      metrics.verificationRate * 1000 * 0.15 +
+      metrics.commentQuality * 500 * 0.15 +
+      metrics.consistencyScore * 300 * 0.1 +
+      metrics.teamworkBonus * 0.1
+    );
+  }
+}
+````
+
+  </TabItem>
+  
+  <TabItem label="Achievement System">
+```typescript
+interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  requirements: AchievementRequirement[];
+  rewards: AchievementReward[];
+}
+
+const achievements: Achievement[] = [
+{
+id: 'raid_rookie',
+name: 'Raid Rookie',
+description: 'Complete your first raid',
+icon: '🎯',
+rarity: 'common',
+requirements: [{ type: 'raids_completed', value: 1 }],
+rewards: [{ type: 'points', value: 100 }, { type: 'badge', value: 'rookie' }]
+},
+{
+id: 'engagement_master',
+name: 'Engagement Master',
+description: 'Achieve 100% verification rate over 50 raids',
+icon: '🏆',
+rarity: 'epic',
+requirements: [
+{ type: 'raids_completed', value: 50 },
+{ type: 'verification_rate', value: 1.0 }
+],
+rewards: [
+{ type: 'points', value: 5000 },
+{ type: 'nft', value: 'engagement_master' },
+{ type: 'role', value: 'Elite Raider' }
+]
+},
+{
+id: 'speed_demon',
+name: 'Speed Demon',
+description: 'Complete 10 raids within 5 minutes of launch',
+icon: '⚡',
+rarity: 'rare',
+requirements: [
+{ type: 'fast_completions', value: 10, timeframe: 300 }
+],
+rewards: [
+{ type: 'points', value: 1000 },
+{ type: 'multiplier', value: 1.1, duration: '7d' }
+]
+},
+{
+id: 'community_guardian',
+name: 'Community Guardian',
+description: 'Lead 25 successful defense raids',
+icon: '🛡️',
+rarity: 'legendary',
+requirements: [
+{ type: 'defense_raids_led', value: 25 },
+{ type: 'defense_success_rate', value: 0.9 }
+],
+rewards: [
+{ type: 'points', value: 10000 },
+{ type: 'nft', value: 'guardian_shield' },
+{ type: 'role', value: 'Community Guardian' },
+{ type: 'privilege', value: 'create_defense_raids' }
+]
+}
+];
+
+````
+  </TabItem>
+
+  <TabItem label="Seasonal Competition">
+```typescript
+interface Season {
+  id: string;
+  name: string;
+  startDate: Date;
+  endDate: Date;
+  theme: string;
+  specialRules: SeasonRule[];
+  rewards: SeasonReward[];
+}
+
+interface SeasonRule {
+  type: 'point_multiplier' | 'bonus_action' | 'special_raid';
+  condition: string;
+  effect: any;
+}
+
+const currentSeason: Season = {
+  id: 'anubis_ascension_2024',
+  name: 'Anubis Ascension',
+  startDate: new Date('2024-01-01'),
+  endDate: new Date('2024-03-31'),
+  theme: 'Ancient Egyptian mythology meets modern crypto',
+  specialRules: [
+    {
+      type: 'point_multiplier',
+      condition: 'raids_with_anubis_hashtag',
+      effect: { multiplier: 1.5 }
+    },
+    {
+      type: 'bonus_action',
+      condition: 'comment_includes_egyptian_reference',
+      effect: { bonus_points: 50 }
+    },
+    {
+      type: 'special_raid',
+      condition: 'weekend_pyramid_raids',
+      effect: { exclusive_access: true, double_points: true }
+    }
+  ],
+  rewards: [
+    {
+      rank: 1,
+      prize: 'Golden Anubis NFT + 50,000 $NUBI',
+      title: 'Supreme Pharaoh'
+    },
+    {
+      rank: '2-10',
+      prize: 'Silver Anubis NFT + 10,000 $NUBI',
+      title: 'Temple Guardian'
+    },
+    {
+      rank: '11-50',
+      prize: 'Bronze Anubis NFT + 1,000 $NUBI',
+      title: 'Loyal Servant'
+    }
+  ]
+};
+````
+
+  </TabItem>
+</Tabs>
+
+## 🔍 Engagement Verification
+
+<Aside type="tip">
+  **Smart Verification**: NUBI's verification system uses multiple data sources
+  including Twitter API, blockchain transactions, and AI-powered content
+  analysis to ensure authentic engagement.
+</Aside>
+
+### Multi-layered Verification Process
+
+<div class="interactive-demo">
+  <h3>🔎 Verification Pipeline</h3>
+  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 2rem 0;">
+    <div style="padding: 1rem; background: linear-gradient(135deg, #4caf50, #45a049); color: white; border-radius: 8px; text-align: center;">
+      <strong>1. API Check</strong>
+      <br />
+      <small>Twitter API verification of actual engagement</small>
+    </div>
+    <div style="padding: 1rem; background: linear-gradient(135deg, #2196f3, #1976d2); color: white; border-radius: 8px; text-align: center;">
+      <strong>2. Quality Scan</strong>
+      <br />
+      <small>AI analysis of comment quality and relevance</small>
+    </div>
+    <div style="padding: 1rem; background: linear-gradient(135deg, #ff9800, #f57c00); color: white; border-radius: 8px; text-align: center;">
+      <strong>3. Timing Check</strong>
+      <br />
+      <small>Verification of participation timeline</small>
+    </div>
+    <div style="padding: 1rem; background: linear-gradient(135deg, #9c27b0, #7b1fa2); color: white; border-radius: 8px; text-align: center;">
+      <strong>4. Final Score</strong>
+      <br />
+      <small>Composite score and point allocation</small>
+    </div>
+  </div>
+</div>
+
+<Tabs>
+  <TabItem label="Twitter API Integration">
+```typescript
+export class TwitterVerifier {
+  private twitterClient: TwitterClient;
+  
+  async verifyEngagement(
+    tweetUrl: string,
+    userId: string,
+    actions: EngagementAction[]
+  ): Promise<VerificationResult> {
+    const tweetId = this.extractTweetId(tweetUrl);
+    const results: ActionVerification[] = [];
+    
+    for (const action of actions) {
+      switch (action) {
+        case 'like':
+          const likeVerified = await this.verifyLike(tweetId, userId);
+          results.push({ action: 'like', verified: likeVerified });
+          break;
+          
+        case 'retweet':
+          const retweetVerified = await this.verifyRetweet(tweetId, userId);
+          results.push({ action: 'retweet', verified: retweetVerified });
+          break;
+          
+        case 'comment':
+          const commentResult = await this.verifyComment(tweetId, userId);
+          results.push({ 
+            action: 'comment', 
+            verified: commentResult.verified,
+            quality: commentResult.quality 
+          });
+          break;
+          
+        case 'follow':
+          const followVerified = await this.verifyFollow(tweetId, userId);
+          results.push({ action: 'follow', verified: followVerified });
+          break;
+      }
+    }
+    
+    return {
+      overall_verified: results.every(r => r.verified),
+      action_results: results,
+      verification_score: this.calculateScore(results),
+      timestamp: new Date()
+    };
+  }
+  
+  private async verifyComment(tweetId: string, userId: string): Promise<CommentVerification> {
+    // Get comments on the tweet
+    const comments = await this.twitterClient.getComments(tweetId);
+    const userComment = comments.find(c => c.author_id === userId);
+    
+    if (!userComment) {
+      return { verified: false, quality: 0 };
+    }
+    
+    // Analyze comment quality with AI
+    const quality = await this.analyzeCommentQuality(userComment.text);
+    
+    return {
+      verified: true,
+      quality,
+      comment: userComment.text,
+      engagement: userComment.public_metrics
+    };
+  }
+}
+```
+  </TabItem>
+  
+  <TabItem label="AI Quality Analysis">
+```typescript
+import { pipeline } from '@huggingface/transformers';
+
+export class QualityAnalyzer {
+  private sentimentAnalyzer: any;
+  private relevanceModel: any;
+  
+  async analyzeCommentQuality(comment: string): Promise<QualityScore> {
+    const [sentiment, relevance, toxicity] = await Promise.all([
+      this.analyzeSentiment(comment),
+      this.analyzeRelevance(comment), 
+      this.checkToxicity(comment)
+    ]);
+    
+    // Calculate composite quality score
+    const qualityScore = this.calculateQualityScore({
+      sentiment,
+      relevance, 
+      toxicity,
+      length: comment.length,
+      hasHashtags: /#\w+/.test(comment),
+      hasMentions: /@\w+/.test(comment),
+      hasEmojis: /[\u{1F600}-\u{1F64F}]/u.test(comment)
+    });
+    
+    return {
+      overall: qualityScore,
+      breakdown: {
+        sentiment: sentiment.score,
+        relevance: relevance.score,
+        toxicity: toxicity.score,
+        engagement_potential: this.estimateEngagementPotential(comment)
+      },
+      feedback: this.generateFeedback(qualityScore, comment)
+    };
+  }
+  
+  private calculateQualityScore(metrics: QualityMetrics): number {
+    let score = 0.5; // Base score
+    
+    // Positive sentiment bonus
+    if (metrics.sentiment.label === 'POSITIVE') {
+      score += 0.2 * metrics.sentiment.confidence;
+    }
+    
+    // Relevance bonus (using semantic similarity)
+    score += 0.3 * metrics.relevance.score;
+    
+    // Toxicity penalty
+    score -= 0.5 * metrics.toxicity.score;
+    
+    // Length bonus (optimal range: 50-280 characters)
+    const lengthFactor = Math.min(1, metrics.length / 50) * Math.max(0, (280 - metrics.length) / 280);
+    score += 0.1 * lengthFactor;
+    
+    // Engagement features bonus
+    if (metrics.hasHashtags) score += 0.05;
+    if (metrics.hasMentions) score += 0.05; 
+    if (metrics.hasEmojis) score += 0.05;
+    
+    return Math.max(0, Math.min(1, score));
+  }
+  
+  private generateFeedback(score: number, comment: string): string[] {
+    const feedback: string[] = [];
+    
+    if (score < 0.3) {
+      feedback.push('Consider making your comment more relevant to the topic');
+      feedback.push('Try adding constructive thoughts or questions');
+    } else if (score < 0.6) {
+      feedback.push('Good comment! Consider adding relevant hashtags');
+      feedback.push('Engaging with the community builds stronger connections');
+    } else {
+      feedback.push('Excellent quality comment!');
+      feedback.push('Your engagement adds real value to the conversation');
+    }
+    
+    return feedback;
+  }
+}
+```
+  </TabItem>
+  
+  <TabItem label="Anti-Gaming Measures">
+```typescript
+export class AntiGamingSystem {
+  private suspiciousPatterns = new Map<string, SuspiciousActivity>();
+  private qualityThresholds = {
+    minCommentQuality: 0.4,
+    maxSimilarComments: 3,
+    minTimeBetweenActions: 30000, // 30 seconds
+    maxActionsPerHour: 20
+  };
+  
+  async checkForGaming(
+    userId: string, 
+    action: EngagementAction,
+    content?: string
+  ): Promise<GamingCheckResult> {
+    const checks = await Promise.all([
+      this.checkRateLimit(userId, action),
+      this.checkContentSimilarity(userId, content),
+      this.checkBehaviorPatterns(userId),
+      this.checkAccountAuthenticity(userId)
+    ]);
+    
+    const riskScore = checks.reduce((sum, check) => sum + check.risk, 0) / checks.length;
+    
+    return {
+      allowed: riskScore < 0.7,
+      riskScore,
+      warnings: checks.filter(c => c.risk > 0.5).map(c => c.warning),
+      recommendations: this.generateRecommendations(checks)
+    };
+  }
+  
+  private async checkContentSimilarity(userId: string, content?: string): Promise<RiskCheck> {
+    if (!content) return { risk: 0, warning: '' };
+    
+    const userHistory = await this.getUserCommentHistory(userId);
+    const similarities = userHistory.map(historical => 
+      this.calculateSimilarity(content, historical.content)
+    );
+    
+    const maxSimilarity = Math.max(...similarities);
+    const similarCount = similarities.filter(s => s > 0.8).length;
+    
+    if (similarCount >= this.qualityThresholds.maxSimilarComments) {
+      return {
+        risk: 0.9,
+        warning: 'Repetitive comment patterns detected',
+        details: { maxSimilarity, similarCount }
+      };
+    }
+    
+    return { 
+      risk: maxSimilarity * 0.5,
+      warning: maxSimilarity > 0.8 ? 'Comment too similar to previous submissions' : ''
+    };
+  }
+  
+  private async checkBehaviorPatterns(userId: string): Promise<RiskCheck> {
+    const recentActivity = await this.getUserRecentActivity(userId);
+    
+    // Check for bot-like patterns
+    const timeIntervals = this.calculateTimeIntervals(recentActivity);
+    const intervalVariation = this.calculateVariation(timeIntervals);
+    
+    // Human behavior typically has more variation in timing
+    if (intervalVariation < 0.2) {
+      return {
+        risk: 0.8,
+        warning: 'Suspicious timing patterns detected',
+        details: { intervalVariation }
+      };
+    }
+    
+    // Check for coordinated behavior
+    const coordinationScore = await this.checkCoordination(userId, recentActivity);
+    
+    return {
+      risk: coordinationScore,
+      warning: coordinationScore > 0.7 ? 'Possible coordinated behavior' : ''
+    };
+  }
+}
+```
+  </TabItem>
+</Tabs>
+
+## 📊 Analytics & Metrics
+
+NUBI's raid system provides comprehensive analytics for measuring campaign effectiveness:
+
+<CardGrid>
+  <Card title="📈 Real-time Metrics" icon="chart">
+    **Live performance tracking** during active raids - Participant count and
+    growth rate - Engagement completion rates - Quality score distributions -
+    Target reach and impressions
+  </Card>
+
+<Card title="🎯 Success Analysis" icon="approve-check">
+  **Post-raid effectiveness** measurement - Engagement rate improvements -
+  Follower growth attribution - Viral coefficient calculation - ROI on community
+  effort
+</Card>
+
+<Card title="👥 Community Health" icon="user">
+  **Participant behavior** and satisfaction metrics - Retention rates across
+  raids - Engagement quality trends - Satisfaction surveys - Community growth
+  impact
+</Card>
+
+  <Card title="🔍 Competitive Intel" icon="setting">
+    **Market positioning** and competitor analysis - Comparative engagement
+    rates - Community size benchmarks - Sentiment analysis - Trend
+    identification
+  </Card>
+</CardGrid>
+
+---
+
+<div class="nubi-note">
+  <strong>⚔️ Ready to lead the charge?</strong> NUBI's Telegram Raids system
+  transforms social media engagement into strategic community operations.
+  Explore <a href="/telegram-raids/coordination/">Raid Coordination</a> to learn
+  how to create and manage campaigns, or dive into{" "}
+  <a href="/telegram-raids/verification/">Engagement Verification</a> to
+  understand our advanced quality systems.
+</div>
+
+## Next Steps
+
+<CardGrid>
+  <Card title="⚡ Raid Coordination" icon="rocket">
+    Learn how to create, manage, and execute successful raid campaigns.
+    [Coordinate →](/telegram-raids/coordination/)
+  </Card>
+
+<Card title="🔍 Engagement Verification" icon="approve-check">
+  Understand the multi-layered verification and quality assessment system.
+  [Verify →](/telegram-raids/verification/)
+</Card>
+
+<Card title="🏆 Leaderboards & Rewards" icon="chart">
+  Explore the gamification system that drives community participation. [Compete
+  →](/telegram-raids/leaderboards/)
+</Card>
+
+  <Card title="🛡️ Safety & Moderation" icon="warning">
+    Discover how NUBI maintains quality and prevents abuse in raids. [Secure
+    →](/telegram-raids/moderation/)
+  </Card>
+</CardGrid>

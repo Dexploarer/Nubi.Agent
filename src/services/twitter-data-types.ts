@@ -141,7 +141,7 @@ export interface TwitterMonitorConfig extends Record<string, unknown> {
     };
     timeWindows: {
       short: number; // minutes
-      medium: number; // minutes  
+      medium: number; // minutes
       long: number; // minutes
     };
   };
@@ -209,7 +209,7 @@ export interface RaidMetrics {
   participants: {
     userId: string;
     username: string;
-    engagementType: 'like' | 'retweet' | 'reply' | 'quote';
+    engagementType: "like" | "retweet" | "reply" | "quote";
     timestamp: Date;
   }[];
   raidScore: number;

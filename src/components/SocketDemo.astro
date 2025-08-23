@@ -1,0 +1,722 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title = "Live Socket.IO Demo", description = "Experience NUBI's real-time communication system" } = Astro.props;
+---
+
+<div class="socket-demo">
+  <div class="demo-header">
+    <h3 class="demo-title">{title}</h3>
+    {description && <p class="demo-description">{description}</p>}
+  </div>
+  
+  <div class="demo-container">
+    <div class="connection-panel">
+      <div class="status-indicator">
+        <div class="status-dot" id="status-dot"></div>
+        <span class="status-text" id="status-text">Disconnected</span>
+      </div>
+      
+      <div class="connection-controls">
+        <input 
+          type="text" 
+          id="server-url" 
+          placeholder="ws://localhost:3001" 
+          value="wss://demo.anubis.chat"
+          class="server-input"
+        />
+        <button class="connect-btn" id="connect-btn" onclick="toggleConnection()">
+          Connect
+        </button>
+      </div>
+    </div>
+    
+    <div class="chat-interface">
+      <div class="messages-container" id="messages-container">
+        <div class="system-message">
+          💡 Connect to start chatting with NUBI's real-time system
+        </div>
+      </div>
+      
+      <div class="input-section">
+        <input 
+          type="text" 
+          id="message-input" 
+          placeholder="Type a message to test NUBI's two-layer processing..."
+          class="message-input"
+          disabled
+        />
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>
+          Send
+        </button>
+      </div>
+    </div>
+    
+    <div class="demo-features">
+      <h4>Try These Demo Messages:</h4>
+      <div class="feature-buttons">
+        <button class="demo-msg-btn" onclick="sendDemoMessage('Hello NUBI! How are you today?')">
+          💬 General Chat
+        </button>
+        <button class="demo-msg-btn" onclick="sendDemoMessage('What is the SOL price?')">
+          💰 Crypto Query
+        </button>
+        <button class="demo-msg-btn" onclick="sendDemoMessage('https://twitter.com/example/post raid this!')">
+          🚀 Raid Command
+        </button>
+        <button class="demo-msg-btn" onclick="sendDemoMessage('Help me with a problem')">
+          🛠️ Support Request
+        </button>
+        <button class="demo-msg-btn" onclick="sendDemoMessage('Tell me some ancient wisdom 🔮')">
+          🧠 Wisdom Mode
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="processing-visualization" id="processing-viz" style="display: none;">
+    <h4>Two-Layer Processing Pipeline</h4>
+    <div class="pipeline-steps">
+      <div class="pipeline-step" id="layer1-step">
+        <div class="step-icon">🛡️</div>
+        <div class="step-content">
+          <div class="step-title">Layer 1: Security</div>
+          <div class="step-status" id="layer1-status">Waiting...</div>
+        </div>
+        <div class="step-progress" id="layer1-progress"></div>
+      </div>
+      
+      <div class="pipeline-arrow">→</div>
+      
+      <div class="pipeline-step" id="layer2-step">
+        <div class="step-icon">🧠</div>
+        <div class="step-content">
+          <div class="step-title">Layer 2: Classification</div>
+          <div class="step-status" id="layer2-status">Waiting...</div>
+        </div>
+        <div class="step-progress" id="layer2-progress"></div>
+      </div>
+      
+      <div class="pipeline-arrow">→</div>
+      
+      <div class="pipeline-step" id="ai-step">
+        <div class="step-icon">🤖</div>
+        <div class="step-content">
+          <div class="step-title">AI Response</div>
+          <div class="step-status" id="ai-status">Waiting...</div>
+        </div>
+        <div class="step-progress" id="ai-progress"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .socket-demo {
+    border: 2px solid var(--nubi-spirit-blue);
+    border-radius: 12px;
+    padding: 2rem;
+    margin: 2rem 0;
+    background: linear-gradient(135deg, var(--nubi-shadow-black) 0%, rgba(63, 81, 181, 0.1) 100%);
+    color: white;
+  }
+  
+  .demo-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .demo-title {
+    color: var(--nubi-spirit-blue);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
+  }
+  
+  .demo-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+  }
+  
+  .connection-panel {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #f44336;
+    animation: pulse 2s infinite;
+  }
+  
+  .status-dot.connected {
+    background: #4caf50;
+  }
+  
+  .status-dot.connecting {
+    background: #ff9800;
+  }
+  
+  .connection-controls {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .server-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(63, 81, 181, 0.3);
+    border-radius: 4px;
+    padding: 0.5rem 0.8rem;
+    color: white;
+    min-width: 200px;
+  }
+  
+  .server-input:focus {
+    outline: none;
+    border-color: var(--nubi-spirit-blue);
+  }
+  
+  .connect-btn {
+    background: var(--nubi-spirit-blue);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  
+  .connect-btn:hover {
+    background: #5c6bc0;
+    transform: translateY(-1px);
+  }
+  
+  .connect-btn.disconnect {
+    background: #f44336;
+  }
+  
+  .connect-btn.disconnect:hover {
+    background: #e53935;
+  }
+  
+  .chat-interface {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  
+  .messages-container {
+    height: 300px;
+    overflow-y: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  
+  .message {
+    max-width: 80%;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    position: relative;
+  }
+  
+  .message.user {
+    align-self: flex-end;
+    background: var(--nubi-spirit-blue);
+    color: white;
+  }
+  
+  .message.nubi {
+    align-self: flex-start;
+    background: var(--nubi-jackal-gold);
+    color: var(--nubi-shadow-black);
+  }
+  
+  .message.system {
+    align-self: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+  
+  .system-message {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+    padding: 2rem;
+  }
+  
+  .message-metadata {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 0.3rem;
+  }
+  
+  .input-section {
+    display: flex;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    gap: 0.5rem;
+  }
+  
+  .message-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(63, 81, 181, 0.3);
+    border-radius: 20px;
+    padding: 0.8rem 1rem;
+    color: white;
+  }
+  
+  .message-input:focus {
+    outline: none;
+    border-color: var(--nubi-spirit-blue);
+  }
+  
+  .message-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .send-btn {
+    background: var(--nubi-jackal-gold);
+    color: var(--nubi-shadow-black);
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  
+  .send-btn:hover:not(:disabled) {
+    background: #f4d03f;
+    transform: scale(1.05);
+  }
+  
+  .send-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .demo-features {
+    margin-bottom: 1.5rem;
+  }
+  
+  .demo-features h4 {
+    color: var(--nubi-spirit-blue);
+    margin: 0 0 1rem 0;
+  }
+  
+  .feature-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.8rem;
+  }
+  
+  .demo-msg-btn {
+    background: rgba(63, 81, 181, 0.2);
+    border: 1px solid var(--nubi-spirit-blue);
+    color: white;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+  
+  .demo-msg-btn:hover {
+    background: rgba(63, 81, 181, 0.3);
+    transform: translateY(-2px);
+  }
+  
+  .processing-visualization {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  
+  .processing-visualization h4 {
+    color: var(--nubi-jackal-gold);
+    margin: 0 0 1rem 0;
+    text-align: center;
+  }
+  
+  .pipeline-steps {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  
+  .pipeline-step {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1rem;
+    border-radius: 8px;
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .pipeline-step.processing {
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid #ffc107;
+  }
+  
+  .pipeline-step.completed {
+    background: rgba(76, 175, 80, 0.2);
+    border: 1px solid #4caf50;
+  }
+  
+  .step-icon {
+    font-size: 1.5rem;
+  }
+  
+  .step-content {
+    flex: 1;
+  }
+  
+  .step-title {
+    font-weight: bold;
+    margin-bottom: 0.2rem;
+  }
+  
+  .step-status {
+    font-size: 0.8rem;
+    opacity: 0.8;
+  }
+  
+  .step-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: var(--nubi-jackal-gold);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  
+  .pipeline-arrow {
+    font-size: 1.5rem;
+    color: var(--nubi-jackal-gold);
+    font-weight: bold;
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  @media (max-width: 768px) {
+    .connection-panel {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .pipeline-steps {
+      flex-direction: column;
+    }
+    
+    .pipeline-arrow {
+      transform: rotate(90deg);
+    }
+    
+    .feature-buttons {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  let socket = null;
+  let isConnected = false;
+  
+  function toggleConnection() {
+    if (isConnected) {
+      disconnect();
+    } else {
+      connect();
+    }
+  }
+  
+  function connect() {
+    const serverUrl = document.getElementById('server-url').value;
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const connectBtn = document.getElementById('connect-btn');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    
+    // Update UI to connecting state
+    statusDot.className = 'status-dot connecting';
+    statusText.textContent = 'Connecting...';
+    connectBtn.disabled = true;
+    
+    try {
+      // Note: In a real implementation, we would use socket.io-client
+      // For this demo, we'll simulate the connection
+      setTimeout(() => {
+        // Simulate successful connection
+        statusDot.className = 'status-dot connected';
+        statusText.textContent = 'Connected';
+        connectBtn.textContent = 'Disconnect';
+        connectBtn.className = 'connect-btn disconnect';
+        connectBtn.disabled = false;
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        isConnected = true;
+        
+        // Add welcome message
+        addMessage('system', 'Connected to NUBI demo server! Try sending a message.');
+        
+        // Show processing visualization
+        document.getElementById('processing-viz').style.display = 'block';
+      }, 1500);
+      
+    } catch (error) {
+      statusDot.className = 'status-dot';
+      statusText.textContent = 'Connection Failed';
+      connectBtn.disabled = false;
+      
+      addMessage('system', `Connection failed: ${error.message}. This is a demo - real connections require a running NUBI server.`);
+    }
+  }
+  
+  function disconnect() {
+    const statusDot = document.getElementById('status-dot');
+    const statusText = document.getElementById('status-text');
+    const connectBtn = document.getElementById('connect-btn');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    
+    statusDot.className = 'status-dot';
+    statusText.textContent = 'Disconnected';
+    connectBtn.textContent = 'Connect';
+    connectBtn.className = 'connect-btn';
+    messageInput.disabled = true;
+    sendBtn.disabled = true;
+    isConnected = false;
+    
+    // Hide processing visualization
+    document.getElementById('processing-viz').style.display = 'none';
+    
+    addMessage('system', 'Disconnected from server.');
+  }
+  
+  function sendMessage() {
+    const messageInput = document.getElementById('message-input');
+    const message = messageInput.value.trim();
+    
+    if (message && isConnected) {
+      // Add user message
+      addMessage('user', message);
+      messageInput.value = '';
+      
+      // Show processing pipeline
+      simulateProcessing(message);
+    }
+  }
+  
+  function sendDemoMessage(message) {
+    if (!isConnected) {
+      addMessage('system', 'Please connect to the server first!');
+      return;
+    }
+    
+    // Add user message
+    addMessage('user', message);
+    
+    // Show processing pipeline
+    simulateProcessing(message);
+  }
+  
+  function addMessage(type, content, metadata = null) {
+    const container = document.getElementById('messages-container');
+    
+    // Remove initial message if present
+    const systemMessage = container.querySelector('.system-message');
+    if (systemMessage && type !== 'system') {
+      systemMessage.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${type}`;
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.textContent = content;
+    messageDiv.appendChild(contentDiv);
+    
+    if (metadata) {
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'message-metadata';
+      metaDiv.textContent = metadata;
+      messageDiv.appendChild(metaDiv);
+    }
+    
+    container.appendChild(messageDiv);
+    container.scrollTop = container.scrollHeight;
+  }
+  
+  function simulateProcessing(message) {
+    // Reset pipeline state
+    resetPipeline();
+    
+    // Layer 1: Security Processing
+    setTimeout(() => {
+      updatePipelineStep('layer1', 'processing', 'Checking rate limits...');
+      
+      setTimeout(() => {
+        updatePipelineStep('layer1', 'processing', 'Scanning for threats...');
+        
+        setTimeout(() => {
+          updatePipelineStep('layer1', 'completed', 'Security check passed ✓');
+          
+          // Layer 2: Classification
+          setTimeout(() => {
+            updatePipelineStep('layer2', 'processing', 'Analyzing message intent...');
+            
+            setTimeout(() => {
+              const classification = classifyMessage(message);
+              updatePipelineStep('layer2', 'completed', `Classified as: ${classification}`);
+              
+              // AI Response
+              setTimeout(() => {
+                updatePipelineStep('ai', 'processing', 'Generating response...');
+                
+                setTimeout(() => {
+                  const response = generateResponse(message, classification);
+                  updatePipelineStep('ai', 'completed', 'Response generated ✓');
+                  
+                  // Add AI response
+                  addMessage('nubi', response, `Persona: ${classification} | Processing: ~45ms`);
+                }, 1200);
+              }, 500);
+            }, 1000);
+          }, 500);
+        }, 800);
+      }, 600);
+    }, 300);
+  }
+  
+  function resetPipeline() {
+    ['layer1', 'layer2', 'ai'].forEach(step => {
+      const stepElement = document.getElementById(`${step}-step`);
+      const statusElement = document.getElementById(`${step}-status`);
+      const progressElement = document.getElementById(`${step}-progress`);
+      
+      stepElement.className = 'pipeline-step';
+      statusElement.textContent = 'Waiting...';
+      progressElement.style.width = '0%';
+    });
+  }
+  
+  function updatePipelineStep(step, state, status) {
+    const stepElement = document.getElementById(`${step}-step`);
+    const statusElement = document.getElementById(`${step}-status`);
+    const progressElement = document.getElementById(`${step}-progress`);
+    
+    stepElement.className = `pipeline-step ${state}`;
+    statusElement.textContent = status;
+    
+    if (state === 'processing') {
+      progressElement.style.width = '50%';
+    } else if (state === 'completed') {
+      progressElement.style.width = '100%';
+    }
+  }
+  
+  function classifyMessage(message) {
+    const lower = message.toLowerCase();
+    
+    if (lower.includes('raid') || lower.includes('twitter.com') || lower.includes('engage')) {
+      return 'Raid Coordinator';
+    } else if (lower.includes('price') || lower.includes('sol') || lower.includes('crypto')) {
+      return 'Crypto Analyst';
+    } else if (lower.includes('help') || lower.includes('problem') || lower.includes('support')) {
+      return 'Support Agent';
+    } else if (lower.includes('wisdom') || lower.includes('ancient') || lower.includes('🔮')) {
+      return 'Personality Core';
+    } else if (lower.includes('lol') || lower.includes('😂') || lower.includes('funny')) {
+      return 'Meme Lord';
+    } else {
+      return 'Community Manager';
+    }
+  }
+  
+  function generateResponse(message, classification) {
+    const responses = {
+      'Community Manager': [
+        "Hey there! Great to see you in the community. How can I help you today?",
+        "Welcome to the NUBI ecosystem! What brings you here?",
+        "Always happy to chat with community members. What's on your mind?"
+      ],
+      'Crypto Analyst': [
+        "🔍 Analyzing the markets... Current SOL is showing strong support levels.",
+        "📈 The crypto markets are dynamic today. Would you like a detailed analysis?",
+        "💰 Market sentiment is bullish. Let me break down the key levels for you."
+      ],
+      'Raid Coordinator': [
+        "⚔️ RAID MODE ACTIVATED! Target acquired. Preparing engagement strategy...",
+        "🚀 Excellent raid opportunity detected! Mobilizing the community now.",
+        "🎯 Roger that! Initiating coordinated engagement protocol."
+      ],
+      'Support Agent': [
+        "🛠️ I'm here to help! Let me walk you through the solution step by step.",
+        "💡 No problem too big or small! What specific issue are you facing?",
+        "🤝 Support mode engaged. I'll get this resolved for you quickly."
+      ],
+      'Personality Core': [
+        "🔮 The ancient wisdom flows through me... In crypto as in life, patience rewards the worthy.",
+        "⚡ From the depths of time I speak: The blockchain remembers all, forgets nothing.",
+        "🏺 As Anubis weighs hearts against truth, so must we weigh investments against wisdom."
+      ],
+      'Meme Lord': [
+        "😂 LMAOOO you're absolutely right! That's some galaxy brain thinking right there.",
+        "🤣 Based and NUBI-pilled! This community never fails to deliver the spice.",
+        "💀 Bruh that's actually hilarious. Community's got jokes today!"
+      ]
+    };
+    
+    const possibleResponses = responses[classification] || responses['Community Manager'];
+    return possibleResponses[Math.floor(Math.random() * possibleResponses.length)];
+  }
+  
+  // Handle Enter key in message input
+  document.addEventListener('DOMContentLoaded', function() {
+    const messageInput = document.getElementById('message-input');
+    messageInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && !messageInput.disabled) {
+        sendMessage();
+      }
+    });
+  });
+</script>

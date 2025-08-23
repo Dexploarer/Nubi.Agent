@@ -42,6 +42,7 @@ import {
 } from "../providers";
 import { antiDetectionPostProcessor } from "../evaluators/anti-detection-post-processor";
 import { communityTrackingEvaluator } from "../evaluators/community-tracking-evaluator";
+import { raidSuccessEvaluator } from "../evaluators/raid-success-evaluator";
 
 // Import database schemas for auto-migration
 import { allSchemas } from "../schemas";
@@ -367,6 +368,7 @@ const nubiPlugin: Plugin = {
     securityEvaluator, // FIRST - security filter runs before all other evaluators
     sessionStateEvaluator,
     personalityEvolutionEvaluator,
+    raidSuccessEvaluator, // Raid metrics tracking and participant management
     antiDetectionPostProcessor,
     communityTrackingEvaluator,
   ],

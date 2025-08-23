@@ -5,6 +5,7 @@ import {
   type ProviderResult,
   type State,
   logger,
+  ModelType,
 } from "@elizaos/core";
 import { DatabaseMemoryService } from "../services/database-memory-service";
 
@@ -42,12 +43,20 @@ export const enhancedContextProvider: Provider = {
         return getBasicContext(runtime, message);
       }
 
-      // Extract topic from message for semantic search
+      // Extract topic from message for semantic search first
       const messageText =
         typeof message.content === "string"
           ? message.content
           : message.content?.text || JSON.stringify(message.content) || "";
       const topic = extractTopic(messageText);
+
+      // Check for raid-related context and enrichment
+      const raidContext = await getRaidEnrichment(
+        runtime,
+        memoryService,
+        messageText,
+        message.roomId,
+      );
 
       // Get comprehensive context from database
       const context = await memoryService.getEnhancedContext(
@@ -67,8 +76,9 @@ export const enhancedContextProvider: Provider = {
       const messageAnalysis = analyzeMessage(messageText);
       const contextData = {
         ...context,
+        raidContext, // Add raid context to data
         messageAnalysis,
-        responseHints: generateResponseHints(context, messageText),
+        responseHints: generateResponseHints(context, messageText, raidContext),
         contextQuality: {
           hasMemories: context.recentMemories.length > 0,
           hasPatterns: context.patterns.length > 0,
@@ -246,7 +256,11 @@ function extractContextValues(
 /**
  * Generate response hints based on context
  */
-function generateResponseHints(context: any, messageText: string): string[] {
+function generateResponseHints(
+  context: any,
+  messageText: string,
+  raidContext?: any,
+): string[] {
   const hints: string[] = [];
 
   // Emotional response hints
@@ -295,6 +309,24 @@ function generateResponseHints(context: any, messageText: string): string[] {
   }
   if (analysis.topics.includes("anubis")) {
     hints.push("mention anubis.chat platform benefits");
+  }
+  if (analysis.topics.includes("raid")) {
+    hints.push("provide raid coordination guidance");
+    hints.push("emphasize community participation");
+  }
+
+  // Raid-specific hints based on context
+  if (raidContext) {
+    if (raidContext.activeRaids?.length > 0) {
+      hints.push("mention active raid opportunities");
+      hints.push("encourage raid participation");
+    }
+    if (raidContext.participantHistory?.length > 0) {
+      hints.push("acknowledge user's raid participation history");
+    }
+    if (raidContext.raidStats) {
+      hints.push("reference community raid achievements");
+    }
   }
 
   return hints;
@@ -347,6 +379,14 @@ function extractTopics(text: string): string[] {
   if (/nft|collection|mint/i.test(text)) topics.push("nft");
   if (/community|friend|group/i.test(text)) topics.push("community");
   if (/help|how|what|explain/i.test(text)) topics.push("support");
+  if (
+    /raid|telegram.*raid|x.*raid|twitter.*raid|like|retweet|reply|engage/i.test(
+      text,
+    )
+  )
+    topics.push("raid");
+  if (/participant|join.*raid|raid.*stats|leaderboard/i.test(text))
+    topics.push("raid_participation");
 
   return topics;
 }
@@ -451,6 +491,120 @@ topics: ${analysis.topics.join(", ")}`,
       values: { error: true },
       data: {},
     };
+  }
+}
+
+/**
+ * Get raid-specific enrichment data using ElizaOS memory patterns
+ */
+async function getRaidEnrichment(
+  runtime: IAgentRuntime,
+  memoryService: DatabaseMemoryService,
+  messageText: string,
+  roomId: string,
+): Promise<any> {
+  try {
+    const raidContext: {
+      activeRaids: any[];
+      participantHistory: any[];
+      raidStats: any;
+      twitterData: any;
+    } = {
+      activeRaids: [],
+      participantHistory: [],
+      raidStats: null,
+      twitterData: null,
+    };
+
+    // Check if message mentions specific raid
+    const raidIdMatch = messageText.match(/raid[_-]([a-zA-Z0-9_-]+)/i);
+    if (raidIdMatch) {
+      const raidId = `raid_${raidIdMatch[1]}`;
+
+      // Get raid context using enhanced memory service
+      const raidData = await (memoryService as any).getRaidContext(
+        raidId,
+        roomId,
+      );
+
+      if (
+        raidData.participants &&
+        Array.isArray(raidData.participants) &&
+        raidData.participants.length > 0
+      ) {
+        raidContext.activeRaids = [
+          {
+            raidId,
+            participants: raidData.participants,
+            status: raidData.metrics?.status || "active",
+          },
+        ];
+      }
+    }
+
+    // Look for user's raid participation history
+    const userId = (runtime as any).userId;
+    if (userId) {
+      try {
+        const participantHistory = await (
+          memoryService as any
+        ).lookupRaidParticipant(userId);
+        raidContext.participantHistory = participantHistory.slice(0, 5); // Last 5 raids
+      } catch (error) {
+        // Participant lookup may fail if user hasn't participated
+      }
+    }
+
+    // Get recent raid statistics from memory
+    try {
+      // Generate embedding for raid analytics search
+      const analyticsEmbedding = await runtime.useModel(
+        ModelType.TEXT_EMBEDDING,
+        {
+          text: "raid_analytics",
+        },
+      );
+      const recentRaidMemories = await runtime.searchMemories({
+        embedding: analyticsEmbedding,
+        roomId: roomId as any,
+        count: 3,
+        match_threshold: 0.8,
+        tableName: "memories",
+      });
+
+      if (recentRaidMemories.length > 0) {
+        const latestRaidStats = recentRaidMemories[0].content as any;
+        if (latestRaidStats) {
+          raidContext.raidStats = {
+            totalParticipants: latestRaidStats.totalParticipants,
+            successRate: latestRaidStats.successRate,
+            engagementScore: latestRaidStats.engagementScore,
+          };
+        }
+      }
+    } catch (error) {
+      // Raid stats lookup may fail
+    }
+
+    // Extract Twitter URL for enrichment
+    const twitterUrlMatch = messageText.match(
+      /(?:https?:\/\/)?(?:www\.)?(?:twitter\.com|x\.com)\/[^\s]+/i,
+    );
+    if (twitterUrlMatch) {
+      raidContext.twitterData = {
+        url: twitterUrlMatch[0],
+        platform: twitterUrlMatch[0].includes("x.com") ? "X" : "Twitter",
+        // Additional Twitter metrics would be fetched via XMCPX in real implementation
+      };
+    }
+
+    return raidContext;
+  } catch (error) {
+    logger.warn(
+      "[ENHANCED_CONTEXT] Failed to get raid enrichment:",
+      error instanceof Error ? error.message : String(error),
+    );
+    return null;
   }
 }
 

@@ -193,7 +193,10 @@ export class OptimizedTelegramService extends Service {
 
       return await response.json();
     } catch (error) {
-      logger.error(`Edge function call failed for ${operation}:`, error);
+      logger.error(
+        `Edge function call failed for ${operation}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -220,7 +223,7 @@ export class OptimizedTelegramService extends Service {
       // Fallback to local rate limiting if edge function fails
       logger.warn(
         "Edge function rate limit check failed, using local fallback:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
       return this.checkRateLimitLocal(userId, limit);
     }
@@ -267,7 +270,7 @@ export class OptimizedTelegramService extends Service {
     } catch (error) {
       logger.warn(
         "Edge function cache check failed, using local fallback:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
     }
 
@@ -289,7 +292,10 @@ export class OptimizedTelegramService extends Service {
         ttl: ttl || 300000, // 5 minutes default
       });
     } catch (error) {
-      logger.warn("Edge function cache set failed:", error);
+      logger.warn(
+        "Edge function cache set failed:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
 
     this.cache.set(key, value, { ttl });
@@ -320,7 +326,10 @@ export class OptimizedTelegramService extends Service {
       this.updateMetrics("messagesProcessed");
       return result;
     } catch (error) {
-      logger.error("Failed to send message with buttons:", error);
+      logger.error(
+        "Failed to send message with buttons:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -350,7 +359,10 @@ export class OptimizedTelegramService extends Service {
 
       logger.info("✅ Telegram bot features configured successfully");
     } catch (error) {
-      logger.warn("⚠️ Some bot features failed to configure:", error);
+      logger.warn(
+        "⚠️ Some bot features failed to configure:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -397,7 +409,10 @@ export class OptimizedTelegramService extends Service {
       await this.connections.primary.telegram.setMyCommands(commands);
       logger.info("✅ Bot commands configured");
     } catch (error) {
-      logger.warn("⚠️ Failed to set bot commands:", error);
+      logger.warn(
+        "⚠️ Failed to set bot commands:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -407,7 +422,7 @@ export class OptimizedTelegramService extends Service {
   private async setMenuButton(): Promise<void> {
     try {
       await this.connections.primary.telegram.setChatMenuButton({
-        menu_button: {
+        menuButton: {
           type: "web_app",
           text: "🌟 Anubis.Chat",
           web_app: {
@@ -417,7 +432,10 @@ export class OptimizedTelegramService extends Service {
       });
       logger.info("✅ Menu button configured");
     } catch (error) {
-      logger.warn("⚠️ Failed to set menu button:", error);
+      logger.warn(
+        "⚠️ Failed to set menu button:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -427,20 +445,21 @@ export class OptimizedTelegramService extends Service {
   private async setBotInfo(): Promise<void> {
     try {
       // Set bot description (shown in bot info)
-      await this.connections.primary.telegram.setMyDescription({
-        description:
-          "🐺 NUBI - The Symbiosis of Anubis\n\nJackal spirit with market wisdom. Community connector for Anubis.Chat - where all AI models meet at one affordable price.\n\nJoin raids, earn points, and connect with fellow builders in the ultimate AI-powered community!",
-      });
+      await this.connections.primary.telegram.setMyDescription(
+        "🐺 NUBI - The Symbiosis of Anubis\n\nJackal spirit with market wisdom. Community connector for Anubis.Chat - where all AI models meet at one affordable price.\n\nJoin raids, earn points, and connect with fellow builders in the ultimate AI-powered community!",
+      );
 
       // Set short description (shown in search results)
-      await this.connections.primary.telegram.setMyShortDescription({
-        short_description:
-          "🐺 NUBI - Community connector for Anubis.Chat. Jackal spirit with market wisdom!",
-      });
+      await this.connections.primary.telegram.setMyShortDescription(
+        "🐺 NUBI - Community connector for Anubis.Chat. Jackal spirit with market wisdom!",
+      );
 
       logger.info("✅ Bot descriptions configured");
     } catch (error) {
-      logger.warn("⚠️ Failed to set bot descriptions:", error);
+      logger.warn(
+        "⚠️ Failed to set bot descriptions:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -452,7 +471,7 @@ export class OptimizedTelegramService extends Service {
     this.connections.primary.on("inline_query", async (ctx) => {
       const query = ctx.inlineQuery.query.toLowerCase();
 
-      const results = [];
+      const results: any[] = [];
 
       if (query.includes("raid")) {
         results.push({
@@ -532,12 +551,15 @@ export class OptimizedTelegramService extends Service {
       }
 
       try {
-        await ctx.answerInlineQuery(results, {
+        await ctx.answerInlineQuery(results as any, {
           cache_time: 300, // Cache for 5 minutes
           is_personal: false,
         });
       } catch (error) {
-        logger.error("Inline query error:", error);
+        logger.error(
+          "Inline query error:",
+          error instanceof Error ? error.message : String(error),
+        );
       }
     });
 
@@ -684,7 +706,10 @@ Built by developers, for developers. Join our growing community!`;
     // Handle Web App data
     this.connections.primary.on("web_app_data", async (ctx) => {
       try {
-        const webAppData = JSON.parse(ctx.webAppData.data);
+        const rawData = ctx.webAppData?.data;
+        const webAppData = JSON.parse(
+          typeof rawData === "string" ? rawData : "{}",
+        );
         logger.info("Web App data received:", webAppData);
 
         // Handle different Web App actions
@@ -699,7 +724,10 @@ Built by developers, for developers. Join our growing community!`;
             await ctx.reply("Web App action processed successfully!");
         }
       } catch (error) {
-        logger.error("Web App data processing error:", error);
+        logger.error(
+          "Web App data processing error:",
+          error instanceof Error ? error.message : String(error),
+        );
         await ctx.reply("Error processing Web App data");
       }
     });
@@ -847,7 +875,10 @@ Raid is now active and participants can join!`;
       this.updateMetrics("messagesProcessed");
       return result;
     } catch (error) {
-      logger.error("Failed to send rich message:", error);
+      logger.error(
+        "Failed to send rich message:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -857,7 +888,7 @@ Raid is now active and participants can join!`;
    */
   setupCallbackHandlers(): void {
     this.connections.primary.on("callback_query", async (ctx) => {
-      const callbackData = ctx.callbackQuery?.data;
+      const callbackData = (ctx.callbackQuery as any)?.data;
       if (!callbackData) return;
 
       // Parse callback data
@@ -922,7 +953,10 @@ Raid is now active and participants can join!`;
             await ctx.answerCbQuery("Action not implemented yet");
         }
       } catch (error) {
-        logger.error("Callback handler error:", error);
+        logger.error(
+          "Callback handler error:",
+          error instanceof Error ? error.message : String(error),
+        );
         await ctx.answerCbQuery("Error processing request");
       }
     });
@@ -976,7 +1010,7 @@ Join the raid and earn points!`;
     } catch (error) {
       logger.warn(
         "Edge function batch queries failed, using local fallback:",
-        error,
+        error instanceof Error ? error.message : String(error),
       );
 
       // Fallback to local database execution
@@ -1004,7 +1038,10 @@ Join the raid and earn points!`;
         try {
           await this.refreshSalts();
         } catch (error) {
-          logger.error("Salt refresh failed:", error);
+          logger.error(
+            "Salt refresh failed:",
+            error instanceof Error ? error.message : String(error),
+          );
         }
       },
       50 * 60 * 1000,
@@ -1074,7 +1111,10 @@ Join the raid and earn points!`;
           localMetrics.rateLimitHits + (edgeMetrics.rateLimitHits || 0),
       };
     } catch (error) {
-      logger.warn("Edge function metrics fetch failed:", error);
+      logger.warn(
+        "Edge function metrics fetch failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return localMetrics;
     }
   }
@@ -1092,7 +1132,10 @@ Join the raid and earn points!`;
         increment,
       });
     } catch (error) {
-      logger.warn("Edge function metrics update failed:", error);
+      logger.warn(
+        "Edge function metrics update failed:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -1158,7 +1201,10 @@ You're now part of the raid! Complete the engagement tasks to earn points.
         buttons,
       );
     } catch (error) {
-      logger.error("Raid join error:", error);
+      logger.error(
+        "Raid join error:",
+        error instanceof Error ? error.message : String(error),
+      );
       await ctx.answerCbQuery("Error joining raid");
     }
   }
@@ -1194,7 +1240,10 @@ Choose a raid to join:`;
       );
       await ctx.answerCbQuery("Loading active raids...");
     } catch (error) {
-      logger.error("Active raids error:", error);
+      logger.error(
+        "Active raids error:",
+        error instanceof Error ? error.message : String(error),
+      );
       await ctx.answerCbQuery("Error loading raids");
     }
   }
@@ -1224,7 +1273,10 @@ Provide the details for your new raid:`;
 
       await this.sendMessageWithButtons(ctx.chat?.id || 0, createText, buttons);
     } catch (error) {
-      logger.error("Raid create error:", error);
+      logger.error(
+        "Raid create error:",
+        error instanceof Error ? error.message : String(error),
+      );
       await ctx.answerCbQuery("Error creating raid");
     }
   }
@@ -1254,7 +1306,10 @@ Great job! Your engagement has been verified.`;
 
       await this.sendMessageWithButtons(ctx.chat?.id || 0, verifyText, buttons);
     } catch (error) {
-      logger.error("Raid verify error:", error);
+      logger.error(
+        "Raid verify error:",
+        error instanceof Error ? error.message : String(error),
+      );
       await ctx.answerCbQuery("Verification failed");
     }
   }
@@ -1288,7 +1343,10 @@ Great job! Your engagement has been verified.`;
 
       await this.sendMessageWithButtons(ctx.chat?.id || 0, statsText, buttons);
     } catch (error) {
-      logger.error("Raid stats error:", error);
+      logger.error(
+        "Raid stats error:",
+        error instanceof Error ? error.message : String(error),
+      );
       await ctx.answerCbQuery("Error loading stats");
     }
   }
@@ -1335,7 +1393,10 @@ Great job! Your engagement has been verified.`;
         buttons,
       );
     } catch (error) {
-      logger.error("Leaderboard error:", error);
+      logger.error(
+        "Leaderboard error:",
+        error instanceof Error ? error.message : String(error),
+      );
       await ctx.answerCbQuery("Error loading leaderboard");
     }
   }
@@ -1450,7 +1511,10 @@ All AI models, one affordable price
 
       await this.sendMessageWithButtons(ctx.chat?.id || 0, statsText, buttons);
     } catch (error) {
-      logger.error("User stats error:", error);
+      logger.error(
+        "User stats error:",
+        error instanceof Error ? error.message : String(error),
+      );
       await ctx.answerCbQuery("Error loading stats");
     }
   }
@@ -1546,7 +1610,10 @@ Community coordinated social media engagements
       // Would integrate with ElizaOS action system here
       // This creates the bridge between Telegram callbacks and ElizaOS actions
     } catch (error) {
-      logger.error(`Failed to trigger ElizaOS action ${actionName}:`, error);
+      logger.error(
+        `Failed to trigger ElizaOS action ${actionName}:`,
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 }

@@ -92,12 +92,15 @@ bun run check-all
    - **CommunityManagementService**: Community engagement and moderation
    - All services extend ElizaOS `Service` class
 
-6. **Telegram Raid System**
+6. **Telegram Raid System with ElizaOS Integration**
    - Complete raid coordination system in `src/telegram-raids/`
    - **OptimizedRaidDatabase**: Batch operations with database pooler integration
-   - Engagement verification, leaderboards, moderation
+   - **ElizaOS Memory Integration**: Raid participant tracking and analytics via ElizaOS memory patterns
+   - **XMCPX MCP Server**: Twitter/X integration with ElizaOS memory client (`/root/xmcpx-server/`)
+   - **Raid Success Evaluator**: ElizaOS-native evaluator for tracking raid performance metrics
+   - Engagement verification, leaderboards, moderation with semantic search capabilities
    - Rate limiting and anti-abuse measures
-   - Integration with X/Twitter for social media raids
+   - Integration with X/Twitter for social media raids through MCP protocol
 
 ### Key Architectural Patterns
 
@@ -140,6 +143,21 @@ NUBI uses a sophisticated multi-layered response system:
 - `supabase/config.toml`: Supabase edge functions configuration
 - Database migrations in `supabase/migrations/`
 
+## ElizaOS Framework Compliance
+
+### Architecture Patterns
+- **Plugin System**: All functionality extends ElizaOS via plugins with proper component structure
+- **Service Lifecycle**: Services extend `Service` base class with proper `start()` and `stop()` methods
+- **Evaluator Implementation**: Use ElizaOS `Evaluator` interface with `validate()` and `handler()` methods
+- **Provider Integration**: Providers supply dynamic context data using ElizaOS patterns
+- **Memory System**: Leverage ElizaOS built-in memory APIs with semantic search capabilities
+
+### ElizaOS-Optimized Raid System
+- **Raid Success Evaluator**: `src/evaluators/raid-success-evaluator.ts` - Tracks raid metrics using ElizaOS memory patterns
+- **Enhanced Memory Service**: `src/services/database-memory-service.ts` - Extended with raid-specific methods (`storeRaidParticipant`, `getRaidContext`, `trackRaidProgress`)
+- **Context Provider Enhancement**: `src/providers/enhanced-context-provider.ts` - Enriched with Twitter data and raid context
+- **XMCPX Integration**: `/root/xmcpx-server/` - MCP server with ElizaOS memory client integration for Twitter raid coordination
+
 ## Important Development Notes
 
 ### Database Operations
@@ -148,6 +166,20 @@ NUBI uses a sophisticated multi-layered response system:
 - **Session Pool**: Use for complex queries with JOINs, analytics, vector operations
 - Services should implement connection pooling patterns
 - Use typed query results, not raw database responses
+
+### ElizaOS Service Development
+- **Extend Service Class**: All services must extend ElizaOS `Service` base class
+- **Service Type**: Define `static serviceType` constant for service identification
+- **Lifecycle Methods**: Implement `start()` and `stop()` methods for proper initialization/cleanup
+- **Runtime Integration**: Access runtime via constructor injection: `constructor(runtime: IAgentRuntime)`
+- **Service Registration**: Register services in plugin `services` array with dependency order
+
+### Memory and Context Patterns
+- **Semantic Search**: Use `runtime.useModel(ModelType.TEXT_EMBEDDING)` for embedding generation
+- **Memory Storage**: Use `runtime.createMemory()` with proper ElizaOS Memory interface
+- **Memory Retrieval**: Use `runtime.searchMemories()` with embedding-based search
+- **Context Building**: Leverage `enhancedContextProvider` for rich context with raid data enrichment
+- **State Management**: Use proper ElizaOS State and Memory types throughout
 
 ### UX Integration Development
 - **WebSocket Services**: Use `SocketIOServerService` and `SocketIOClientService`
@@ -161,18 +193,21 @@ NUBI uses a sophisticated multi-layered response system:
 - Mock services appropriately in tests using `MockRuntime` from `src/__tests__/test-utils.ts`
 - Use `bun test` framework, not Jest
 - Socket.IO tests require proper cleanup in afterEach hooks
+- ElizaOS components require proper interface compliance testing
 
 ### Performance Patterns
 - Execute independent database queries in parallel using `Promise.all()`
 - Use centralized connection management with pooler routing
 - Implement proper error handling with connection cleanup
 - Leverage intelligent query routing for optimal performance
+- Use ElizaOS built-in embedding and semantic search for efficient memory operations
 
 ### Code Style
 - Use ElizaOS logger: `import { logger } from "@elizaos/core"`
 - Follow TypeScript strict mode requirements
 - Prefer async/await over callbacks
 - Use proper interface definitions over `any` types
+- Import ElizaOS types from `@elizaos/core`: `IAgentRuntime`, `Memory`, `State`, `ActionResult`
 
 ## Supabase Integration
 
@@ -181,6 +216,31 @@ NUBI uses a sophisticated multi-layered response system:
 - Database migrations for schema management
 - Analytics and webhook processing capabilities
 - Dual pooler architecture for optimized query performance
+
+## MCP Server Integration (XMCPX)
+
+The NUBI system includes a comprehensive MCP (Model Context Protocol) server for Twitter/X integration:
+
+### XMCPX Server (`/root/xmcpx-server/`)
+- **Published Package**: `@promptordie/xmcpx@1.2.0` on npm
+- **MCP Tools**: 9 comprehensive tools for Twitter raid coordination
+- **ElizaOS Integration**: Built-in memory client for storing participant data and analytics
+- **Database Integration**: PostgreSQL schema for raid management
+- **Authentication**: Cookie-based Twitter auth with credential management
+
+### Key XMCPX Tools
+- `startRaid`: Initiate Twitter raids with multi-parameter objectives
+- `monitorRaid`: Real-time raid progress monitoring
+- `verifyParticipation`: Verify user actions (likes, retweets, replies, etc.)
+- `endRaid`: Complete raids and generate analytics
+- `getRaidStats`: Retrieve comprehensive raid statistics
+- `getLeaderboard`: Get top performer rankings
+- `parseTelegramRaidMessage`: Parse raid commands from Telegram
+
+### MCP Character Configuration
+- **NUBI MCP Config**: `src/character/nubi-mcp-config.ts`
+- **Server Registration**: Both XMCPX and Supabase MCP servers
+- **Environment Integration**: Automatic credential and database URL configuration
 
 ## Environment Variables
 
@@ -193,7 +253,9 @@ Key environment variables:
 - `OPENAI_API_KEY`: Required for AI responses
 - `TELEGRAM_BOT_TOKEN`: For Telegram integration
 - `DISCORD_API_TOKEN`: For Discord integration
-- `TWITTER_API_KEY`: For Twitter/X integration
+- `TWITTER_USERNAME`: Twitter/X username for XMCPX authentication
+- `TWITTER_PASSWORD`: Twitter/X password for XMCPX authentication  
+- `TWITTER_EMAIL`: Twitter/X email for XMCPX authentication
 - `CLICKHOUSE_HOST`: For analytics (optional)
 - `SOCKET_PREPROCESSING_ENABLED`: Enable UX preprocessing pipeline
 - `SOCKET_CONTENT_FILTERING`: Enable content filtering

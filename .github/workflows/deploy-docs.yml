@@ -1,0 +1,130 @@
+name: Deploy NUBI Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/content/docs/**'
+      - 'src/components/**'
+      - 'src/styles/**'
+      - 'astro.config.mjs'
+      - 'package.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/content/docs/**'
+      - 'src/components/**'
+      - 'src/styles/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+env:
+  BUILD_PATH: "."
+
+jobs:
+  build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+          
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        
+      - name: Install dependencies
+        run: |
+          bun install
+          
+      - name: Build documentation
+        run: |
+          npx astro build \
+            --site "${{ steps.pages.outputs.origin }}" \
+            --base "${{ steps.pages.outputs.base_path }}"
+          
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  lighthouse:
+    name: Lighthouse Audit
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v11
+        with:
+          urls: |
+            ${{ needs.deploy.outputs.page_url }}
+            ${{ needs.deploy.outputs.page_url }}/getting-started/introduction/
+            ${{ needs.deploy.outputs.page_url }}/api/rest/
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+  seo-check:
+    name: SEO Analysis
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          
+      - name: Install SEO tools
+        run: |
+          npm install -g @lhci/cli sitemap-generator-cli
+          
+      - name: Generate sitemap
+        run: |
+          npx sitemap-generator-cli ${{ needs.deploy.outputs.page_url }} \
+            --max-depth 3 \
+            --output-file sitemap-check.xml
+            
+      - name: SEO audit
+        run: |
+          echo "🔍 SEO Analysis Results:" >> $GITHUB_STEP_SUMMARY
+          echo "- Site URL: ${{ needs.deploy.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Pages indexed: $(grep -c '<url>' sitemap-check.xml || echo 'Unknown')" >> $GITHUB_STEP_SUMMARY
+          echo "- Lighthouse score: Available in artifacts" >> $GITHUB_STEP_SUMMARY

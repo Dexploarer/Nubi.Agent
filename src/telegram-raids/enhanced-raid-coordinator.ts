@@ -477,7 +477,10 @@ Great work, raiders! 🎯`;
 
       return await response.json();
     } catch (error) {
-      logger.error("Failed to call analytics engine:", error);
+      logger.error(
+        "Failed to call analytics engine:",
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
@@ -506,7 +509,10 @@ Great work, raiders! 🎯`;
 
       return await response.json();
     } catch (error) {
-      logger.error("Failed to call raid coordinator:", error);
+      logger.error(
+        "Failed to call raid coordinator:",
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
@@ -518,7 +524,13 @@ Great work, raiders! 🎯`;
       .filter((p) => p.verified)
       .map((p) => {
         const lastAction = p.actions[p.actions.length - 1];
-        return lastAction ? (lastAction.timestamp - p.joinedAt) / 1000 : 0;
+        return lastAction &&
+          typeof lastAction === "object" &&
+          "timestamp" in lastAction
+          ? (new Date((lastAction as any).timestamp).getTime() -
+              new Date(p.joinedAt).getTime()) /
+              1000
+          : 0;
       });
 
     return responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;

@@ -1,0 +1,359 @@
+---
+interface Props {
+  title: string;
+  endpoint: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  description?: string;
+}
+
+const { title, endpoint, method, description } = Astro.props;
+const methodColors = {
+  GET: '#4caf50',
+  POST: '#2196f3', 
+  PUT: '#ff9800',
+  DELETE: '#f44336'
+};
+---
+
+<div class="api-explorer">
+  <div class="api-header">
+    <h3 class="api-title">{title}</h3>
+    {description && <p class="api-description">{description}</p>}
+  </div>
+  
+  <div class="api-endpoint">
+    <span class="method" style={`background-color: ${methodColors[method]}`}>
+      {method}
+    </span>
+    <code class="endpoint-url">{endpoint}</code>
+    <button class="try-button" onclick="tryEndpoint(this)">Try it out</button>
+  </div>
+  
+  <div class="api-form" id="form-{endpoint.replace(/[^a-zA-Z0-9]/g, '-')}">
+    <div class="form-section">
+      <h4>Request Headers</h4>
+      <textarea 
+        class="headers-input" 
+        placeholder='{"Authorization": "Bearer your-token", "Content-Type": "application/json"}'
+        rows="3"
+      ></textarea>
+    </div>
+    
+    <div class="form-section">
+      <h4>Request Body {method !== 'GET' ? '' : '(Not applicable for GET)'}</h4>
+      <textarea 
+        class="body-input" 
+        placeholder={method === 'GET' ? 'GET requests do not have a body' : 'Enter JSON request body...'}
+        rows="8"
+        disabled={method === 'GET'}
+      ></textarea>
+    </div>
+    
+    <div class="form-section">
+      <button class="execute-btn" onclick="executeRequest(this)">
+        <span class="execute-text">Execute Request</span>
+        <span class="loading-spinner" style="display: none;">⚡</span>
+      </button>
+    </div>
+    
+    <div class="response-section">
+      <h4>Response</h4>
+      <div class="response-status" id="status-{endpoint.replace(/[^a-zA-Z0-9]/g, '-')}">
+        Ready to execute...
+      </div>
+      <pre class="response-body" id="response-{endpoint.replace(/[^a-zA-Z0-9]/g, '-')}">
+        Click "Execute Request" to see the response
+      </pre>
+    </div>
+  </div>
+</div>
+
+<style>
+  .api-explorer {
+    border: 2px solid var(--nubi-jackal-gold);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 2rem 0;
+    background: linear-gradient(135deg, var(--nubi-shadow-black) 0%, rgba(212, 175, 55, 0.1) 100%);
+    color: white;
+  }
+  
+  .api-header {
+    margin-bottom: 1rem;
+  }
+  
+  .api-title {
+    color: var(--nubi-jackal-gold);
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+  }
+  
+  .api-description {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    font-size: 0.9rem;
+  }
+  
+  .api-endpoint {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    flex-wrap: wrap;
+  }
+  
+  .method {
+    color: white;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    min-width: 60px;
+    text-align: center;
+  }
+  
+  .endpoint-url {
+    background: var(--nubi-shadow-black);
+    color: var(--nubi-jackal-gold);
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+    font-family: monospace;
+    flex: 1;
+    min-width: 200px;
+  }
+  
+  .try-button {
+    background: var(--nubi-jackal-gold);
+    color: var(--nubi-shadow-black);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+  }
+  
+  .try-button:hover {
+    background: #f4d03f;
+    transform: translateY(-1px);
+  }
+  
+  .api-form {
+    display: none;
+    animation: slideDown 0.3s ease;
+  }
+  
+  .api-form.active {
+    display: block;
+  }
+  
+  .form-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-section h4 {
+    color: var(--nubi-jackal-gold);
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+  }
+  
+  .headers-input, .body-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 4px;
+    padding: 0.8rem;
+    color: white;
+    font-family: monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+  }
+  
+  .headers-input:focus, .body-input:focus {
+    outline: none;
+    border-color: var(--nubi-jackal-gold);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  }
+  
+  .headers-input:disabled, .body-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .execute-btn {
+    background: linear-gradient(135deg, var(--nubi-jackal-gold), #f39c12);
+    color: var(--nubi-shadow-black);
+    border: none;
+    padding: 0.8rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .execute-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  }
+  
+  .execute-btn:active {
+    transform: translateY(0);
+  }
+  
+  .loading-spinner {
+    animation: spin 1s linear infinite;
+  }
+  
+  .response-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.3);
+  }
+  
+  .response-status {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 0.8rem;
+    border-radius: 4px;
+    margin-bottom: 0.8rem;
+    font-family: monospace;
+    font-size: 0.9rem;
+  }
+  
+  .response-body {
+    background: var(--nubi-shadow-black);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 4px;
+    padding: 1rem;
+    color: #00ff00;
+    font-family: monospace;
+    font-size: 0.9rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  
+  @media (max-width: 768px) {
+    .api-endpoint {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .endpoint-url {
+      min-width: unset;
+    }
+  }
+</style>
+
+<script>
+  function tryEndpoint(button) {
+    const explorer = button.closest('.api-explorer');
+    const form = explorer.querySelector('.api-form');
+    
+    if (form.classList.contains('active')) {
+      form.classList.remove('active');
+      button.textContent = 'Try it out';
+    } else {
+      form.classList.add('active');
+      button.textContent = 'Hide form';
+    }
+  }
+  
+  async function executeRequest(button) {
+    const explorer = button.closest('.api-explorer');
+    const endpoint = explorer.querySelector('.endpoint-url').textContent;
+    const method = explorer.querySelector('.method').textContent;
+    const headersInput = explorer.querySelector('.headers-input');
+    const bodyInput = explorer.querySelector('.body-input');
+    const statusDiv = explorer.querySelector('.response-status');
+    const responseDiv = explorer.querySelector('.response-body');
+    const executeText = button.querySelector('.execute-text');
+    const spinner = button.querySelector('.loading-spinner');
+    
+    // Show loading state
+    executeText.style.display = 'none';
+    spinner.style.display = 'inline';
+    button.disabled = true;
+    
+    try {
+      // Parse headers
+      let headers = {};
+      try {
+        headers = headersInput.value ? JSON.parse(headersInput.value) : {};
+      } catch (e) {
+        headers = { 'Content-Type': 'application/json' };
+      }
+      
+      // Parse body
+      let body = undefined;
+      if (method !== 'GET' && bodyInput.value) {
+        try {
+          body = JSON.stringify(JSON.parse(bodyInput.value));
+        } catch (e) {
+          body = bodyInput.value;
+        }
+      }
+      
+      statusDiv.textContent = 'Sending request...';
+      statusDiv.style.color = '#ff9800';
+      
+      // Make the request
+      const response = await fetch(endpoint, {
+        method,
+        headers,
+        body
+      });
+      
+      const responseText = await response.text();
+      let responseData;
+      
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        responseData = responseText;
+      }
+      
+      // Update status
+      statusDiv.textContent = `Status: ${response.status} ${response.statusText}`;
+      statusDiv.style.color = response.ok ? '#4caf50' : '#f44336';
+      
+      // Update response body
+      responseDiv.textContent = typeof responseData === 'object' ? 
+        JSON.stringify(responseData, null, 2) : 
+        responseData;
+      
+    } catch (error) {
+      statusDiv.textContent = `Error: ${error.message}`;
+      statusDiv.style.color = '#f44336';
+      responseDiv.textContent = `Request failed: ${error.message}\n\nThis is likely due to CORS restrictions in the demo environment.`;
+    } finally {
+      // Hide loading state
+      executeText.style.display = 'inline';
+      spinner.style.display = 'none';
+      button.disabled = false;
+    }
+  }
+</script>

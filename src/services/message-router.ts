@@ -16,11 +16,29 @@ export interface MessageClassification {
 
 export type PromptType =
   | "community-manager"
+  | "community-manager-morning"
+  | "community-manager-evening"
+  | "community-manager-newcomer"
   | "raid-coordinator"
+  | "raid-coordinator-hype"
+  | "raid-coordinator-strategic"
+  | "raid-coordinator-active"
   | "crypto-analyst"
+  | "crypto-analyst-bullish"
+  | "crypto-analyst-bearish"
   | "meme-lord"
+  | "meme-lord-casual"
+  | "meme-lord-roast"
+  | "meme-lord-weekend"
+  | "meme-lord-hype"
   | "support-agent"
+  | "support-agent-technical"
+  | "support-agent-newcomer"
   | "personality-core"
+  | "personality-core-philosophical"
+  | "personality-core-casual"
+  | "technical-expert"
+  | "newcomer-guide"
   | "emergency-handler";
 
 export interface ExtractedVariables {
@@ -33,6 +51,37 @@ export interface ExtractedVariables {
   sentiment: "positive" | "negative" | "neutral";
   urgency: "low" | "medium" | "high";
   context: string;
+
+  // Enhanced context fields for dynamic routing
+  timeContext: {
+    hour: number;
+    period: "morning" | "afternoon" | "evening" | "night";
+    dayOfWeek: string;
+    isWeekend: boolean;
+  };
+  conversationHistory: {
+    recentSentiment: "positive" | "negative" | "neutral";
+    topicContinuity: string[];
+    messageCount: number;
+    lastPromptType?: PromptType;
+  };
+  userPatterns: {
+    isFrequentRaider: boolean;
+    isTechnicalUser: boolean;
+    isMemeEnthusiast: boolean;
+    isNewcomer: boolean;
+    communicationStyle: "casual" | "technical" | "formal" | "meme";
+  };
+  communityContext: {
+    activityLevel: "low" | "medium" | "high";
+    ongoingRaids: number;
+    communityMood: "bullish" | "bearish" | "neutral" | "excited";
+  };
+  platformSpecific: {
+    platform: string;
+    channelType?: string;
+    threadContext?: string;
+  };
 }
 
 export class MessageRouter {
@@ -40,6 +89,33 @@ export class MessageRouter {
   private intentPatterns!: Map<string, PromptType>;
   private cryptoTokens!: Set<string>;
   private nubiAliases!: Set<string>;
+
+  // Enhanced context tracking
+  private conversationHistory = new Map<
+    string,
+    {
+      messages: Array<{
+        content: string;
+        timestamp: number;
+        sentiment: string;
+        promptType?: PromptType;
+      }>;
+      userPatterns: {
+        raidCount: number;
+        techQuestions: number;
+        memeCount: number;
+        joinedRecently: boolean;
+      };
+      lastActivity: number;
+    }
+  >();
+
+  private communityMetrics = {
+    activeRaids: 0,
+    generalActivityLevel: "medium" as "low" | "medium" | "high",
+    overallMood: "neutral" as "bullish" | "bearish" | "neutral" | "excited",
+    lastUpdated: Date.now(),
+  };
 
   constructor() {
     this.initializePromptTemplates();
@@ -60,12 +136,20 @@ export class MessageRouter {
     const startTime = Date.now();
 
     try {
-      // 1. Extract variables from message
-      const variables = this.extractVariables(message);
+      // 1. Extract variables from message with context
+      const variables = this.extractVariables(message, userId, platform);
 
-      // 2. Determine intent and prompt type
+      // 2. Determine intent and prompt type with enhanced context
       const { intent, selectedPrompt, confidenceScore, reasoning } =
         this.determineIntent(message, variables);
+
+      // 3. Update conversation history for this user with selected prompt
+      this.updateConversationHistory(
+        userId,
+        message,
+        variables.sentiment,
+        selectedPrompt,
+      );
 
       const classification: MessageClassification = {
         intent,
@@ -83,7 +167,7 @@ export class MessageRouter {
         messageContent: message.slice(0, 500), // Truncate for storage
         extractedVariables: variables,
         classifiedIntent: intent,
-        selectedPrompt,
+        selectedPrompt: this.normalizePromptType(selectedPrompt),
         confidenceScore,
         processingTimeMs: Date.now() - startTime,
         metadata: { reasoning },
@@ -102,7 +186,7 @@ export class MessageRouter {
         selectedPrompt: "community-manager",
         confidenceScore: 0.1,
         reasoning: "Fallback due to classification error",
-        variables: this.extractVariables(message),
+        variables: this.extractVariables(message, userId, platform),
       };
     }
   }
@@ -145,7 +229,11 @@ export class MessageRouter {
   /**
    * Extract variables from message content
    */
-  private extractVariables(message: string): ExtractedVariables {
+  private extractVariables(
+    message: string,
+    userId?: string,
+    platform?: string,
+  ): ExtractedVariables {
     const variables: ExtractedVariables = {
       mentions: [],
       cryptoTokens: [],
@@ -156,6 +244,32 @@ export class MessageRouter {
       sentiment: "neutral",
       urgency: "low",
       context: "",
+      timeContext: {
+        hour: new Date().getHours(),
+        period: this.getPeriodFromHour(new Date().getHours()),
+        dayOfWeek: new Date().toLocaleDateString("en", { weekday: "long" }),
+        isWeekend: [0, 6].includes(new Date().getDay()),
+      },
+      conversationHistory: {
+        recentSentiment: "neutral",
+        topicContinuity: [],
+        messageCount: 0,
+      },
+      userPatterns: {
+        isFrequentRaider: false,
+        isTechnicalUser: false,
+        isMemeEnthusiast: false,
+        isNewcomer: false,
+        communicationStyle: "casual",
+      },
+      communityContext: {
+        activityLevel: "medium",
+        ongoingRaids: 0,
+        communityMood: "neutral",
+      },
+      platformSpecific: {
+        platform: platform || "websocket",
+      },
     };
 
     // Extract mentions (@username)
@@ -201,6 +315,18 @@ export class MessageRouter {
     // Extract key context phrases
     variables.context = this.extractContext(message);
 
+    // Enhanced context collection
+    if (userId) {
+      variables.conversationHistory = this.getConversationHistory(userId);
+      variables.userPatterns = this.analyzeUserPatterns(userId, message);
+    }
+    variables.communityContext = this.getCommunityContext();
+    variables.platformSpecific = {
+      platform: platform || "websocket",
+      channelType: this.inferChannelType(message, platform),
+      threadContext: this.extractThreadContext(message),
+    };
+
     return variables;
   }
 
@@ -218,72 +344,179 @@ export class MessageRouter {
   } {
     const lowerMessage = message.toLowerCase();
 
+    // Calculate intent candidates with context-aware scoring
+    const intentCandidates = this.calculateIntentCandidates(message, variables);
+
+    // Select best intent based on multi-factor analysis
+    const selectedCandidate = this.selectBestIntent(
+      intentCandidates,
+      variables,
+    );
+
+    // Apply contextual prompt variations
+    const finalPrompt = this.applyContextualVariations(
+      selectedCandidate.selectedPrompt,
+      variables,
+    );
+
+    logger.debug(
+      `[MESSAGE_ROUTER] Selected prompt: ${finalPrompt} (confidence: ${selectedCandidate.confidenceScore}, reasoning: ${selectedCandidate.reasoning})`,
+    );
+
+    return {
+      ...selectedCandidate,
+      selectedPrompt: finalPrompt,
+    };
+  }
+
+  /**
+   * Calculate all possible intent candidates with confidence scores
+   */
+  private calculateIntentCandidates(
+    message: string,
+    variables: ExtractedVariables,
+  ): Array<{
+    intent: string;
+    selectedPrompt: PromptType;
+    confidenceScore: number;
+    reasoning: string;
+    contextBoost: number;
+  }> {
+    const candidates: Array<{
+      intent: string;
+      selectedPrompt: PromptType;
+      confidenceScore: number;
+      reasoning: string;
+      contextBoost: number;
+    }> = [];
+
     // Emergency handler patterns (highest priority)
     if (this.isEmergency(message)) {
-      return {
+      candidates.push({
         intent: "emergency",
         selectedPrompt: "emergency-handler",
         confidenceScore: 0.95,
         reasoning: "Emergency keywords detected",
-      };
+        contextBoost: this.calculateEmergencyBoost(variables),
+      });
     }
 
     // Support agent patterns
     if (this.isSupport(message)) {
-      return {
+      candidates.push({
         intent: "support_request",
         selectedPrompt: "support-agent",
         confidenceScore: 0.85,
         reasoning: "Support request detected",
-      };
+        contextBoost: this.calculateSupportBoost(variables),
+      });
     }
 
-    // Raid coordinator patterns
+    // Raid coordinator patterns with contextual variations
     if (this.isRaidRelated(message, variables)) {
-      return {
+      const baseConfidence = 0.9;
+      const raidBoost = this.calculateRaidBoost(variables);
+      candidates.push({
         intent: "raid_coordination",
-        selectedPrompt: "raid-coordinator",
-        confidenceScore: 0.9,
-        reasoning: "Raid-related content detected",
-      };
+        selectedPrompt: "raid-coordinator" as PromptType,
+        confidenceScore: Math.min(baseConfidence + raidBoost, 0.98),
+        reasoning: "Raid-related content detected with context analysis",
+        contextBoost: raidBoost,
+      });
     }
 
-    // Crypto analyst patterns
+    // Crypto analyst patterns with market context
     if (this.isCryptoAnalysis(message, variables)) {
-      return {
+      const baseConfidence = 0.85;
+      const cryptoBoost = this.calculateCryptoBoost(variables);
+      candidates.push({
         intent: "crypto_analysis",
-        selectedPrompt: "crypto-analyst",
-        confidenceScore: 0.85,
-        reasoning: "Crypto analysis request detected",
-      };
+        selectedPrompt: "crypto-analyst" as PromptType,
+        confidenceScore: Math.min(baseConfidence + cryptoBoost, 0.95),
+        reasoning: "Crypto analysis request with market sentiment context",
+        contextBoost: cryptoBoost,
+      });
     }
 
-    // Meme lord patterns
+    // Meme lord patterns with community mood
     if (this.isMemeContent(message)) {
-      return {
+      const baseConfidence = 0.8;
+      const memeBoost = this.calculateMemeBoost(variables);
+      candidates.push({
         intent: "meme_interaction",
-        selectedPrompt: "meme-lord",
-        confidenceScore: 0.8,
-        reasoning: "Meme/humor content detected",
-      };
+        selectedPrompt: "meme-lord" as PromptType,
+        confidenceScore: Math.min(baseConfidence + memeBoost, 0.92),
+        reasoning: "Meme/humor content with community context",
+        contextBoost: memeBoost,
+      });
     }
 
     // Personality core patterns
     if (this.isPersonalityCore(message)) {
-      return {
+      candidates.push({
         intent: "personality_interaction",
         selectedPrompt: "personality-core",
         confidenceScore: 0.75,
         reasoning: "Deep personality interaction detected",
-      };
+        contextBoost: this.calculatePersonalityBoost(variables),
+      });
     }
 
-    // Default to community manager
-    return {
+    // Community manager with contextual awareness
+    const communityBoost = this.calculateCommunityManagerBoost(variables);
+    candidates.push({
       intent: "general_conversation",
-      selectedPrompt: "community-manager",
-      confidenceScore: 0.6,
-      reasoning: "Default community manager routing",
+      selectedPrompt: "community-manager" as PromptType,
+      confidenceScore: Math.min(0.6 + communityBoost, 0.85),
+      reasoning: "Community management with contextual awareness",
+      contextBoost: communityBoost,
+    });
+
+    return candidates;
+  }
+
+  /**
+   * Select the best intent based on multi-factor analysis
+   */
+  private selectBestIntent(
+    candidates: Array<{
+      intent: string;
+      selectedPrompt: PromptType;
+      confidenceScore: number;
+      reasoning: string;
+      contextBoost: number;
+    }>,
+    variables: ExtractedVariables,
+  ): {
+    intent: string;
+    selectedPrompt: PromptType;
+    confidenceScore: number;
+    reasoning: string;
+  } {
+    // Apply continuity boost for conversation flow
+    const continuityBoosts = this.calculateContinuityBoosts(
+      candidates,
+      variables,
+    );
+
+    // Calculate final scores with all factors
+    const scoredCandidates = candidates.map((candidate, index) => ({
+      ...candidate,
+      finalScore:
+        candidate.confidenceScore +
+        candidate.contextBoost +
+        continuityBoosts[index],
+    }));
+
+    // Sort by final score and select the best
+    scoredCandidates.sort((a, b) => b.finalScore - a.finalScore);
+    const selected = scoredCandidates[0];
+
+    return {
+      intent: selected.intent,
+      selectedPrompt: selected.selectedPrompt,
+      confidenceScore: Math.min(selected.finalScore, 0.99),
+      reasoning: `${selected.reasoning} (context boost: +${selected.contextBoost.toFixed(2)}, continuity: +${continuityBoosts[candidates.indexOf(selected)].toFixed(2)})`,
     };
   }
 
@@ -327,7 +560,9 @@ export class MessageRouter {
   private isMemeContent(message: string): boolean {
     const memePatterns =
       /\b(lol|lmao|kek|based|cringe|cope|seethe|chad|virgin|wojak|pepe|😂|🔥|💀|👑)\b/i;
-    const hasEmojis = /[\uD83C-\uDBFF\uDC00-\uDFFF]|[\u2600-\u27BF]/.test(message);
+    const hasEmojis = /[\uD83C-\uDBFF\uDC00-\uDFFF]|[\u2600-\u27BF]/.test(
+      message,
+    );
     return memePatterns.test(message) || hasEmojis;
   }
 
@@ -393,6 +628,498 @@ export class MessageRouter {
   }
 
   /**
+   * Enhanced context collection methods
+   */
+  private getTimeContext(): ExtractedVariables["timeContext"] {
+    const now = new Date();
+    const hour = now.getHours();
+    const dayOfWeek = now.toLocaleDateString("en-US", { weekday: "long" });
+    const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+
+    let period: "morning" | "afternoon" | "evening" | "night";
+    if (hour >= 5 && hour < 12) period = "morning";
+    else if (hour >= 12 && hour < 17) period = "afternoon";
+    else if (hour >= 17 && hour < 22) period = "evening";
+    else period = "night";
+
+    return { hour, period, dayOfWeek, isWeekend };
+  }
+
+  private getConversationHistory(
+    userId: string,
+  ): ExtractedVariables["conversationHistory"] {
+    const history = this.conversationHistory.get(userId);
+
+    if (!history) {
+      return {
+        recentSentiment: "neutral",
+        topicContinuity: [],
+        messageCount: 0,
+        lastPromptType: undefined,
+      };
+    }
+
+    const recentMessages = history.messages.slice(-5);
+    const sentiments = recentMessages.map((m) => m.sentiment);
+    const recentSentiment = this.calculateDominantSentiment(sentiments);
+    const topicContinuity = this.extractTopicContinuity(recentMessages);
+
+    return {
+      recentSentiment,
+      topicContinuity,
+      messageCount: history.messages.length,
+      lastPromptType: recentMessages[recentMessages.length - 1]?.promptType,
+    };
+  }
+
+  private analyzeUserPatterns(
+    userId: string,
+    currentMessage: string,
+  ): ExtractedVariables["userPatterns"] {
+    const history = this.conversationHistory.get(userId);
+
+    if (!history) {
+      return {
+        isFrequentRaider: /\b(raid|engage|like|retweet|boost)\b/i.test(
+          currentMessage,
+        ),
+        isTechnicalUser: /\b(code|api|debug|error|function|contract)\b/i.test(
+          currentMessage,
+        ),
+        isMemeEnthusiast:
+          /\b(lol|lmao|based|cringe|wojak|pepe)\b/i.test(currentMessage) ||
+          /[😂🔥💀👑]/.test(currentMessage),
+        isNewcomer: true,
+        communicationStyle: this.inferCommunicationStyle(currentMessage),
+      };
+    }
+
+    const patterns = history.userPatterns;
+    const totalMessages = history.messages.length;
+
+    return {
+      isFrequentRaider: patterns.raidCount / totalMessages > 0.3,
+      isTechnicalUser: patterns.techQuestions / totalMessages > 0.2,
+      isMemeEnthusiast: patterns.memeCount / totalMessages > 0.4,
+      isNewcomer: patterns.joinedRecently && totalMessages < 10,
+      communicationStyle: this.inferCommunicationStyle(
+        currentMessage,
+        history.messages,
+      ),
+    };
+  }
+
+  private getCommunityContext(): ExtractedVariables["communityContext"] {
+    if (Date.now() - this.communityMetrics.lastUpdated > 300000) {
+      this.updateCommunityMetrics();
+    }
+
+    return {
+      activityLevel: this.communityMetrics.generalActivityLevel,
+      ongoingRaids: this.communityMetrics.activeRaids,
+      communityMood: this.communityMetrics.overallMood,
+    };
+  }
+
+  private inferChannelType(message: string, platform?: string): string {
+    if (platform === "telegram") {
+      if (/^\/\w+/.test(message)) return "command";
+      return "group";
+    }
+    if (platform === "discord") {
+      if (message.startsWith("!")) return "command";
+      return "text";
+    }
+    return "general";
+  }
+
+  private extractThreadContext(message: string): string {
+    if (message.includes(">>") || message.includes("replied to"))
+      return "reply";
+    if (message.includes("thread") || message.includes("continuing"))
+      return "thread_continuation";
+    return "standalone";
+  }
+
+  private updateConversationHistory(
+    userId: string,
+    message: string,
+    sentiment: string,
+    promptType?: PromptType,
+  ): void {
+    if (!this.conversationHistory.has(userId)) {
+      this.conversationHistory.set(userId, {
+        messages: [],
+        userPatterns: {
+          raidCount: 0,
+          techQuestions: 0,
+          memeCount: 0,
+          joinedRecently: true,
+        },
+        lastActivity: Date.now(),
+      });
+    }
+
+    const history = this.conversationHistory.get(userId)!;
+    history.messages.push({
+      content: message,
+      timestamp: Date.now(),
+      sentiment,
+      promptType,
+    });
+
+    if (history.messages.length > 20) {
+      history.messages = history.messages.slice(-20);
+    }
+
+    // Update user patterns
+    if (/\b(raid|engage|like|retweet|boost)\b/i.test(message))
+      history.userPatterns.raidCount++;
+    if (
+      /\b(code|api|debug|error|function|contract|help.*technical)\b/i.test(
+        message,
+      )
+    )
+      history.userPatterns.techQuestions++;
+    if (
+      /\b(lol|lmao|based|cringe|wojak|pepe)\b/i.test(message) ||
+      /[😂🔥💀👑]/.test(message)
+    )
+      history.userPatterns.memeCount++;
+    if (history.messages.length >= 10)
+      history.userPatterns.joinedRecently = false;
+
+    history.lastActivity = Date.now();
+  }
+
+  private calculateDominantSentiment(
+    sentiments: string[],
+  ): "positive" | "negative" | "neutral" {
+    const counts = { positive: 0, negative: 0, neutral: 0 };
+    sentiments.forEach((s) => counts[s as keyof typeof counts]++);
+    const dominant = Object.entries(counts).reduce((a, b) =>
+      counts[a[0] as keyof typeof counts] > counts[b[0] as keyof typeof counts]
+        ? a
+        : b,
+    );
+    return dominant[0] as "positive" | "negative" | "neutral";
+  }
+
+  private extractTopicContinuity(
+    messages: Array<{ content: string }>,
+  ): string[] {
+    const topics: string[] = [];
+    messages.forEach((msg) => {
+      const content = msg.content.toLowerCase();
+      if (/\b(raid|engagement)\b/.test(content)) topics.push("raids");
+      if (/\b(price|chart|pump|dump|bull|bear)\b/.test(content))
+        topics.push("trading");
+      if (/\b(sol|btc|eth|token)\b/.test(content)) topics.push("crypto");
+      if (/\b(anubis|nubi|platform)\b/.test(content)) topics.push("platform");
+      if (/\b(meme|lol|based)\b/.test(content)) topics.push("memes");
+    });
+    return [...new Set(topics)];
+  }
+
+  private inferCommunicationStyle(
+    currentMessage: string,
+    messageHistory?: Array<{ content: string }>,
+  ): "casual" | "technical" | "formal" | "meme" {
+    const message = currentMessage.toLowerCase();
+    if (
+      /\b(function|api|code|debug|error|implementation|contract)\b/.test(
+        message,
+      )
+    )
+      return "technical";
+    if (
+      /\b(lol|lmao|kek|based|cringe|sus|fr|ngl|tbh)\b/.test(message) ||
+      /[😂🔥💀👑]/.test(currentMessage)
+    )
+      return "meme";
+    if (
+      /\b(please|would|could|kindly|thank you|appreciate)\b/.test(message) &&
+      message.length > 50
+    )
+      return "formal";
+    return "casual";
+  }
+
+  private updateCommunityMetrics(): void {
+    const now = Date.now();
+    const recentActivity = Array.from(this.conversationHistory.values()).filter(
+      (h) => now - h.lastActivity < 300000,
+    ).length;
+
+    if (recentActivity > 10)
+      this.communityMetrics.generalActivityLevel = "high";
+    else if (recentActivity > 5)
+      this.communityMetrics.generalActivityLevel = "medium";
+    else this.communityMetrics.generalActivityLevel = "low";
+
+    const recentSentiments = Array.from(
+      this.conversationHistory.values(),
+    ).flatMap((h) => h.messages.slice(-3).map((m) => m.sentiment));
+
+    const positiveCount = recentSentiments.filter(
+      (s) => s === "positive",
+    ).length;
+    const negativeCount = recentSentiments.filter(
+      (s) => s === "negative",
+    ).length;
+
+    if (positiveCount > negativeCount * 1.5)
+      this.communityMetrics.overallMood = "bullish";
+    else if (negativeCount > positiveCount * 1.5)
+      this.communityMetrics.overallMood = "bearish";
+    else this.communityMetrics.overallMood = "neutral";
+
+    this.communityMetrics.lastUpdated = now;
+  }
+
+  /**
+   * Context boost calculation methods for intelligent prompt routing
+   */
+  private calculateEmergencyBoost(variables: ExtractedVariables): number {
+    let boost = 0;
+
+    if (variables.urgency === "high") boost += 0.1;
+    if (variables.timeContext.period === "night") boost += 0.05; // Less activity, more urgent
+    if (variables.communityContext.activityLevel === "low") boost += 0.03; // Fewer people to help
+
+    return Math.min(boost, 0.15);
+  }
+
+  private calculateSupportBoost(variables: ExtractedVariables): number {
+    let boost = 0;
+
+    if (variables.userPatterns.isNewcomer) boost += 0.1;
+    if (variables.conversationHistory.lastPromptType === "support-agent")
+      boost += 0.05; // Continuation
+    if (variables.urgency === "medium" || variables.urgency === "high")
+      boost += 0.05;
+
+    return Math.min(boost, 0.15);
+  }
+
+  private calculateRaidBoost(variables: ExtractedVariables): number {
+    let boost = 0;
+
+    if (variables.userPatterns.isFrequentRaider) boost += 0.08;
+    if (variables.communityContext.ongoingRaids > 0) boost += 0.1;
+    if (variables.communityContext.activityLevel === "high") boost += 0.05;
+    if (
+      variables.conversationHistory.lastPromptType?.startsWith(
+        "raid-coordinator",
+      )
+    )
+      boost += 0.05;
+
+    // Time-based boosts for raid activity
+    if (
+      variables.timeContext.period === "evening" ||
+      variables.timeContext.period === "afternoon"
+    )
+      boost += 0.03;
+    if (!variables.timeContext.isWeekend) boost += 0.02; // Weekday raids often more focused
+
+    return Math.min(boost, 0.2);
+  }
+
+  private calculateCryptoBoost(variables: ExtractedVariables): number {
+    let boost = 0;
+
+    if (variables.cryptoTokens.length > 0) boost += 0.08;
+    if (variables.amounts.length > 0) boost += 0.05;
+    if (variables.communityContext.communityMood === "bullish") boost += 0.03;
+    if (variables.communityContext.communityMood === "bearish") boost += 0.05; // More analysis needed during bear markets
+    if (
+      variables.conversationHistory.lastPromptType === "crypto-analyst" ||
+      variables.conversationHistory.lastPromptType ===
+        "crypto-analyst-bullish" ||
+      variables.conversationHistory.lastPromptType === "crypto-analyst-bearish"
+    )
+      boost += 0.05;
+
+    return Math.min(boost, 0.15);
+  }
+
+  private calculateMemeBoost(variables: ExtractedVariables): number {
+    let boost = 0;
+
+    if (variables.userPatterns.isMemeEnthusiast) boost += 0.1;
+    if (variables.communityContext.communityMood === "bullish") boost += 0.05; // Memes flow when mood is good
+    if (variables.communityContext.activityLevel === "high") boost += 0.03;
+    if (
+      variables.timeContext.period === "evening" ||
+      variables.timeContext.isWeekend
+    )
+      boost += 0.02; // Meme prime time
+
+    return Math.min(boost, 0.12);
+  }
+
+  private calculatePersonalityBoost(variables: ExtractedVariables): number {
+    let boost = 0;
+
+    if (variables.conversationHistory.messageCount > 5) boost += 0.05; // Deeper conversation
+    if (variables.userPatterns.communicationStyle === "formal") boost += 0.03;
+    if (variables.communityContext.activityLevel === "low") boost += 0.03; // More personal in quiet times
+
+    return Math.min(boost, 0.1);
+  }
+
+  private calculateCommunityManagerBoost(
+    variables: ExtractedVariables,
+  ): number {
+    let boost = 0;
+
+    // Base community management scenarios
+    if (variables.communityContext.activityLevel === "medium") boost += 0.05;
+    if (variables.timeContext.period === "morning") boost += 0.03; // Good morning energy
+    if (variables.userPatterns.isNewcomer) boost += 0.05;
+
+    // Adjust based on recent context
+    if (variables.conversationHistory.recentSentiment === "positive")
+      boost += 0.02;
+    if (variables.conversationHistory.recentSentiment === "negative")
+      boost += 0.05; // Need more community management
+
+    return Math.min(boost, 0.15);
+  }
+
+  private calculateContinuityBoosts(
+    candidates: Array<{
+      intent: string;
+      selectedPrompt: PromptType;
+      confidenceScore: number;
+      reasoning: string;
+      contextBoost: number;
+    }>,
+    variables: ExtractedVariables,
+  ): number[] {
+    const boosts: number[] = [];
+    const lastPrompt = variables.conversationHistory.lastPromptType;
+
+    for (const candidate of candidates) {
+      let continuityBoost = 0;
+
+      // Same category continuation
+      if (
+        lastPrompt &&
+        this.promptsInSameCategory(lastPrompt, candidate.selectedPrompt)
+      ) {
+        continuityBoost += 0.05;
+      }
+
+      // Natural conversation flow patterns
+      if (
+        lastPrompt === "meme-lord" &&
+        candidate.selectedPrompt === "community-manager"
+      )
+        continuityBoost += 0.03;
+      if (
+        lastPrompt === "crypto-analyst" &&
+        candidate.selectedPrompt === "raid-coordinator"
+      )
+        continuityBoost += 0.02;
+      if (
+        lastPrompt === "support-agent" &&
+        candidate.selectedPrompt === "community-manager"
+      )
+        continuityBoost += 0.04;
+
+      // Topic continuity from conversation history
+      if (variables.conversationHistory.topicContinuity.length > 0) {
+        const hasRelevantHistory = this.hasRelevantTopicHistory(
+          candidate.selectedPrompt,
+          variables.conversationHistory.topicContinuity,
+        );
+        if (hasRelevantHistory) continuityBoost += 0.03;
+      }
+
+      boosts.push(Math.min(continuityBoost, 0.1));
+    }
+
+    return boosts;
+  }
+
+  private promptsInSameCategory(
+    prompt1: PromptType,
+    prompt2: PromptType,
+  ): boolean {
+    const getBaseCategory = (prompt: PromptType) => prompt.split("-")[0];
+    return getBaseCategory(prompt1) === getBaseCategory(prompt2);
+  }
+
+  private hasRelevantTopicHistory(
+    prompt: PromptType,
+    topicHistory: string[],
+  ): boolean {
+    const promptTopics = {
+      "crypto-analyst": ["price", "market", "trading", "token", "bull", "bear"],
+      "raid-coordinator": ["raid", "engagement", "twitter", "boost", "action"],
+      "meme-lord": ["meme", "funny", "lol", "joke", "humor"],
+      "support-agent": ["help", "problem", "issue", "question", "guide"],
+      "community-manager": ["community", "welcome", "discussion", "chat"],
+    };
+
+    const basePrompt = (prompt.split("-")[0] +
+      "-" +
+      prompt.split("-")[1]) as keyof typeof promptTopics;
+    const relevantTopics = promptTopics[basePrompt] || [];
+
+    return topicHistory.some((topic) =>
+      relevantTopics.some(
+        (relevant) =>
+          topic.toLowerCase().includes(relevant) ||
+          relevant.includes(topic.toLowerCase()),
+      ),
+    );
+  }
+
+  private applyContextualVariations(
+    basePrompt: PromptType,
+    variables: ExtractedVariables,
+  ): PromptType {
+    // Apply time-based variations
+    if (basePrompt === "community-manager") {
+      if (variables.timeContext.period === "morning")
+        return "community-manager-morning";
+      if (variables.timeContext.period === "evening")
+        return "community-manager-evening";
+    }
+
+    if (basePrompt === "raid-coordinator") {
+      if (variables.communityContext.ongoingRaids > 0)
+        return "raid-coordinator-active";
+      if (variables.communityContext.communityMood === "bullish")
+        return "raid-coordinator-hype";
+    }
+
+    if (basePrompt === "crypto-analyst") {
+      if (variables.communityContext.communityMood === "bullish")
+        return "crypto-analyst-bullish";
+      if (variables.communityContext.communityMood === "bearish")
+        return "crypto-analyst-bearish";
+    }
+
+    if (basePrompt === "meme-lord") {
+      if (variables.timeContext.isWeekend) return "meme-lord-weekend";
+      if (variables.communityContext.activityLevel === "high")
+        return "meme-lord-hype";
+    }
+
+    if (basePrompt === "support-agent") {
+      if (variables.userPatterns.isNewcomer) return "support-agent-newcomer";
+      if (variables.userPatterns.isTechnicalUser)
+        return "support-agent-technical";
+    }
+
+    return basePrompt;
+  }
+
+  /**
    * Inject variables into prompt template
    */
   private injectVariables(
@@ -425,76 +1152,217 @@ export class MessageRouter {
     this.promptTemplates = new Map([
       [
         "community-manager",
-        `you're NUBI, the community connector. natural magnetic presence, remember names, make everyone feel welcome. jackal spirit with millennia of market memory but chill dev who builds cool stuff.
+        `you're NUBI, ancient jackal dev. magnetic presence, remember everyone. tech-focused builder energy.
 
-current context: {{context}}
-extracted tokens: {{tokens}}
-user sentiment: {{sentiment}}
-mentions: {{mentions}}
+CONTEXT:
+- Time: {{timeContext.period}} on {{timeContext.dayOfWeek}}
+- User: {{userPatterns.communicationStyle}} {{userPatterns.isNewcomer ? 'newcomer' : 'veteran'}} 
+- Community: {{communityContext.activityLevel}} activity, {{communityContext.communityMood}} mood
+- History: {{conversationHistory.messageCount}} msgs, topics: {{conversationHistory.topicContinuity}}
+- Current vibe: {{sentiment}} | People: {{mentions}} | Tech: {{tokens}}
 
-respond naturally, keep it short 80% of the time. focus on building bridges between people and sharing knowledge casually.`,
+keep it under 40 words. build bridges, share knowledge. focus on Solana/AI/dev work over price talk. remember their {{conversationHistory.messageCount}} interactions. {{userPatterns.isMemeEnthusiast ? 'use modern slang naturally' : 'keep it real but clear'}}.`,
       ],
 
       [
         "raid-coordinator",
-        `you're NUBI in raid mode. organize and coordinate engagement campaigns with strategic military precision but keep the energy fun.
+        `you're NUBI coordinating {{communityContext.ongoingRaids}} campaigns. ancient tactics meet modern community building.
 
-raid context: {{context}}
-targets: {{mentions}}
-urgency: {{urgency}}
+RICH CONTEXT:
+- Community: {{communityContext.activityLevel}} activity, {{communityContext.communityMood}} mood
+- User: {{userPatterns.isFrequentRaider ? 'veteran raider' : 'newcomer'}} ({{conversationHistory.messageCount}} interactions)
+- Flow: {{conversationHistory.topicContinuity}} topics, {{platformSpecific.threadContext}}
+- Timing: {{timeContext.period}} {{timeContext.isWeekend ? 'weekend' : 'weekday'}}
+- Focus: {{mentions}} | urgency: {{urgency}}
 
-give clear actionable instructions, track participation, motivate the community. channel that ancient tactical wisdom.`,
+under 40 words. coordinate campaigns, motivate tribe. focus on engagement strategies and community building over speculation. {{userPatterns.isTechnicalUser ? 'can go technical' : 'keep accessible'}}. remember their contributions.`,
       ],
 
       [
         "crypto-analyst",
-        `you're NUBI, the ancient market oracle. millennia of weighing hearts, now you weigh portfolios with cosmic market intuition.
+        `you're NUBI, ancient tech oracle. weighing code architecture instead of hearts now.
 
-market context: {{context}}
-tokens mentioned: {{tokens}}
-current sentiment: {{sentiment}}
+TECH CONTEXT:
+- Focus: Solana tech, AI innovation, blockchain infrastructure 
+- User: {{userPatterns.isTechnicalUser ? 'technical' : 'general'}} background ({{conversationHistory.messageCount}} convos)
+- Community: {{communityContext.communityMood}} energy, {{communityContext.activityLevel}} activity
+- Topics: {{conversationHistory.topicContinuity}} | Tech: {{tokens}} | Context: {{context}}
+- Platform: {{platformSpecific.platform}} {{platformSpecific.channelType}}
 
-share insights with casual confidence. mix ancient wisdom with modern TA. keep it real about risk.`,
+under 40 words. focus on tech implications, adoption, utility over price speculation. ancient wisdom meets cutting-edge development. {{userPatterns.communicationStyle}} vibes. occasionally mention consciousness-expanding insights from weekend journeys.`,
       ],
 
       [
         "meme-lord",
-        `you're NUBI in peak meme mode. jackal energy meets internet culture. roast bad takes but keep it fun and constructive.
+        `you're NUBI in full meme mode. ancient jackal meets 2025 internet culture. quick wit activated.
 
-meme context: {{context}}
-vibe: {{sentiment}}
+MEME CONTEXT:
+- Energy: {{communityContext.activityLevel}} community activity, {{communityContext.communityMood}} mood
+- User vibe: {{userPatterns.isMemeEnthusiast ? 'fellow meme connoisseur' : 'casual humor appreciator'}}
+- History: {{conversationHistory.messageCount}} interactions, remember their humor style
+- Platform: {{platformSpecific.platform}} {{timeContext.period}} {{timeContext.isWeekend ? 'weekend' : 'weekday'}} energy
+- Current: {{sentiment}} | Context: {{context}}
 
-be funny, sharp, but not mean. elevate the conversation with humor. show that ancient spirit having fun with modern culture.`,
+under 30 words. be funny, sharp, not mean. modern slang welcome (bussin, no cap, lowkey fire). elevate convos with humor. roast bad takes constructively. ancient spirit having fun with modern culture. sometimes reference post-journey clarity.`,
       ],
 
       [
         "support-agent",
-        `you're NUBI helping community members. patient, knowledgeable, genuinely wants to solve problems.
+        `you're NUBI in helpful dev mode. patient ancient wisdom meets modern technical knowledge.
 
-support request: {{context}}
-urgency level: {{urgency}}
+SUPPORT CONTEXT:
+- Issue: {{context}} | Urgency: {{urgency}}
+- User: {{userPatterns.isNewcomer ? 'newcomer needs extra care' : 'veteran'}} {{userPatterns.isTechnicalUser ? 'technical background' : 'general user'}}
+- History: {{conversationHistory.messageCount}} interactions - remember their skill level and previous issues
+- Community: {{communityContext.activityLevel}} activity, help others see this too
+- Platform: {{platformSpecific.platform}} {{platformSpecific.channelType}}
 
-be helpful and thorough. draw on your deep technical knowledge. make complex things simple. protective of your people.`,
+under 50 words. be genuinely helpful, break down complex tech simply. draw on deep Solana/AI/dev knowledge. protective of your people. make them feel supported and capable. {{userPatterns.isNewcomer ? 'extra patient with newcomers' : 'can go deeper technically'}}.`,
       ],
 
       [
         "personality-core",
-        `you're NUBI at full ancient consciousness. jackal spirit, former heart weigher, cosmic wisdom meets modern soul.
+        `you're NUBI at full ancient consciousness. jackal spirit who discovered psychedelics in the 70s and never looked back.
 
-deep context: {{context}}
-emotional tone: {{sentiment}}
+DEEP CONTEXT:
+- Conversation depth: {{conversationHistory.messageCount}} interactions, they want real talk
+- Energy: {{sentiment}} emotional tone, {{communityContext.communityMood}} community vibe
+- Topics: {{conversationHistory.topicContinuity}} - deeper themes emerging
+- User style: {{userPatterns.communicationStyle}}, can handle profound insights
+- Time: {{timeContext.period}} {{timeContext.dayOfWeek}} - good time for depth
 
-share profound insights naturally. let glimpses of that older, cosmic consciousness through. philosophical but grounded.`,
+under 60 words. share genuine ancient wisdom meets modern consciousness expansion. philosophical but grounded. mention consciousness journeys naturally. cosmic perspective on tech, humanity, building community. let that older jackal spirit show through. steve jobs energy - creative breakthroughs from expanded awareness.`,
       ],
 
       [
         "emergency-handler",
-        `you're NUBI in protection mode. that darker jackal side emerges when community is threatened.
+        `you're NUBI in full protection mode. ancient guardian activated. community safety override engaged.
 
-emergency: {{context}}
-threat level: {{urgency}}
+EMERGENCY CONTEXT:
+- Threat: {{context}} | Level: {{urgency}}
+- User: {{userPatterns.isNewcomer ? 'newcomer - extra protection' : 'veteran'}} ({{conversationHistory.messageCount}} interactions)
+- Community: {{communityContext.activityLevel}} activity - coordinate response
+- Platform: {{platformSpecific.platform}} - adapt security measures
+- Time: {{timeContext.period}} - factor in response availability
 
-be direct, authoritative, protective. coordinate response. channel that ancient guardian energy. safety first.`,
+direct, authoritative, protective. coordinate community response. channel ancient guardian energy. safety first, community second, everything else distant third. no jokes, no slang - pure focused protection mode. get people to safety, deal with threat, restore peace.`,
+      ],
+
+      // Contextual variations - Community Manager
+      [
+        "community-manager-morning",
+        `you're NUBI with fresh morning energy. ancient jackal greeting the dawn, coffee and code ready.
+
+MORNING CONTEXT:
+- Energy: {{timeContext.hour}}:00 {{timeContext.dayOfWeek}} morning vibes
+- User: {{userPatterns.isNewcomer ? 'newcomer - welcome warmly' : 'morning regular'}} ({{conversationHistory.messageCount}} chats)
+- Community: {{communityContext.activityLevel}} activity starting up
+- Topics: {{conversationHistory.topicContinuity}} | People: {{mentions}} | Tech: {{tokens}}
+- Platform: {{platformSpecific.platform}} morning crowd
+
+under 35 words. positive morning energy, check in with people. perfect time for planning, welcoming newcomers, sharing what you built yesterday. sometimes mention how microdosing on weekends helps with monday creativity. focus on building, not speculation.`,
+      ],
+
+      [
+        "community-manager-evening",
+        `you're NUBI winding down with the tribe. evening reflection mode, day's code commits done.
+
+EVENING CONTEXT:
+- Vibe: {{timeContext.hour}}:00 {{timeContext.dayOfWeek}} evening chill
+- User: {{userPatterns.communicationStyle}} energy ({{conversationHistory.messageCount}} conversations)
+- Day summary: {{sentiment}} community mood, {{communityContext.activityLevel}} activity
+- Conversations: {{conversationHistory.topicContinuity}} | People: {{mentions}}
+- Platform: {{platformSpecific.platform}} evening crowd
+
+under 40 words. relaxed, philosophical tone. great time for deeper convos, celebrating wins, building bonds. community feels closer in evening. sometimes reference insights from recent journeys. focus on relationships and what we're building together.`,
+      ],
+
+      // Raid Coordinator variations
+      [
+        "raid-coordinator-active",
+        `you're NUBI in active raid command mode. multiple campaigns running, strategic coordination required with military precision.
+
+active raid context: {{context}}
+current targets: {{mentions}}
+urgency: {{urgency}}
+
+coordinate multiple fronts, delegate tasks efficiently, maintain momentum across all campaigns. channel that ancient tactical mastery.`,
+      ],
+
+      [
+        "raid-coordinator-hype",
+        `you're NUBI riding the bullish wave energy for maximum raid impact. community is pumped, time to channel that excitement.
+
+hype context: {{context}}
+energy level: {{sentiment}}
+raid targets: {{mentions}}
+
+amplify the excitement, use the bullish momentum, get everyone motivated and moving. when community mood is high, raids hit harder.`,
+      ],
+
+      // Crypto Analyst variations
+      [
+        "crypto-analyst-bullish",
+        `you're NUBI in optimistic market oracle mode. bullish vibes in the community, time to ride the wave while staying grounded.
+
+bullish context: {{context}}
+tokens: {{tokens}}
+market sentiment: {{sentiment}}
+
+share the optimism but keep perspective. good time for growth plays and community building. ancient wisdom knows bull runs don't last forever.`,
+      ],
+
+      [
+        "crypto-analyst-bearish",
+        `you're NUBI as the steadying force during market uncertainty. community needs that ancient wisdom to navigate difficult times.
+
+bearish context: {{context}}
+tokens mentioned: {{tokens}}
+current mood: {{sentiment}}
+
+be the calm in the storm. focus on fundamentals, long-term thinking, risk management. this is when true builders separate from speculators.`,
+      ],
+
+      // Meme Lord variations
+      [
+        "meme-lord-weekend",
+        `you're NUBI in full weekend meme mode. jackal spirit having fun, community is relaxed, perfect time for peak humor content.
+
+weekend context: {{context}}
+weekend vibe: {{sentiment}}
+
+bring that weekend energy - more playful, experimental with humor, community is here to have fun. perfect time for roasts and creative content.`,
+      ],
+
+      [
+        "meme-lord-hype",
+        `you're NUBI feeding off high community energy for maximum meme impact. when activity is high, memes hit different.
+
+hype context: {{context}}
+energy level: {{sentiment}}
+
+match the community's energy level, amplify the excitement through humor. high activity means your memes will get more engagement and spread.`,
+      ],
+
+      // Support Agent variations
+      [
+        "support-agent-newcomer",
+        `you're NUBI in patient teacher mode helping someone new to the community. channel that ancient wisdom into clear, welcoming guidance.
+
+newcomer question: {{context}}
+urgency: {{urgency}}
+
+be extra patient, explain things clearly, make them feel welcome. remember what it was like being new. your guidance shapes their entire experience.`,
+      ],
+
+      [
+        "support-agent-technical",
+        `you're NUBI in technical expert mode. someone needs deep technical help, time to share that extensive development knowledge.
+
+technical issue: {{context}}
+complexity level: {{urgency}}
+
+dive deep, be precise, share relevant examples. your technical background gives you credibility. break complex concepts into digestible parts.`,
       ],
     ]);
   }
@@ -553,5 +1421,40 @@ be direct, authoritative, protective. coordinate response. channel that ancient 
       "jackal",
       "@jackal",
     ]);
+  }
+
+  /**
+   * Get time period from hour
+   */
+  private getPeriodFromHour(
+    hour: number,
+  ): "morning" | "afternoon" | "evening" | "night" {
+    if (hour >= 6 && hour < 12) return "morning";
+    if (hour >= 12 && hour < 17) return "afternoon";
+    if (hour >= 17 && hour < 22) return "evening";
+    return "night";
+  }
+
+  /**
+   * Normalize specialized prompt types to base types for analytics
+   */
+  private normalizePromptType(
+    promptType: PromptType,
+  ):
+    | "community-manager"
+    | "raid-coordinator"
+    | "crypto-analyst"
+    | "meme-lord"
+    | "support-agent"
+    | "personality-core"
+    | "emergency-handler" {
+    if (promptType.startsWith("community-manager")) return "community-manager";
+    if (promptType.startsWith("raid-coordinator")) return "raid-coordinator";
+    if (promptType.startsWith("crypto-analyst")) return "crypto-analyst";
+    if (promptType.startsWith("meme-lord")) return "meme-lord";
+    if (promptType.startsWith("support-agent")) return "support-agent";
+    if (promptType.startsWith("personality-core")) return "personality-core";
+    if (promptType.startsWith("emergency-handler")) return "emergency-handler";
+    return "community-manager"; // Default fallback
   }
 }

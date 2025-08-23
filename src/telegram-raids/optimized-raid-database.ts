@@ -6,7 +6,10 @@
  */
 
 import { Service, IAgentRuntime, logger } from "@elizaos/core";
-import { DatabasePoolerManager, PoolType } from "../services/database-pooler-manager";
+import {
+  DatabasePoolerManager,
+  PoolType,
+} from "../services/database-pooler-manager";
 
 export interface OptimizedRaidQueries {
   createRaid: string;
@@ -34,12 +37,16 @@ export class OptimizedRaidDatabase extends Service {
   async initialize(runtime: IAgentRuntime): Promise<void> {
     // Get the database pooler manager if available
     try {
-      this.poolerManager = runtime.getService<DatabasePoolerManager>("database-pooler-manager");
+      this.poolerManager =
+        runtime.getService<DatabasePoolerManager>("database-pooler-manager") ||
+        undefined;
       if (this.poolerManager) {
         logger.info("[OPTIMIZED_RAID_DB] Connected to database pooler manager");
       }
     } catch (error) {
-      logger.debug("[OPTIMIZED_RAID_DB] Database pooler manager not available, using fallback");
+      logger.debug(
+        "[OPTIMIZED_RAID_DB] Database pooler manager not available, using fallback",
+      );
     }
   }
 
@@ -117,16 +124,23 @@ export class OptimizedRaidDatabase extends Service {
         // Use transaction pool for batch operations
         const promises = operations.map(async ({ query, params }) => {
           const sql = typeof query === "string" ? query : this.queries[query];
-          const result = await this.poolerManager!.query(sql, params, { poolType: PoolType.TRANSACTION });
+          const result = await this.poolerManager!.query(sql, params, {
+            poolType: PoolType.TRANSACTION,
+          });
           return result.rows;
         });
         return await Promise.all(promises);
       } else {
         // Fallback: use ElizaOS runtime connection methods
-        throw new Error("Database pooler manager not available - cannot perform batch operations");
+        throw new Error(
+          "Database pooler manager not available - cannot perform batch operations",
+        );
       }
     } catch (error) {
-      logger.error("Batch query execution failed:", error);
+      logger.error(
+        "Batch query execution failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -207,8 +221,11 @@ export class OptimizedRaidDatabase extends Service {
       // Use session pool for complex analytics queries
       const operations = [
         { sql: this.queries.getRaidStats, params: [raidId] },
-        { sql: `SELECT * FROM raid_participants WHERE raid_id = $1 ORDER BY points_earned DESC`, params: [raidId] },
-        { 
+        {
+          sql: `SELECT * FROM raid_participants WHERE raid_id = $1 ORDER BY points_earned DESC`,
+          params: [raidId],
+        },
+        {
           sql: `
             SELECT 
               AVG(points_earned) as avg_points,
@@ -216,12 +233,14 @@ export class OptimizedRaidDatabase extends Service {
               MIN(points_earned) as min_points
             FROM raid_participants 
             WHERE raid_id = $1
-          `, 
-          params: [raidId] 
+          `,
+          params: [raidId],
         },
       ];
 
-      const results = await this.poolerManager.transaction<any>(operations, { poolType: PoolType.SESSION });
+      const results = await this.poolerManager.transaction<any>(operations, {
+        poolType: PoolType.SESSION,
+      });
 
       return {
         raid: results[0][0],
@@ -252,7 +271,8 @@ export class OptimizedRaidDatabase extends Service {
         },
       ];
 
-      const [raidData, participants, stats] = await this.batchExecute(operations);
+      const [raidData, participants, stats] =
+        await this.batchExecute(operations);
 
       return {
         raid: raidData[0],
@@ -270,18 +290,20 @@ export class OptimizedRaidDatabase extends Service {
     limit: number = 50,
   ): Promise<any[]> {
     const dateFilter = this.getDateFilter(period);
-    
+
     if (this.poolerManager) {
       // Use session pool for complex leaderboard queries
       const result = await this.poolerManager.query(
         this.queries.getLeaderboard,
         [dateFilter, limit],
-        { poolType: PoolType.SESSION }
+        { poolType: PoolType.SESSION },
       );
       return result.rows;
     } else {
       // Fallback: use ElizaOS runtime connection methods
-      throw new Error("Database pooler manager not available - cannot get leaderboard");
+      throw new Error(
+        "Database pooler manager not available - cannot get leaderboard",
+      );
     }
   }
 

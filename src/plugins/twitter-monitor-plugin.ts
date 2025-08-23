@@ -81,14 +81,17 @@ const searchTwitterAction: Action = {
       logger.info(
         `Twitter search completed: ${query} - ${results.tweets.length} results`,
       );
-      
+
       return {
         success: true,
         text: `Found ${results.tweets.length} tweets for "${query}"`,
-        action: "SEARCH_TWITTER"
+        action: "SEARCH_TWITTER",
       };
     } catch (error) {
-      logger.error("Twitter search action failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Twitter search action failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return;
     }
   },
@@ -164,14 +167,17 @@ const getUserInfoAction: Action = {
 
       // Log user info results (memory storage not available in plugin context)
       logger.info(`Twitter user info retrieved: @${user.username}`);
-      
+
       return {
         success: true,
         text: `User info for @${user.username}: ${user.name} (${user.publicMetrics.followersCount} followers)`,
-        action: "GET_TWITTER_USER"
+        action: "GET_TWITTER_USER",
       };
     } catch (error) {
-      logger.error("Get Twitter user action failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Get Twitter user action failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return;
     }
   },
@@ -222,7 +228,7 @@ const mentionsProvider: Provider = {
         return {
           text: "No recent Twitter mentions found.",
           values: { mentionCount: 0 },
-          data: { mentions: [] }
+          data: { mentions: [] },
         };
       }
 
@@ -236,14 +242,17 @@ const mentionsProvider: Provider = {
       return {
         text: `Recent Twitter mentions:\n${mentionSummary}`,
         values: { mentionCount: recentMentions.tweets.length },
-        data: { mentions: recentMentions.tweets }
+        data: { mentions: recentMentions.tweets },
       };
     } catch (error) {
-      logger.error("Error getting mentions:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Error getting mentions:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         text: "Unable to fetch Twitter mentions at this time.",
         values: { error: true },
-        data: {}
+        data: {},
       };
     }
   },
@@ -288,7 +297,7 @@ const trendingProvider: Provider = {
         return {
           text: "No trending topics found for our focus areas.",
           values: { trendingCount: 0 },
-          data: { trending: [] }
+          data: { trending: [] },
         };
       }
 
@@ -299,14 +308,17 @@ const trendingProvider: Provider = {
       return {
         text: `Currently trending: ${trendingSummary}`,
         values: { trendingCount: trending.length },
-        data: { trending }
+        data: { trending },
       };
     } catch (error) {
-      logger.error("Error getting trending topics:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Error getting trending topics:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         text: "Unable to fetch trending topics at this time.",
         values: { error: true },
-        data: {}
+        data: {},
       };
     }
   },
@@ -329,14 +341,17 @@ const raidAnalyticsProvider: Provider = {
       // Get raid analytics for the last 24 hours
       const endDate = new Date();
       const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000);
-      
-      const raidMetrics = await twitterService.getRaidAnalytics(startDate, endDate);
+
+      const raidMetrics = await twitterService.getRaidAnalytics(
+        startDate,
+        endDate,
+      );
 
       if (!raidMetrics) {
         return {
           text: "Raid monitoring is not enabled.",
           values: { raidMonitoringEnabled: false },
-          data: {}
+          data: {},
         };
       }
 
@@ -344,28 +359,34 @@ const raidAnalyticsProvider: Provider = {
         return {
           text: "No raid activity detected in the last 24 hours.",
           values: { totalRaids: 0 },
-          data: { raidMetrics }
+          data: { raidMetrics },
         };
       }
 
-      const successRate = ((raidMetrics.successfulRaids / raidMetrics.totalRaids) * 100).toFixed(1);
-      
+      const successRate = (
+        (raidMetrics.successfulRaids / raidMetrics.totalRaids) *
+        100
+      ).toFixed(1);
+
       return {
         text: `Raid analytics (24h): ${raidMetrics.totalRaids} total raids, ${raidMetrics.successfulRaids} successful (${successRate}%), average score: ${raidMetrics.averageRaidScore.toFixed(1)}`,
-        values: { 
+        values: {
           totalRaids: raidMetrics.totalRaids,
           successfulRaids: raidMetrics.successfulRaids,
           successRate: parseFloat(successRate),
-          averageScore: raidMetrics.averageRaidScore
+          averageScore: raidMetrics.averageRaidScore,
         },
-        data: { raidMetrics }
+        data: { raidMetrics },
       };
     } catch (error) {
-      logger.error("Error getting raid analytics:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Error getting raid analytics:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         text: "Unable to fetch raid analytics at this time.",
         values: { error: true },
-        data: {}
+        data: {},
       };
     }
   },
@@ -378,7 +399,7 @@ const monitorListsAction: Action = {
   description: "Monitor Twitter lists for new tweets and activity",
   validate: async (runtime: IAgentRuntime, message: Memory) => {
     const content = message.content?.text || "";
-    
+
     const listIndicators = [
       "monitor lists",
       "check lists",
@@ -387,8 +408,8 @@ const monitorListsAction: Action = {
       "list activity",
     ];
 
-    return listIndicators.some(indicator => 
-      content.toLowerCase().includes(indicator)
+    return listIndicators.some((indicator) =>
+      content.toLowerCase().includes(indicator),
     );
   },
   handler: async (runtime: IAgentRuntime, message: Memory) => {
@@ -409,23 +430,28 @@ const monitorListsAction: Action = {
         return {
           success: true,
           text: "No Twitter lists configured for monitoring",
-          action: "MONITOR_TWITTER_LISTS"
+          action: "MONITOR_TWITTER_LISTS",
         };
       }
 
-      const totalTweets = listTweets.reduce((sum, list) => sum + list.totalTweets, 0);
+      const totalTweets = listTweets.reduce(
+        (sum, list) => sum + list.totalTweets,
+        0,
+      );
       const listSummary = listTweets
-        .map(list => `List ${list.listId}: ${list.totalTweets} tweets`)
-        .join(', ');
+        .map((list) => `List ${list.listId}: ${list.totalTweets} tweets`)
+        .join(", ");
 
       return {
         success: true,
         text: `Monitored ${listTweets.length} lists with ${totalTweets} total tweets. ${listSummary}`,
-        action: "MONITOR_TWITTER_LISTS"
+        action: "MONITOR_TWITTER_LISTS",
       };
-
     } catch (error) {
-      logger.error("Twitter list monitoring failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Twitter list monitoring failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return;
     }
   },
@@ -437,7 +463,9 @@ const monitorListsAction: Action = {
       },
       {
         name: "{{agentName}}",
-        content: { text: "I'll check our monitored Twitter lists for new tweets" },
+        content: {
+          text: "I'll check our monitored Twitter lists for new tweets",
+        },
       },
     ],
   ],
@@ -450,7 +478,7 @@ const trackRaidAction: Action = {
   description: "Track raid metrics and engagement for specific tweets",
   validate: async (runtime: IAgentRuntime, message: Memory) => {
     const content = message.content?.text || "";
-    
+
     const raidIndicators = [
       "track raid",
       "raid metrics",
@@ -460,11 +488,16 @@ const trackRaidAction: Action = {
     ];
 
     // Also check for tweet URLs or IDs
-    const hasTweetId = /twitter\.com\/\w+\/status\/(\d+)|x\.com\/\w+\/status\/(\d+)|\b\d{19}\b/.test(content);
+    const hasTweetId =
+      /twitter\.com\/\w+\/status\/(\d+)|x\.com\/\w+\/status\/(\d+)|\b\d{19}\b/.test(
+        content,
+      );
 
-    return raidIndicators.some(indicator => 
-      content.toLowerCase().includes(indicator)
-    ) || hasTweetId;
+    return (
+      raidIndicators.some((indicator) =>
+        content.toLowerCase().includes(indicator),
+      ) || hasTweetId
+    );
   },
   handler: async (runtime: IAgentRuntime, message: Memory) => {
     try {
@@ -478,16 +511,20 @@ const trackRaidAction: Action = {
       }
 
       const content = message.content?.text || "";
-      
+
       // Extract tweet ID from URL or direct ID
-      const tweetIdMatch = content.match(/twitter\.com\/\w+\/status\/(\d+)|x\.com\/\w+\/status\/(\d+)|\b(\d{19})\b/);
-      const tweetId = tweetIdMatch ? (tweetIdMatch[1] || tweetIdMatch[2] || tweetIdMatch[3]) : null;
+      const tweetIdMatch = content.match(
+        /twitter\.com\/\w+\/status\/(\d+)|x\.com\/\w+\/status\/(\d+)|\b(\d{19})\b/,
+      );
+      const tweetId = tweetIdMatch
+        ? tweetIdMatch[1] || tweetIdMatch[2] || tweetIdMatch[3]
+        : null;
 
       if (!tweetId) {
         return {
           success: false,
           text: "Please provide a tweet URL or ID to track raid metrics",
-          action: "TRACK_RAID_METRICS"
+          action: "TRACK_RAID_METRICS",
         };
       }
 
@@ -498,18 +535,20 @@ const trackRaidAction: Action = {
         return {
           success: false,
           text: "Raid monitoring is not enabled or failed to track metrics",
-          action: "TRACK_RAID_METRICS"
+          action: "TRACK_RAID_METRICS",
         };
       }
 
       return {
         success: true,
         text: `Raid metrics for tweet ${tweetId}: Score ${raidMetrics.raidScore.toFixed(1)}, Velocity ${raidMetrics.velocity.toFixed(1)}/min, Total engagements: ${raidMetrics.engagementData.totalEngagements}`,
-        action: "TRACK_RAID_METRICS"
+        action: "TRACK_RAID_METRICS",
       };
-
     } catch (error) {
-      logger.error("Raid tracking failed:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "Raid tracking failed:",
+        error instanceof Error ? error.message : String(error),
+      );
       return;
     }
   },
@@ -517,11 +556,15 @@ const trackRaidAction: Action = {
     [
       {
         name: "{{user1}}",
-        content: { text: "Track raid metrics for https://twitter.com/user/status/1234567890123456789" },
+        content: {
+          text: "Track raid metrics for https://twitter.com/user/status/1234567890123456789",
+        },
       },
       {
         name: "{{agentName}}",
-        content: { text: "I'll track the raid metrics for that tweet and monitor engagement" },
+        content: {
+          text: "I'll track the raid metrics for that tweet and monitor engagement",
+        },
       },
     ],
   ],
@@ -536,7 +579,12 @@ export const twitterMonitorPlugin: Plugin = {
 
   services: [TwitterMonitorService],
 
-  actions: [searchTwitterAction, getUserInfoAction, monitorListsAction, trackRaidAction],
+  actions: [
+    searchTwitterAction,
+    getUserInfoAction,
+    monitorListsAction,
+    trackRaidAction,
+  ],
 
   providers: [mentionsProvider, trendingProvider, raidAnalyticsProvider],
 
@@ -559,13 +607,16 @@ async function handleNewMention(
 
     // Log new mention (memory creation not available in event handlers)
     logger.info(
-      `New Twitter mention from @${user.username}: ${tweet.text.slice(0, 100)}${tweet.text.length > 100 ? '...' : ''}`
+      `New Twitter mention from @${user.username}: ${tweet.text.slice(0, 100)}${tweet.text.length > 100 ? "..." : ""}`,
     );
 
     // Note: Internal event emission not available in plugin context
     logger.debug("Twitter mention processed");
   } catch (error) {
-    logger.error("Error handling new Twitter mention:", error instanceof Error ? error.message : String(error));
+    logger.error(
+      "Error handling new Twitter mention:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 
@@ -579,7 +630,10 @@ async function handleEngagementMilestone(
     // Note: Event emission not available in plugin context
     logger.debug("Twitter engagement milestone processed");
   } catch (error) {
-    logger.error("Error handling engagement milestone:", error instanceof Error ? error.message : String(error));
+    logger.error(
+      "Error handling engagement milestone:",
+      error instanceof Error ? error.message : String(error),
+    );
   }
 }
 

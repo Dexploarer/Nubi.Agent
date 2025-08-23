@@ -1,0 +1,289 @@
+---
+import type { Props } from '@astrojs/starlight/props';
+
+const { data } = Astro.props.entry;
+const { title, tagline } = data;
+---
+
+<div class="hero sl-flex">
+  <div class="sl-container">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">
+          <span class="nubi-logo">🐺</span>
+          {title || 'NUBI Documentation'}
+        </h1>
+        <p class="hero-tagline">
+          {tagline || 'The Symbiotic Essence of Anubis - Advanced AI Agent Documentation'}
+        </p>
+        <div class="hero-features">
+          <div class="feature-grid">
+            <div class="feature-item">
+              <div class="feature-icon">🔌</div>
+              <h3>UX Integration</h3>
+              <p>Real-time Socket.IO with two-layer processing</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">🗄️</div>
+              <h3>Smart Database</h3>
+              <p>Intelligent pooler routing for optimal performance</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">🚀</div>
+              <h3>Telegram Raids</h3>
+              <p>Advanced coordination and engagement system</p>
+            </div>
+            <div class="feature-item">
+              <div class="feature-icon">🧠</div>
+              <h3>ElizaOS Core</h3>
+              <p>Built on the powerful ElizaOS framework</p>
+            </div>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <a href="/getting-started/quick-start/" class="hero-cta-primary">
+            Get Started
+          </a>
+          <a href="/api/rest/" class="hero-cta-secondary">
+            API Reference
+          </a>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="architecture-diagram">
+          <div class="layer layer-1">
+            <div class="layer-title">Layer 2: Classification</div>
+            <div class="layer-content">Message Analysis & Routing</div>
+          </div>
+          <div class="layer layer-2">
+            <div class="layer-title">Layer 1: Security</div>
+            <div class="layer-content">Rate Limiting & Filtering</div>
+          </div>
+          <div class="layer layer-3">
+            <div class="layer-title">ElizaOS Core</div>
+            <div class="layer-content">AI Agent Processing</div>
+          </div>
+          <div class="connections">
+            <div class="connection-line"></div>
+            <div class="connection-line"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.hero {
+  background: var(--nubi-hero-gradient);
+  color: var(--sl-color-white);
+  padding: 4rem 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(212, 175, 55, 0.2) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(74, 144, 226, 0.1) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.hero-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-title {
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin: 0 0 1rem 0;
+  line-height: 1.1;
+  background: linear-gradient(135deg, #fff 0%, var(--nubi-jackal-gold) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.nubi-logo {
+  display: inline-block;
+  font-size: 4rem;
+  margin-right: 1rem;
+  filter: sepia(1) hue-rotate(30deg) saturate(1.5);
+}
+
+.hero-tagline {
+  font-size: 1.25rem;
+  margin: 0 0 2rem 0;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.feature-item {
+  text-align: left;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.feature-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature-item h3 {
+  font-size: 1rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--nubi-jackal-gold);
+}
+
+.feature-item p {
+  font-size: 0.875rem;
+  margin: 0;
+  opacity: 0.8;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.hero-cta-primary {
+  padding: 1rem 2rem;
+  background: var(--nubi-jackal-gold);
+  color: var(--nubi-shadow-black);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: 2px solid var(--nubi-jackal-gold);
+}
+
+.hero-cta-primary:hover {
+  background: transparent;
+  color: var(--nubi-jackal-gold);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+}
+
+.hero-cta-secondary {
+  padding: 1rem 2rem;
+  background: transparent;
+  color: var(--sl-color-white);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.hero-cta-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--nubi-jackal-gold);
+  transform: translateY(-2px);
+}
+
+.architecture-diagram {
+  position: relative;
+  padding: 2rem;
+}
+
+.layer {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid var(--nubi-jackal-gold);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.layer:hover {
+  transform: translateX(8px);
+  box-shadow: 0 8px 32px rgba(212, 175, 55, 0.3);
+}
+
+.layer-title {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--nubi-jackal-gold);
+  margin-bottom: 0.5rem;
+}
+
+.layer-content {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.connections {
+  position: absolute;
+  right: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.connection-line {
+  width: 40px;
+  height: 2px;
+  background: var(--nubi-jackal-gold);
+  margin: 2rem 0;
+  position: relative;
+}
+
+.connection-line::after {
+  content: '→';
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  color: var(--nubi-jackal-gold);
+  font-size: 1.2rem;
+}
+
+@media (max-width: 768px) {
+  .hero-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hero-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .hero-cta-primary,
+  .hero-cta-secondary {
+    width: 100%;
+    max-width: 250px;
+    text-align: center;
+  }
+}
+</style>

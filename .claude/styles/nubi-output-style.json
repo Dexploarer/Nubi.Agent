@@ -1,0 +1,256 @@
+{
+  "name": "NUBI ElizaOS Style",
+  "description": "Custom output styling for NUBI ElizaOS development with raid coordination emphasis",
+  "version": "1.0.0",
+  "styles": {
+    "codeBlocks": {
+      "typescript": {
+        "backgroundColor": "#1a1a1a",
+        "foregroundColor": "#e4e4e7",
+        "borderColor": "#6366f1",
+        "borderWidth": "1px",
+        "borderStyle": "solid",
+        "borderRadius": "6px",
+        "padding": "12px",
+        "fontFamily": "JetBrains Mono, Consolas, monospace",
+        "fontSize": "14px",
+        "lineHeight": "1.5",
+        "syntax": {
+          "keywords": "#a855f7",
+          "strings": "#22d3ee",
+          "comments": "#64748b",
+          "functions": "#34d399",
+          "variables": "#fbbf24",
+          "types": "#fb7185"
+        }
+      },
+      "bash": {
+        "backgroundColor": "#0f172a",
+        "foregroundColor": "#e2e8f0",
+        "borderColor": "#10b981",
+        "borderWidth": "1px",
+        "borderStyle": "solid",
+        "borderRadius": "6px",
+        "padding": "12px",
+        "fontFamily": "JetBrains Mono, Consolas, monospace",
+        "fontSize": "14px",
+        "lineHeight": "1.5",
+        "syntax": {
+          "commands": "#10b981",
+          "options": "#06b6d4",
+          "paths": "#fbbf24",
+          "comments": "#64748b"
+        }
+      },
+      "sql": {
+        "backgroundColor": "#1e1b4b",
+        "foregroundColor": "#e0e7ff",
+        "borderColor": "#8b5cf6",
+        "borderWidth": "1px",
+        "borderStyle": "solid",
+        "borderRadius": "6px",
+        "padding": "12px",
+        "fontFamily": "JetBrains Mono, Consolas, monospace",
+        "fontSize": "14px",
+        "lineHeight": "1.5",
+        "syntax": {
+          "keywords": "#8b5cf6",
+          "strings": "#06d6a0",
+          "comments": "#64748b",
+          "functions": "#f59e0b"
+        }
+      }
+    },
+    "headers": {
+      "h1": {
+        "color": "#6366f1",
+        "fontWeight": "bold",
+        "fontSize": "24px",
+        "marginBottom": "16px",
+        "borderBottom": "2px solid #6366f1"
+      },
+      "h2": {
+        "color": "#8b5cf6",
+        "fontWeight": "bold",
+        "fontSize": "20px",
+        "marginBottom": "12px",
+        "marginTop": "20px"
+      },
+      "h3": {
+        "color": "#10b981",
+        "fontWeight": "bold",
+        "fontSize": "18px",
+        "marginBottom": "8px",
+        "marginTop": "16px"
+      }
+    },
+    "lists": {
+      "unordered": {
+        "bulletStyle": "•",
+        "bulletColor": "#6366f1",
+        "indentation": "  ",
+        "itemSpacing": "4px"
+      },
+      "ordered": {
+        "numberStyle": "decimal",
+        "numberColor": "#8b5cf6",
+        "indentation": "  ",
+        "itemSpacing": "4px"
+      }
+    },
+    "emphasis": {
+      "bold": {
+        "fontWeight": "bold",
+        "color": "#fbbf24"
+      },
+      "italic": {
+        "fontStyle": "italic",
+        "color": "#06b6d4"
+      },
+      "code": {
+        "backgroundColor": "#374151",
+        "color": "#10b981",
+        "padding": "2px 6px",
+        "borderRadius": "3px",
+        "fontFamily": "JetBrains Mono, Consolas, monospace",
+        "fontSize": "13px"
+      }
+    },
+    "tables": {
+      "headerBackground": "#1e293b",
+      "headerColor": "#6366f1",
+      "borderColor": "#475569",
+      "alternatingRows": {
+        "even": "#0f172a",
+        "odd": "#1e293b"
+      },
+      "padding": "8px 12px",
+      "fontSize": "14px"
+    },
+    "quotes": {
+      "backgroundColor": "#1e293b",
+      "borderLeft": "4px solid #06b6d4",
+      "color": "#cbd5e1",
+      "padding": "12px 16px",
+      "fontStyle": "italic",
+      "marginLeft": "8px"
+    },
+    "links": {
+      "color": "#06b6d4",
+      "textDecoration": "underline",
+      "hoverColor": "#0891b2"
+    },
+    "messages": {
+      "success": {
+        "backgroundColor": "#064e3b",
+        "borderColor": "#10b981",
+        "color": "#6ee7b7",
+        "icon": "✅",
+        "padding": "8px 12px",
+        "borderRadius": "4px"
+      },
+      "warning": {
+        "backgroundColor": "#451a03",
+        "borderColor": "#f59e0b",
+        "color": "#fcd34d",
+        "icon": "⚠️",
+        "padding": "8px 12px",
+        "borderRadius": "4px"
+      },
+      "error": {
+        "backgroundColor": "#7f1d1d",
+        "borderColor": "#ef4444",
+        "color": "#fca5a5",
+        "icon": "❌",
+        "padding": "8px 12px",
+        "borderRadius": "4px"
+      },
+      "info": {
+        "backgroundColor": "#1e3a8a",
+        "borderColor": "#3b82f6",
+        "color": "#93c5fd",
+        "icon": "ℹ️",
+        "padding": "8px 12px",
+        "borderRadius": "4px"
+      }
+    },
+    "specialElements": {
+      "elizaosService": {
+        "backgroundColor": "#1e1b4b",
+        "borderColor": "#8b5cf6",
+        "color": "#c4b5fd",
+        "icon": "🏛️",
+        "label": "ElizaOS Service"
+      },
+      "raidCoordination": {
+        "backgroundColor": "#1a2e05",
+        "borderColor": "#22c55e",
+        "color": "#86efac",
+        "icon": "⚡",
+        "label": "Raid Coordination"
+      },
+      "databaseOperation": {
+        "backgroundColor": "#1e293b",
+        "borderColor": "#0ea5e9",
+        "color": "#7dd3fc",
+        "icon": "🗄️",
+        "label": "Database Operation"
+      },
+      "mcpIntegration": {
+        "backgroundColor": "#7c2d12",
+        "borderColor": "#ea580c",
+        "color": "#fed7aa",
+        "icon": "🔌",
+        "label": "MCP Integration"
+      }
+    }
+  },
+  "contextualHighlighting": {
+    "elizaosPatterns": [
+      "extends Service",
+      "IAgentRuntime",
+      "ActionResult",
+      "Memory",
+      "State",
+      "Evaluator",
+      "Provider",
+      "@elizaos/core"
+    ],
+    "raidPatterns": [
+      "startRaid",
+      "monitorRaid",
+      "getRaidStats",
+      "getLeaderboard",
+      "verifyParticipation",
+      "XMCPX"
+    ],
+    "databasePatterns": [
+      "DatabasePoolerManager",
+      "POSTGRES_URL",
+      "PGLite",
+      "searchMemories",
+      "createMemory"
+    ],
+    "performancePatterns": [
+      "Promise.all",
+      "performance.now",
+      "memory optimization",
+      "connection pool"
+    ]
+  },
+  "responsePrefixes": {
+    "serviceCreated": "🏛️ **ElizaOS Service Created**",
+    "raidInitiated": "⚡ **Raid Campaign Initiated**",
+    "databaseOptimized": "🗄️ **Database Optimization Complete**",
+    "testsCompleted": "✅ **Tests Completed Successfully**",
+    "complianceValidated": "🔍 **ElizaOS Compliance Validated**",
+    "mcpConnected": "🔌 **MCP Server Connected**"
+  },
+  "footerInfo": {
+    "enabled": true,
+    "content": "🔮 NUBI ElizaOS Agent | Powered by Claude Code CLI",
+    "color": "#64748b",
+    "fontSize": "12px",
+    "marginTop": "16px"
+  }
+}

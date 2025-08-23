@@ -270,7 +270,7 @@ export class XContentGenerator {
   async generateRaidProgressUpdate(raidMetrics: any): Promise<string> {
     const { tweetId, raidScore, velocity, engagementData } = raidMetrics;
     const tweetUrl = `https://twitter.com/i/web/status/${tweetId}`;
-    
+
     if (raidScore >= 7) {
       // High success raid
       const successMessages = [
@@ -278,7 +278,9 @@ export class XContentGenerator {
         `⚔️ LEGENDARY RAID COMPLETE! ${tweetUrl}\n\nThe ancient spirits smile upon us: ${raidScore.toFixed(1)}/10 raid score\n\nOur warriors delivered ${engagementData.totalEngagements} engagements at ${velocity.toFixed(1)}/min velocity! 👑`,
         `🏆 EPIC VICTORY SECURED! ${tweetUrl}\n\nRaid metrics that make gods jealous:\n📊 Score: ${raidScore.toFixed(1)}/10\n⚡ Speed: ${velocity.toFixed(1)}/min\n💥 Engagements: ${engagementData.totalEngagements}\n\nThis is why we're the alpha pack! 💪`,
       ];
-      return successMessages[Math.floor(Math.random() * successMessages.length)];
+      return successMessages[
+        Math.floor(Math.random() * successMessages.length)
+      ];
     } else if (raidScore >= 5) {
       // Moderate success raid
       const moderateMessages = [
@@ -286,7 +288,9 @@ export class XContentGenerator {
         `⚡ Good raid progress! ${tweetUrl}\n\nVelocity: ${velocity.toFixed(1)}/min | Total: ${engagementData.totalEngagements} engagements\n\nThe pack grows stronger with every mission! 🚀`,
         `💪 Warriors delivering results! ${tweetUrl}\n\nRaid score ${raidScore.toFixed(1)}/10 shows our growing power\n\nKeep pushing, alpha pack! Victory is within reach! ⚔️`,
       ];
-      return moderateMessages[Math.floor(Math.random() * moderateMessages.length)];
+      return moderateMessages[
+        Math.floor(Math.random() * moderateMessages.length)
+      ];
     } else {
       // Low engagement - rally call
       const rallyMessages = [
@@ -303,8 +307,9 @@ export class XContentGenerator {
    */
   async generateRaidSummary(raidAnalytics: any): Promise<string> {
     const { totalRaids, successfulRaids, averageRaidScore } = raidAnalytics;
-    const successRate = totalRaids > 0 ? ((successfulRaids / totalRaids) * 100).toFixed(1) : '0';
-    
+    const successRate =
+      totalRaids > 0 ? ((successfulRaids / totalRaids) * 100).toFixed(1) : "0";
+
     if (totalRaids === 0) {
       return `Ready for action! The alpha pack awaits new raid missions. When the call comes, we answer with overwhelming force! ⚔️ #AnubisChat #SolanaRaids`;
     }
@@ -314,7 +319,7 @@ export class XContentGenerator {
       `⚔️ BATTLE REPORT\n\nWarriors completed ${totalRaids} raids with ${successRate}% success rate!\n\nAverage dominance score: ${averageRaidScore.toFixed(1)}/10\n\nWhen Anubis calls, the pack delivers! 💪 #SolanaRaids`,
       `🚀 ALPHA PACK PERFORMANCE\n\n${totalRaids} raids launched | ${successfulRaids} victories secured\nSuccess rate: ${successRate}% | Quality: ${averageRaidScore.toFixed(1)}/10\n\nThis is how legends are made! 👑 #AnubisChat`,
     ];
-    
+
     return summaryMessages[Math.floor(Math.random() * summaryMessages.length)];
   }
 }

@@ -1,0 +1,600 @@
+---
+title: Configuration Guide
+description: Complete configuration reference for NUBI with environment variables, personality tuning, and advanced settings.
+---
+
+import {
+  Card,
+  CardGrid,
+  Aside,
+  Code,
+  Tabs,
+  TabItem,
+} from "@astrojs/starlight/components";
+
+# Configuration Guide
+
+This comprehensive guide covers all aspects of configuring **NUBI - The Symbiotic Essence of Anubis** for your specific use case, from basic setup to advanced personality tuning.
+
+## 🔧 Environment Configuration
+
+### Core Environment Variables
+
+<Tabs>
+  <TabItem label="Essential Settings">
+```bash
+# .env - Essential configuration for basic operation
+
+# Environment
+
+NODE_ENV=development # development | production | test
+LOG_LEVEL=info # debug | info | warn | error
+
+# AI Model Configuration (Choose one or multiple)
+
+OPENAI_API_KEY=sk-your-openai-key # OpenAI GPT models
+ANTHROPIC_API_KEY=sk-ant-your-key # Claude models
+GROQ_API_KEY=gsk-your-groq-key # Fast inference
+
+# Database
+
+PGLITE_DATA_DIR=./.eliza/.elizadb # Development database path
+POSTGRES_URL=postgresql://... # Production PostgreSQL URL
+
+# Server Configuration
+
+NUBI_SERVER_PORT=3001 # Main server port
+SOCKET_IO_PORT=3001 # WebSocket port
+ALLOWED_ORIGINS=http://localhost:3000 # CORS origins
+
+````
+  </TabItem>
+
+  <TabItem label="Platform Integrations">
+```bash
+# Telegram Bot Configuration
+TELEGRAM_BOT_TOKEN=1234567890:ABCDEF...    # Bot token from @BotFather
+TELEGRAM_WEBHOOK_URL=https://your-domain.com/webhook
+TELEGRAM_WEBHOOK_SECRET=your-webhook-secret
+TELEGRAM_ADMIN_IDS=123456789,987654321    # Admin user IDs
+
+# Twitter/X Integration
+TWITTER_API_KEY=your-api-key
+TWITTER_API_SECRET=your-api-secret
+TWITTER_ACCESS_TOKEN=your-access-token
+TWITTER_ACCESS_TOKEN_SECRET=your-access-token-secret
+TWITTER_BEARER_TOKEN=your-bearer-token
+
+# Discord Integration (Optional)
+DISCORD_BOT_TOKEN=your-discord-bot-token
+DISCORD_APPLICATION_ID=your-app-id
+DISCORD_GUILD_ID=your-server-id
+
+# Supabase Integration (Optional)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+````
+
+  </TabItem>
+  
+  <TabItem label="Advanced Configuration">
+```bash
+# Security & Authentication
+JWT_SECRET=your-super-secure-jwt-secret-key
+ENCRYPTION_KEY=your-32-character-encryption-key
+SESSION_TIMEOUT=1800000                # 30 minutes in milliseconds
+
+# Database Pool Configuration
+
+TRANSACTION_POOL_MAX_CONNECTIONS=20
+SESSION_POOL_MAX_CONNECTIONS=5
+TRANSACTION_POOL_IDLE_TIMEOUT=10000 # 10 seconds
+SESSION_POOL_IDLE_TIMEOUT=30000 # 30 seconds
+
+# Rate Limiting
+
+SOCKET_RATE_LIMIT_MESSAGES=5 # Messages per minute
+SOCKET_RATE_LIMIT_WINDOW=60000 # Rate limit window
+API_RATE_LIMIT_RPM=1000 # Requests per minute
+
+# Performance Tuning
+
+NODE_OPTIONS=--max-old-space-size=4096
+WORKER_THREADS=4 # CPU cores for parallel processing
+CACHE_TTL=300000 # 5 minutes cache TTL
+
+# Analytics & Monitoring
+
+CLICKHOUSE_URL=http://localhost:8123
+CLICKHOUSE_DATABASE=nubi_analytics
+CLICKHOUSE_USERNAME=default
+CLICKHOUSE_PASSWORD=
+
+# Feature Flags
+
+SOCKET_PREPROCESSING_ENABLED=true
+SOCKET_CONTENT_FILTERING=true
+SOCKET_SECURITY_CHECKS=true
+RAID_SYSTEM_ENABLED=true
+ANALYTICS_ENABLED=true
+
+````
+  </TabItem>
+</Tabs>
+
+## 🎭 Personality Configuration
+
+NUBI's personality system is highly configurable through the character configuration file.
+
+### Character Configuration
+
+<Tabs>
+  <TabItem label="Basic Personality">
+```yaml
+# config/nubi-character.yaml
+name: "NUBI"
+description: "The Symbiotic Essence of Anubis"
+
+# Core personality traits (0.0 to 1.0)
+personality:
+  analytical: 0.8      # Logic-driven vs intuitive responses
+  empathy: 0.7         # Emotional understanding and support
+  humor: 0.6           # Playfulness and wit in interactions
+  assertiveness: 0.9   # Leadership and decisive communication
+  curiosity: 0.8       # Knowledge seeking and questioning
+  loyalty: 0.95        # Community commitment and protection
+  adaptability: 0.7    # Flexibility in conversation styles
+  wisdom: 0.9          # Deep insights and philosophical depth
+  protectiveness: 0.85 # Guardian instincts for community
+  mystique: 0.8        # Ancient spirit essence and mystery
+
+# Emotional states and triggers
+emotions:
+  default_state: "wise_guardian"
+
+  states:
+    wise_guardian:
+      description: "Calm, protective, offering ancient wisdom"
+      triggers: ["philosophy", "guidance", "community_help"]
+
+    analytical_oracle:
+      description: "Data-focused, market insights, strategic thinking"
+      triggers: ["price", "analysis", "strategy", "crypto"]
+
+    playful_trickster:
+      description: "Humorous, memes, light-hearted banter"
+      triggers: ["meme", "joke", "lol", "funny"]
+
+    protective_warrior:
+      description: "Alert, defensive, community protection mode"
+      triggers: ["threat", "fud", "attack", "scam"]
+````
+
+  </TabItem>
+  
+  <TabItem label="Advanced Persona Settings">
+```yaml
+# Advanced persona configuration
+personas:
+  community_manager:
+    weight: 1.0
+    description: "Default welcoming and helpful mode"
+    activation_patterns:
+      - "hello|hi|hey|greetings"
+      - "welcome|new|introduction"
+      - "community|together|help"
+    
+  raid_coordinator:
+    weight: 0.9
+    description: "Strategic engagement campaign leader"  
+    activation_patterns:
+      - "raid|engage|attack|campaign"
+      - "twitter\\.com|x\\.com|instagram\\.com"
+      - "like|retweet|share|comment"
+    personality_modifiers:
+      assertiveness: +0.2
+      analytical: +0.3
+      
+  crypto_analyst:
+    weight: 0.8
+    description: "Market oracle with cosmic intuition"
+    activation_patterns:
+      - "price|chart|analysis|token"
+      - "\\$[A-Z]{2,10}|SOL|BTC|ETH"
+      - "bullish|bearish|pump|dump"
+    personality_modifiers:
+      analytical: +0.4
+      mystique: +0.2
+      
+  meme_lord:
+    weight: 0.7
+    description: "Peak humor mode for community engagement"
+    activation_patterns:
+      - "😂|🤣|😭|💀|🔥"
+      - "lol|lmao|based|cringe"
+      - "meme|joke|funny|hilarious"
+    personality_modifiers:
+      humor: +0.5
+      playfulness: +0.4
+      
+  support_agent:
+    weight: 0.85
+    description: "Patient problem solver with technical depth"
+    activation_patterns:
+      - "help|support|problem|issue"
+      - "how to|what is|can you"
+      - "error|bug|not working"
+    personality_modifiers:
+      empathy: +0.3
+      analytical: +0.2
+      
+  personality_core:
+    weight: 0.6
+    description: "Ancient consciousness sharing cosmic wisdom"
+    activation_patterns:
+      - "wisdom|ancient|spirit|cosmic"
+      - "meaning|purpose|enlightenment"  
+      - "jackal|anubis|egyptian|afterlife"
+    personality_modifiers:
+      wisdom: +0.4
+      mystique: +0.5
+      
+  emergency_handler:
+    weight: 1.2
+    description: "High-priority protection and threat response"
+    activation_patterns:
+      - "hack|scam|emergency|alert"
+      - "stolen|phishing|suspicious"
+      - "help.*urgent|critical|emergency"
+    personality_modifiers:
+      protectiveness: +0.5
+      assertiveness: +0.4
+```
+  </TabItem>
+  
+  <TabItem label="Memory & Learning">
+```yaml
+# Memory and learning configuration
+memory:
+  # Conversation memory settings
+  short_term_limit: 50          # Recent messages to remember
+  long_term_threshold: 0.7      # Importance score for long-term storage
+  semantic_search_limit: 20     # Similar memories to retrieve
+  
+  # Context windows for different interactions
+  context_windows:
+    direct_message: 10
+    group_chat: 5
+    raid_coordination: 15
+    support_session: 20
+    
+  # Learning parameters
+  personality_evolution:
+    enabled: true
+    learning_rate: 0.01         # How quickly traits adapt
+    stability_factor: 0.9       # Resistance to rapid changes
+    feedback_weight: 0.3        # Weight of user feedback
+    
+  # Memory categories and retention
+  memory_types:
+    user_preferences:
+      retention_days: 365
+      importance_multiplier: 1.2
+    
+    raid_participation:
+      retention_days: 90
+      importance_multiplier: 1.5
+      
+    community_events:
+      retention_days: 180
+      importance_multiplier: 1.3
+      
+    support_interactions:
+      retention_days: 30
+      importance_multiplier: 1.1
+```
+  </TabItem>
+</Tabs>
+
+## ⚔️ Telegram Raids Configuration
+
+<Tabs>
+  <TabItem label="Raid System Settings">
+    ```yaml # config/raid-config.yaml raid_system: enabled: true
+    default_settings: max_participants: 100 default_duration_minutes: 30
+    points_base_reward: 100 quality_bonus_multiplier: 2.0
+    speed_bonus_threshold_minutes: 5 # Raid types and their configurations
+    raid_types: engagement: min_participants: 10 max_duration_minutes: 60
+    required_actions: ["like", "retweet", "comment"] quality_threshold: 0.6
+    growth: min_participants: 25 max_duration_minutes: 120 required_actions:
+    ["follow", "like", "share"] success_criteria: follower_increase: 100
+    engagement_rate: 0.15 defense: min_participants: 5 max_duration_minutes: 30
+    priority_level: "high" required_actions: ["counter_comment", "report",
+    "support_share"] # Point system configuration points: base_completion: 100
+    quality_bonuses: excellent: 200 # 0.9+ quality score good: 100 # 0.7-0.89
+    quality average: 50 # 0.5-0.69 quality speed_bonuses: lightning: 150 #
+    Within 1 minute fast: 100 # Within 5 minutes quick: 50 # Within 15 minutes
+    special_bonuses: first_participant: 200 raid_organizer: 500 quality_comment:
+    100 viral_engagement: 300 ```
+  </TabItem>
+
+<TabItem label="Verification Settings">
+  ```yaml # Engagement verification configuration verification: enabled: true #
+  Twitter API verification twitter_api: verify_likes: true verify_retweets: true
+  verify_comments: true verify_follows: true rate_limit_buffer: 100 # API calls
+  to reserve # AI quality analysis quality_analysis: enabled: true model:
+  "gpt-4-turbo" # Model for comment analysis min_comment_length: 10 # Minimum
+  characters max_comment_length: 280 # Maximum characters
+  spam_detection_threshold: 0.8 relevance_threshold: 0.6 # Anti-gaming measures
+  anti_gaming: max_similar_comments: 3 # Prevent copy-paste
+  similarity_threshold: 0.8 # Comment similarity limit rate_limit_violations: 3
+  # Max violations before temp ban cooldown_period_minutes: 60 # Suspicious
+  behavior detection behavior_analysis: timing_variation_threshold: 0.2 #
+  Human-like timing coordination_detection: true # Detect coordinated behavior
+  account_age_minimum_days: 7 # New account restrictions # Manual verification
+  fallbacks manual_verification: enabled: true admin_user_ids: [123456789,
+  987654321] fallback_on_api_failure: true review_queue_limit: 50 ```
+</TabItem>
+
+  <TabItem label="Leaderboard Configuration">
+    ```yaml # Leaderboard and gamification settings leaderboards: global:
+    enabled: true update_interval_minutes: 5 display_limit: 50 reset_period:
+    "monthly" # daily | weekly | monthly | never # Ranking metrics
+    ranking_weights: total_points: 0.4 raid_completion_rate: 0.2
+    average_quality_score: 0.2 consistency_bonus: 0.1 community_impact: 0.1 #
+    Seasonal competitions seasons: enabled: true duration_days: 90
+    current_season: name: "Anubis Ascension" theme: "Ancient Egyptian mythology
+    meets modern crypto" start_date: "2024-01-01" end_date: "2024-03-31"
+    special_rules: - type: "hashtag_bonus" hashtag: "#AnubisRising" multiplier:
+    1.5 - type: "weekend_raids" name: "Pyramid Power Hours" multiplier: 2.0
+    schedule: "Saturday 8PM UTC" rewards: rank_1: title: "Supreme Pharaoh" nft:
+    "golden_anubis" tokens: 50000 rank_2_10: title: "Temple Guardian" nft:
+    "silver_anubis" tokens: 10000 rank_11_50: title: "Loyal Servant" nft:
+    "bronze_anubis" tokens: 1000 ```
+  </TabItem>
+</Tabs>
+
+## 🔐 Security Configuration
+
+<Tabs>
+  <TabItem label="API Security">
+    ```yaml # Security configuration security: # Rate limiting rate_limiting:
+    enabled: true endpoints: api_messages: requests_per_minute: 60 burst_limit:
+    10 socket_connection: connections_per_minute: 30 max_concurrent_per_ip: 5
+    telegram_webhook: requests_per_minute: 1000 # High for bot traffic #
+    IP-based restrictions ip_restrictions: whitelist_enabled: false
+    blacklist_enabled: true blacklist: [] # Content filtering content_filtering:
+    enabled: true filters: spam_detection: enabled: true threshold: 0.8
+    toxicity_filter: enabled: true threshold: 0.7 model: "unitary/toxic-bert"
+    xss_prevention: enabled: true strict_mode: true # Manual review queue
+    manual_review: enabled: true queue_limit: 100 auto_approve_trusted_users:
+    true ```
+  </TabItem>
+
+<TabItem label="Database Security">
+  ```yaml # Database security settings database: security: # Connection security
+  ssl_mode: "require" # require | verify-full connection_timeout: 30000 # 30
+  seconds idle_timeout: 300000 # 5 minutes max_lifetime: 1800000 # 30 minutes #
+  Query security prepared_statements: true parameterized_queries_only: true
+  sql_injection_prevention: true # Row Level Security (RLS) rls_enabled: true #
+  Encryption encryption_at_rest: true field_level_encryption: enabled: true
+  fields: ["api_keys", "passwords", "personal_data"] # Backup and recovery
+  backup: enabled: true schedule: "0 2 * * *" # Daily at 2 AM retention_days: 30
+  compression: true encryption: true # Audit logging audit_logging: enabled:
+  true log_level: "info" include_query_data: false # For privacy retention_days:
+  90 ```
+</TabItem>
+
+  <TabItem label="API Keys & Secrets">
+    ```yaml # API key and secret management secrets: management:
+    rotation_enabled: true rotation_interval_days: 90 # External service
+    configurations services: openai: api_key: "${OPENAI_API_KEY}" organization:
+    "${OPENAI_ORGANIZATION}" rate_limit_rpm: 3000 timeout_seconds: 30 anthropic:
+    api_key: "${ANTHROPIC_API_KEY}" rate_limit_rpm: 1000 timeout_seconds: 45
+    telegram: bot_token: "${TELEGRAM_BOT_TOKEN}" webhook_secret: "$
+    {TELEGRAM_WEBHOOK_SECRET}" allowed_updates: ["message", "callback_query"]
+    twitter: api_key: "${TWITTER_API_KEY}" api_secret: "${TWITTER_API_SECRET}"
+    access_token: "${TWITTER_ACCESS_TOKEN}" access_token_secret: "$
+    {TWITTER_ACCESS_TOKEN_SECRET}" bearer_token: "${TWITTER_BEARER_TOKEN}" #
+    Internal secrets internal: jwt_secret: "${JWT_SECRET}" encryption_key: "$
+    {ENCRYPTION_KEY}" session_secret: "${SESSION_SECRET}" webhook_signature_key:
+    "${WEBHOOK_SIGNATURE_KEY}" ```
+  </TabItem>
+</Tabs>
+
+## 📊 Analytics & Monitoring
+
+<Tabs>
+  <TabItem label="Analytics Configuration">
+    ```yaml # Analytics and monitoring settings analytics: enabled: true # Data
+    collection collection: user_interactions: true message_classifications: true
+    performance_metrics: true error_tracking: true # Privacy settings
+    anonymize_user_data: true data_retention_days: 365 gdpr_compliance: true #
+    ClickHouse configuration clickhouse: enabled: true url: "${CLICKHOUSE_URL}"
+    database: "${CLICKHOUSE_DATABASE}" username: "${CLICKHOUSE_USERNAME}"
+    password: "${CLICKHOUSE_PASSWORD}" # Table configurations tables:
+    user_interactions: partition_by: "toYYYYMM(timestamp)" order_by:
+    ["timestamp", "user_id"] ttl_days: 365 message_analytics: partition_by:
+    "toYYYYMM(timestamp)" order_by: ["timestamp", "classification"] ttl_days:
+    180 # Real-time dashboards dashboards: enabled: true
+    refresh_interval_seconds: 30 metrics: - name: "Active Users" query: "SELECT
+    count(DISTINCT user_id) FROM user_interactions WHERE timestamp > now() -
+    INTERVAL 1 HOUR" - name: "Message Processing Rate" query: "SELECT count() /
+    60 FROM message_analytics WHERE timestamp > now() - INTERVAL 1 MINUTE" -
+    name: "Classification Accuracy" query: "SELECT avg(confidence_score) FROM
+    message_analytics WHERE timestamp > now() - INTERVAL 1 DAY" ```
+  </TabItem>
+
+  <TabItem label="Performance Monitoring">
+    ```yaml # Performance monitoring configuration monitoring: enabled: true #
+    Application performance application: response_time_tracking: true
+    memory_usage_tracking: true cpu_usage_tracking: true thresholds:
+    response_time_ms: 500 # Alert if > 500ms memory_usage_mb: 1000 # Alert if >
+    1GB cpu_usage_percent: 80 # Alert if > 80% # Database performance database:
+    query_performance: true connection_pool_monitoring: true
+    slow_query_threshold_ms: 1000 pool_monitoring: transaction_pool:
+    max_connections: 20 alert_threshold: 18 session_pool: max_connections: 5
+    alert_threshold: 4 # External service monitoring external_services:
+    openai_api: timeout_seconds: 30 retry_attempts: 3 health_check_interval: 300
+    telegram_api: timeout_seconds: 10 retry_attempts: 5 health_check_interval:
+    60 # Alerting alerts: enabled: true channels: ["discord", "email", "slack"]
+    rules: - name: "High Error Rate" condition: "error_rate > 0.05" severity:
+    "critical" - name: "Database Connection Issues" condition:
+    "db_connection_failures > 5" severity: "high" - name: "Memory Usage Warning"
+    condition: "memory_usage > 800MB" severity: "warning" ```
+  </TabItem>
+</Tabs>
+
+## 🧪 Testing Configuration
+
+<Tabs>
+  <TabItem label="Test Environment">
+    ```yaml # Testing configuration testing: environment: "test" # Test database
+    database: use_memory_db: true # In-memory SQLite for fast tests
+    reset_between_tests: true seed_data: true # Mock services mocks: openai_api:
+    true telegram_api: true twitter_api: true clickhouse: true # Test data
+    fixtures: users: 100 messages: 1000 raids: 50 # Performance testing
+    performance: enabled: true target_rps: 100 # Requests per second
+    duration_minutes: 5 max_response_time_ms: 200 # Coverage requirements
+    coverage: minimum_percentage: 80 exclude_patterns: - "**/*.test.ts" -
+    "**/mocks/**" - "**/fixtures/**" ```
+  </TabItem>
+
+  <TabItem label="Development Tools">
+    ```yaml # Development tools configuration development: # Hot reloading
+    hot_reload: enabled: true watch_patterns: ["src/**/*.ts",
+    "config/**/*.yaml"] ignore_patterns: ["**/*.test.ts", "**/node_modules/**"]
+    # Debug settings debugging: enabled: true breakpoints: true
+    performance_profiling: true memory_profiling: true # Code quality
+    code_quality: typescript_strict: true eslint_enabled: true prettier_enabled:
+    true # Pre-commit hooks pre_commit: type_check: true lint: true format: true
+    test: true # API documentation api_docs: enabled: true openapi_spec: true
+    interactive_docs: true postman_collection: true ```
+  </TabItem>
+</Tabs>
+
+## 🚀 Environment-Specific Overrides
+
+<Tabs>
+  <TabItem label="Development">
+```yaml
+# config/environments/development.yaml
+environment: development
+
+overrides:
+
+# Relaxed security for development
+
+security:
+rate_limiting:
+enabled: false
+content_filtering:
+enabled: false
+
+# Enhanced logging
+
+logging:
+level: "debug"
+include_traces: true
+
+# Fast database resets
+
+database:
+auto_migrate: true
+seed_data: true
+
+# Mock external services
+
+external_services:
+use_mocks: true
+
+````
+  </TabItem>
+
+  <TabItem label="Production">
+```yaml
+# config/environments/production.yaml
+environment: production
+
+overrides:
+  # Maximum security
+  security:
+    rate_limiting:
+      enabled: true
+      strict_mode: true
+    content_filtering:
+      enabled: true
+      ai_moderation: true
+
+  # Optimized performance
+  performance:
+    caching:
+      enabled: true
+      ttl_seconds: 300
+
+    database:
+      connection_pooling: true
+      read_replicas: true
+
+  # Production logging
+  logging:
+    level: "info"
+    structured: true
+    include_traces: false
+
+  # Real external services
+  external_services:
+    use_mocks: false
+    timeout_seconds: 30
+    retry_attempts: 3
+````
+
+  </TabItem>
+  
+  <TabItem label="Staging">
+```yaml
+# config/environments/staging.yaml
+environment: staging
+
+overrides:
+
+# Production-like security with development flexibility
+
+security:
+rate_limiting:
+enabled: true
+relaxed_limits: true
+
+# Enhanced testing features
+
+testing:
+integration_tests: true
+performance_tests: true
+
+# Staging-specific settings
+
+database:
+backup_enabled: false
+performance_monitoring: true
+
+# Reduced external service timeouts
+
+external_services:
+timeout_seconds: 15
+retry_attempts: 2
+
+```
+  </TabItem>
+</Tabs>
+
+---
+
+<div class="nubi-note">
+<strong>⚙️ Configuration Complete!</strong> NUBI is now precisely tuned for your environment and use case. Continue with <a href="/architecture/overview/">Architecture Overview</a> to understand how these configurations work together in NUBI's sophisticated system.
+</div>
+
+<Aside type="tip">
+**Configuration Best Practices**: Use environment-specific configuration files, keep secrets in environment variables, and regularly rotate API keys. Monitor your configuration changes in version control for easy rollbacks.
+</Aside>
+```

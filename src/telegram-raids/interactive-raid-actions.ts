@@ -84,7 +84,10 @@ export const joinRaidAction: Action = {
         text: result,
       };
     } catch (error) {
-      logger.error("Join raid action failed:", error);
+      logger.error(
+        "Join raid action failed:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       if (callback) {
         await callback({
@@ -183,7 +186,10 @@ export const completeRaidAction: Action = {
         text: result,
       };
     } catch (error) {
-      logger.error("Complete raid action failed:", error);
+      logger.error(
+        "Complete raid action failed:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       if (callback) {
         await callback({
@@ -308,7 +314,10 @@ ${stats.topPerformers
         text: statsMessage,
       };
     } catch (error) {
-      logger.error("Raid stats action failed:", error);
+      logger.error(
+        "Raid stats action failed:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       const errorMessage = "❌ Failed to fetch raid stats";
       if (callback) {
@@ -416,7 +425,10 @@ ${leaderboard
         text: leaderboardMessage,
       };
     } catch (error) {
-      logger.error("Leaderboard action failed:", error);
+      logger.error(
+        "Leaderboard action failed:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       const errorMessage = "❌ Failed to fetch leaderboard";
       if (callback) {
@@ -546,7 +558,10 @@ export const createRaidAction: Action = {
         values: { raidId, postUrl },
       };
     } catch (error) {
-      logger.error("Create raid action failed:", error);
+      logger.error(
+        "Create raid action failed:",
+        error instanceof Error ? error.message : String(error),
+      );
 
       const errorMessage = "❌ Failed to create raid";
       if (callback) {

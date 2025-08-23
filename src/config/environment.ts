@@ -22,7 +22,7 @@ export interface EnvironmentConfig {
   // Database
   databaseUrl?: string;
   postgresUrl?: string;
-  
+
   // Database Poolers (Supabase)
   transactionPoolerUrl?: string;
   sessionPoolerUrl?: string;
@@ -67,11 +67,13 @@ export function loadEnvironmentConfig(): EnvironmentConfig {
       // Database
       databaseUrl: process.env.DATABASE_URL,
       postgresUrl: process.env.POSTGRES_URL,
-      
+
       // Database Poolers (Supabase)
-      transactionPoolerUrl: process.env.SUPABASE_TRANSACTION_POOLER_URL || 
+      transactionPoolerUrl:
+        process.env.SUPABASE_TRANSACTION_POOLER_URL ||
         "postgresql://postgres.nfnmoqepgjyutcbbaqjg:[Anubisdata1!]@aws-1-us-east-2.pooler.supabase.com:6543/postgres",
-      sessionPoolerUrl: process.env.SUPABASE_SESSION_POOLER_URL || 
+      sessionPoolerUrl:
+        process.env.SUPABASE_SESSION_POOLER_URL ||
         "postgresql://postgres.nfnmoqepgjyutcbbaqjg:[Anubisdata1!]@aws-1-us-east-2.pooler.supabase.com:5432/postgres",
 
       // NUBI Specific
@@ -158,7 +160,12 @@ export function getFeatureAvailability(config: EnvironmentConfig) {
     ),
     raids: config.raidsEnabled && !!config.telegramBotToken,
     autoRaids: config.autoRaids && config.raidsEnabled,
-    database: !!(config.databaseUrl || config.postgresUrl || config.transactionPoolerUrl || config.sessionPoolerUrl),
+    database: !!(
+      config.databaseUrl ||
+      config.postgresUrl ||
+      config.transactionPoolerUrl ||
+      config.sessionPoolerUrl
+    ),
   };
 }
 

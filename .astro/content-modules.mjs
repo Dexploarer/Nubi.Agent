@@ -1,0 +1,20 @@
+
+export default new Map([
+["src/content/docs/getting-started/introduction.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fgetting-started%2Fintroduction.mdx&astroContentModuleFlag=true")],
+["src/content/docs/api/rest.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fapi%2Frest.mdx&astroContentModuleFlag=true")],
+["src/content/docs/database/pooler-manager.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fdatabase%2Fpooler-manager.mdx&astroContentModuleFlag=true")],
+["src/content/docs/index.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Findex.mdx&astroContentModuleFlag=true")],
+["src/content/docs/telegram-raids/overview.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Ftelegram-raids%2Foverview.mdx&astroContentModuleFlag=true")],
+["src/content/docs/ux-integration/socketio.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fux-integration%2Fsocketio.mdx&astroContentModuleFlag=true")],
+["src/content/docs/ux-integration/processing.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fux-integration%2Fprocessing.mdx&astroContentModuleFlag=true")],
+["src/content/docs/ux-integration/overview.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fux-integration%2Foverview.mdx&astroContentModuleFlag=true")],
+["src/content/docs/getting-started/quick-start.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fgetting-started%2Fquick-start.mdx&astroContentModuleFlag=true")],
+["src/content/docs/getting-started/installation.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fgetting-started%2Finstallation.mdx&astroContentModuleFlag=true")],
+["src/content/docs/getting-started/configuration.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fgetting-started%2Fconfiguration.mdx&astroContentModuleFlag=true")],
+["src/content/docs/architecture/overview.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Farchitecture%2Foverview.mdx&astroContentModuleFlag=true")],
+["src/content/docs/architecture/modular-design.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Farchitecture%2Fmodular-design.mdx&astroContentModuleFlag=true")],
+["src/content/docs/architecture/service-layer.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Farchitecture%2Fservice-layer.mdx&astroContentModuleFlag=true")],
+["src/content/docs/architecture/elizaos-integration.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Farchitecture%2Felizaos-integration.mdx&astroContentModuleFlag=true")],
+["src/content/docs/ux-integration/classification.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fux-integration%2Fclassification.mdx&astroContentModuleFlag=true")],
+["src/content/docs/ux-integration/security.mdx", () => import("astro:content-layer-deferred-module?astro%3Acontent-layer-deferred-module=&fileName=src%2Fcontent%2Fdocs%2Fux-integration%2Fsecurity.mdx&astroContentModuleFlag=true")]]);
+		

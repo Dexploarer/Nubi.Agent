@@ -109,13 +109,19 @@ export class DatabaseMemoryService extends Service {
 
       // Get the database pooler manager if available
       try {
-        const service = this.runtime.getService<DatabasePoolerManager>("database-pooler-manager");
+        const service = this.runtime.getService<DatabasePoolerManager>(
+          "database-pooler-manager",
+        );
         this.poolerManager = service || undefined;
         if (this.poolerManager) {
-          logger.info("[DATABASE_MEMORY_SERVICE] Connected to database pooler manager");
+          logger.info(
+            "[DATABASE_MEMORY_SERVICE] Connected to database pooler manager",
+          );
         }
       } catch (error) {
-        logger.debug("[DATABASE_MEMORY_SERVICE] Database pooler manager not available, using fallback");
+        logger.debug(
+          "[DATABASE_MEMORY_SERVICE] Database pooler manager not available, using fallback",
+        );
       }
     } catch (error) {
       logger.error(
@@ -202,7 +208,7 @@ export class DatabaseMemoryService extends Service {
     try {
       // Use ElizaOS built-in memory retrieval
       const memories = await this.runtime.getMemories({
-        roomId: roomId,
+        roomId: roomId as any,
         agentId: this.agentId,
         count: limit,
         unique: false,
@@ -236,7 +242,7 @@ export class DatabaseMemoryService extends Service {
       // Use ElizaOS built-in semantic search with embedding
       const memories = await this.runtime.searchMemories({
         embedding: embedding,
-        roomId: roomId,
+        roomId: roomId as any,
         entityId: this.agentId,
         count: limit,
         match_threshold: 0.7,
@@ -290,6 +296,293 @@ export class DatabaseMemoryService extends Service {
         "[DATABASE_MEMORY_SERVICE] Failed to update traits:",
         error instanceof Error ? error.message : String(error),
       );
+    }
+  }
+
+  /**
+   * RAID-SPECIFIC MEMORY METHODS
+   * Using ElizaOS memory patterns for raid participant tracking and context
+   */
+
+  /**
+   * Store raid participant data using ElizaOS memory patterns
+   */
+  async storeRaidParticipant(
+    roomId: string,
+    raidId: string,
+    participant: {
+      telegramId: string;
+      telegramUsername: string;
+      twitterUsername?: string;
+      actionsCompleted: number;
+      pointsEarned: number;
+      verified: boolean;
+    },
+  ): Promise<boolean> {
+    try {
+      const participantMemory: Memory = {
+        id: crypto.randomUUID() as any,
+        agentId: this.agentId,
+        entityId:
+          participant.telegramId as `${string}-${string}-${string}-${string}-${string}`,
+        roomId: roomId as any,
+        content: {
+          text: `Raid participant ${participant.telegramUsername} in raid ${raidId}`,
+          type: "raid_participant",
+          raidId,
+          telegramId: participant.telegramId,
+          telegramUsername: participant.telegramUsername,
+          twitterUsername: participant.twitterUsername,
+          actionsCompleted: participant.actionsCompleted,
+          pointsEarned: participant.pointsEarned,
+          verified: participant.verified,
+          joinedAt: new Date().toISOString(),
+        },
+        embedding: undefined,
+        createdAt: Date.now(),
+      };
+
+      await this.runtime.createMemory(participantMemory, "memories", false);
+
+      logger.debug(
+        `[DATABASE_MEMORY_SERVICE] Stored raid participant: ${participant.telegramUsername} for raid ${raidId}`,
+      );
+
+      return true;
+    } catch (error) {
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to store raid participant:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Get raid context and participant history using semantic search
+   */
+  async getRaidContext(
+    raidId: string,
+    roomId?: string,
+    limit: number = 50,
+  ): Promise<{
+    raidMemories: Memory[];
+    participants: any[];
+    metrics: any;
+  }> {
+    try {
+      // Search for raid-related memories
+      const embedding = await this.runtime.useModel(ModelType.TEXT_EMBEDDING, {
+        text: raidId,
+      });
+      const raidMemories = await this.runtime.searchMemories({
+        embedding,
+        roomId: (roomId || crypto.randomUUID()) as any,
+        count: limit,
+        match_threshold: 0.5,
+        tableName: "memories",
+      });
+
+      // Parse participant data from memories
+      const participants = raidMemories
+        .filter((m) => (m.content as any)?.type === "raid_participant")
+        .map((m) => {
+          const content = m.content as any;
+          return {
+            telegramId: content.telegramId,
+            telegramUsername: content.telegramUsername,
+            twitterUsername: content.twitterUsername,
+            actionsCompleted: content.actionsCompleted || 0,
+            pointsEarned: content.pointsEarned || 0,
+            verified: content.verified || false,
+            joinedAt: content.joinedAt,
+          };
+        });
+
+      // Extract metrics from raid memories
+      const metricsMemory = raidMemories.find(
+        (m) => (m.content as any)?.type === "raid_metrics",
+      );
+      const metrics = metricsMemory ? (metricsMemory.content as any) : {};
+
+      logger.debug(
+        `[DATABASE_MEMORY_SERVICE] Retrieved raid context for ${raidId}: ` +
+          `${raidMemories.length} memories, ${participants.length} participants`,
+      );
+
+      return {
+        raidMemories,
+        participants,
+        metrics,
+      };
+    } catch (error) {
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to get raid context:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return {
+        raidMemories: [],
+        participants: [],
+        metrics: {},
+      };
+    }
+  }
+
+  /**
+   * Track raid progress using ElizaOS memory patterns
+   */
+  async trackRaidProgress(
+    raidId: string,
+    roomId: string,
+    progressData: {
+      status: string;
+      participantCount: number;
+      actionsCompleted: number;
+      completionRate: number;
+      timestamp: Date;
+    },
+  ): Promise<boolean> {
+    try {
+      const progressMemory: Memory = {
+        id: crypto.randomUUID() as any,
+        agentId: this.agentId,
+        entityId: this.agentId,
+        roomId: roomId as any,
+        content: {
+          text: `Raid ${raidId} progress: ${Math.round(progressData.completionRate * 100)}% complete`,
+          type: "raid_progress",
+          raidId,
+          status: progressData.status,
+          participantCount: progressData.participantCount,
+          actionsCompleted: progressData.actionsCompleted,
+          completionRate: progressData.completionRate,
+          timestamp: progressData.timestamp.toISOString(),
+        },
+        embedding: undefined,
+        createdAt: Date.now(),
+      };
+
+      await this.runtime.createMemory(progressMemory, "memories", false);
+
+      logger.debug(
+        `[DATABASE_MEMORY_SERVICE] Tracked raid progress: ${raidId} - ${Math.round(progressData.completionRate * 100)}% complete`,
+      );
+
+      return true;
+    } catch (error) {
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to track raid progress:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Get participant lookup using ElizaOS semantic search
+   */
+  async lookupRaidParticipant(
+    telegramUsername: string,
+    raidId?: string,
+  ): Promise<any[]> {
+    try {
+      const searchQuery = raidId
+        ? `${telegramUsername} raid_participant ${raidId}`
+        : `${telegramUsername} raid_participant`;
+
+      const embedding = await this.runtime.useModel(ModelType.TEXT_EMBEDDING, {
+        text: searchQuery,
+      });
+      const participantMemories = await this.runtime.searchMemories({
+        embedding,
+        count: 10,
+        match_threshold: 0.7,
+        tableName: "memories",
+      });
+
+      const participants = participantMemories
+        .filter((m) => (m.content as any)?.type === "raid_participant")
+        .map((m) => {
+          const content = m.content as any;
+          return {
+            raidId: content.raidId,
+            telegramId: content.telegramId,
+            telegramUsername: content.telegramUsername,
+            twitterUsername: content.twitterUsername,
+            actionsCompleted: content.actionsCompleted || 0,
+            pointsEarned: content.pointsEarned || 0,
+            verified: content.verified || false,
+            joinedAt: content.joinedAt,
+            memoryId: m.id,
+          };
+        });
+
+      logger.debug(
+        `[DATABASE_MEMORY_SERVICE] Found ${participants.length} participant records for ${telegramUsername}`,
+      );
+
+      return participants;
+    } catch (error) {
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to lookup raid participant:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return [];
+    }
+  }
+
+  /**
+   * Store raid metrics using ElizaOS memory system
+   */
+  async storeRaidAnalytics(
+    roomId: string,
+    raidId: string,
+    analytics: {
+      totalParticipants: number;
+      verifiedParticipants: number;
+      completionRate: number;
+      engagementScore: number;
+      avgResponseTime: number;
+      successRate: number;
+      twitterMetrics?: any;
+    },
+  ): Promise<boolean> {
+    try {
+      const analyticsMemory: Memory = {
+        id: crypto.randomUUID() as any,
+        agentId: this.agentId,
+        entityId: this.agentId,
+        roomId: roomId as any,
+        content: {
+          text: `Raid ${raidId} analytics: ${analytics.totalParticipants} participants, ${Math.round(analytics.successRate * 100)}% success`,
+          type: "raid_analytics",
+          raidId,
+          totalParticipants: analytics.totalParticipants,
+          verifiedParticipants: analytics.verifiedParticipants,
+          completionRate: analytics.completionRate,
+          engagementScore: analytics.engagementScore,
+          avgResponseTime: analytics.avgResponseTime,
+          successRate: analytics.successRate,
+          twitterMetrics: analytics.twitterMetrics,
+          timestamp: new Date().toISOString(),
+        },
+        embedding: undefined,
+        createdAt: Date.now(),
+      };
+
+      await this.runtime.createMemory(analyticsMemory, "memories", false);
+
+      logger.info(
+        `[DATABASE_MEMORY_SERVICE] Stored raid analytics: ${raidId} - ${Math.round(analytics.successRate * 100)}% success`,
+      );
+
+      return true;
+    } catch (error) {
+      logger.error(
+        "[DATABASE_MEMORY_SERVICE] Failed to store raid analytics:",
+        error instanceof Error ? error.message : String(error),
+      );
+      return false;
     }
   }
 

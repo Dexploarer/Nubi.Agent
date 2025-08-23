@@ -2,9 +2,50 @@
   "mcpServers": {
     "xmcpx": {
       "command": "npx",
-      "args": ["-y", "@promptordie/xmcpx@1.0.2"],
+      "args": ["-y", "@promptordie/xmcpx@1.2.0"],
       "env": {
-        "NODE_ENV": "production"
+        "TWITTER_USERNAME": "$TWITTER_USERNAME",
+        "TWITTER_PASSWORD": "$TWITTER_PASSWORD", 
+        "TWITTER_EMAIL": "$TWITTER_EMAIL",
+        "DATABASE_URL": "$POSTGRES_URL",
+        "GOOGLE_GENERATIVE_AI_API_KEY": "$GOOGLE_GENERATIVE_AI_API_KEY",
+        "PORT": "3011",
+        "NODE_ENV": "production",
+        "DISABLE_HTTP_SERVER": "false",
+        "LOG_LEVEL": "info"
+      }
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--access-token", "$SUPABASE_ACCESS_TOKEN"],
+      "env": {
+        "SUPABASE_URL": "$SUPABASE_URL",
+        "SUPABASE_ANON_KEY": "$SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY": "$SUPABASE_SERVICE_ROLE_KEY"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem@latest", "/root/dex/anubis"],
+      "env": {}
+    },
+    "github": {
+      "command": "npx", 
+      "args": ["-y", "@modelcontextprotocol/server-github@latest"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "$GITHUB_TOKEN"
+      }
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer@latest"],
+      "env": {}
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres@latest"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "$POSTGRES_URL"
       }
     }
   }

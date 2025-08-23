@@ -503,7 +503,9 @@ export class SocketIOServerService extends Service {
         }
 
         // Clean up active sessions for this socket
-        for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
+        for (const [sessionId, session] of Array.from(
+          this.activeSessions.entries(),
+        )) {
           // Remove sessions that were associated with this socket
           // Note: In a real implementation, you'd track socket.id to session mapping
           if (session.lastActivity < Date.now() - 300000) {
@@ -688,7 +690,35 @@ export class SocketIOServerService extends Service {
               keywords: [],
               sentiment: "neutral" as const,
               urgency: "low" as const,
-              context: ""
+              context: "",
+              timeContext: {
+                hour: new Date().getHours(),
+                period: this.getPeriodFromHour(new Date().getHours()),
+                dayOfWeek: new Date().toLocaleDateString("en", {
+                  weekday: "long",
+                }),
+                isWeekend: [0, 6].includes(new Date().getDay()),
+              },
+              conversationHistory: {
+                recentSentiment: "neutral" as const,
+                topicContinuity: [],
+                messageCount: 0,
+              },
+              userPatterns: {
+                isFrequentRaider: false,
+                isTechnicalUser: false,
+                isMemeEnthusiast: false,
+                isNewcomer: false,
+                communicationStyle: "casual" as const,
+              },
+              communityContext: {
+                activityLevel: "medium" as const,
+                ongoingRaids: 0,
+                communityMood: "neutral" as const,
+              },
+              platformSpecific: {
+                platform: "websocket",
+              },
             },
           };
 
@@ -995,6 +1025,32 @@ export class SocketIOServerService extends Service {
           sentiment: "neutral",
           urgency: "low",
           context: message.message.slice(0, 100),
+          timeContext: {
+            hour: new Date().getHours(),
+            period: this.getPeriodFromHour(new Date().getHours()),
+            dayOfWeek: new Date().toLocaleDateString("en", { weekday: "long" }),
+            isWeekend: [0, 6].includes(new Date().getDay()),
+          },
+          conversationHistory: {
+            recentSentiment: "neutral",
+            topicContinuity: [],
+            messageCount: 0,
+          },
+          userPatterns: {
+            isFrequentRaider: false,
+            isTechnicalUser: false,
+            isMemeEnthusiast: false,
+            isNewcomer: false,
+            communicationStyle: "casual",
+          },
+          communityContext: {
+            activityLevel: "medium",
+            ongoingRaids: 0,
+            communityMood: "neutral",
+          },
+          platformSpecific: {
+            platform: "websocket",
+          },
         },
       };
     }
@@ -1263,7 +1319,9 @@ export class SocketIOServerService extends Service {
       process.env.SOCKET_SESSION_TIMEOUT || "1800000",
     ); // 30 minutes default
 
-    for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
+    for (const [sessionId, session] of Array.from(
+      this.activeSessions.entries(),
+    )) {
       if (now - session.lastActivity > sessionTimeout) {
         this.activeSessions.delete(sessionId);
 
@@ -1356,5 +1414,17 @@ export class SocketIOServerService extends Service {
 
   getRoomState(roomId: string) {
     return this.worldState.rooms[roomId] || null;
+  }
+
+  /**
+   * Get time period from hour
+   */
+  private getPeriodFromHour(
+    hour: number,
+  ): "morning" | "afternoon" | "evening" | "night" {
+    if (hour >= 6 && hour < 12) return "morning";
+    if (hour >= 12 && hour < 17) return "afternoon";
+    if (hour >= 17 && hour < 22) return "evening";
+    return "night";
   }
 }
