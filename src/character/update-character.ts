@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from "fs";
+import { logger } from "@elizaos/core";
 
 const characterPath = "src/nubi-character.ts";
 let content = readFileSync(characterPath, "utf-8");
@@ -36,4 +37,4 @@ if (!content.includes("telegramPlugin")) {
 }
 
 writeFileSync(characterPath, content);
-console.log("✅ Updated nubi-character.ts with Telegram plugin");
+logger.info("✅ Updated nubi-character.ts with Telegram plugin");

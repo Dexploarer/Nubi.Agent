@@ -36,6 +36,7 @@ export class TwitterMonitorService extends Service {
   private streamConnection: any = null;
   private isStreaming: boolean = false;
   private eventListeners: Map<TwitterMonitorEventType, Function[]> = new Map();
+  private periodicTimers: NodeJS.Timeout[] = [];
 
   // Analytics and metrics
   private metrics = {
@@ -302,11 +303,22 @@ export class TwitterMonitorService extends Service {
         const lines = chunk.split("\n").filter((line) => line.trim());
 
         for (const line of lines) {
+          // Skip empty lines and obvious non-JSON lines to avoid unnecessary parsing attempts
+          if (!line.trim() || (!line.startsWith('{') && !line.startsWith('['))) {
+            continue;
+          }
+          
           try {
             const data = JSON.parse(line);
             await this.handleStreamEvent(data);
           } catch (parseError) {
-            // Ignore malformed JSON (keep-alive heartbeats, etc.)
+            // Log unexpected JSON parsing errors for debugging while ignoring known non-JSON lines
+            if (line.length > 10) { // Only log substantial lines that should be JSON
+              logger.debug(
+                "[TWITTER_MONITOR] Unexpected JSON parsing error for line:",
+                line.substring(0, 100) + (line.length > 100 ? "..." : "")
+              );
+            }
             continue;
           }
         }
@@ -591,7 +603,7 @@ export class TwitterMonitorService extends Service {
    */
   private startPeriodicTasks(): void {
     // Check monitored users every 15 minutes
-    setInterval(
+    const userCheckTimer = setInterval(
       async () => {
         if (this.config.monitoredUsers.length > 0) {
           await this.checkMonitoredUsers();
@@ -601,7 +613,7 @@ export class TwitterMonitorService extends Service {
     );
 
     // Clean up old cache entries every hour
-    setInterval(
+    const cacheCleanupTimer = setInterval(
       () => {
         // LRU cache handles this automatically, but we can trigger manual cleanup
         this.cache.clear();
@@ -610,12 +622,15 @@ export class TwitterMonitorService extends Service {
     );
 
     // Reset rate limit counters every 15 minutes
-    setInterval(
+    const rateLimitResetTimer = setInterval(
       () => {
         this.rateLimiter.clear();
       },
       15 * 60 * 1000,
     );
+
+    // Store timer references for cleanup
+    this.periodicTimers.push(userCheckTimer, cacheCleanupTimer, rateLimitResetTimer);
   }
 
   /**
@@ -1173,6 +1188,10 @@ export class TwitterMonitorService extends Service {
       this.streamConnection.disconnect();
       this.isStreaming = false;
     }
+
+    // Clear all periodic timers to prevent memory leaks
+    this.periodicTimers.forEach(timer => clearInterval(timer));
+    this.periodicTimers = [];
 
     // Clear rate limiter
     this.rateLimiter.clear();
