@@ -102,9 +102,10 @@ export const projectAgent: ProjectAgent = {
     await app.initialize();
     await app.start();
   },
-  // Plugins are now managed through character.plugins array for better ElizaOS compliance
+  // Load NUBI core plugin and analytics
   plugins: [
-    clickhouseAnalyticsPlugin, // Analytics and observability
+    nubiPlugin,
+    clickhouseAnalyticsPlugin,
   ],
   //   tests: [ProjectStarterTestSuite],
 };
