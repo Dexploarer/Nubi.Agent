@@ -420,25 +420,20 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
     "genuine helper who remembers your name",
   ],
 
-  // Essential plugins - SQL plugin loaded first for database priority
+  // Essential plugins - leveraging ElizaOS plugin system
   plugins: [
-    "@elizaos/plugin-sql", // Load SQL plugin FIRST to ensure PostgreSQL connection
-    "@elizaos/plugin-bootstrap",
-    "@elizaos/plugin-knowledge", // Enable knowledge ingestion/retrieval (RAG)
-    "@elizaos/plugin-mcp", // Enable MCP for external tool capabilities
-    "sessions", // NUBI Sessions API plugin for advanced session management
-    "twitter-monitor", // Read-only Twitter monitoring plugin
-    ...(process.env.OPENAI_API_KEY?.trim() ? ["@elizaos/plugin-openai"] : []),
-    ...(process.env.TWITTER_USERNAME?.trim() &&
-    process.env.ENABLE_TWITTER_BOT === "true"
-      ? ["@elizaos/plugin-twitter"]
-      : []),
-    ...(process.env.DISCORD_API_TOKEN?.trim()
-      ? ["@elizaos/plugin-discord"]
-      : []),
-    ...(process.env.TELEGRAM_BOT_TOKEN?.trim()
-      ? ["@elizaos/plugin-telegram"]
-      : []),
+    "@elizaos/plugin-sql", // Database connectivity
+    "@elizaos/plugin-bootstrap", // Core functionality
+    "@elizaos/plugin-knowledge", // RAG capabilities
+    "@elizaos/plugin-mcp", // External tool integration
+    "@elizaos/plugin-telegram", // Telegram integration
+    "@elizaos/plugin-openai", // AI model integration
+    "@elizaos/plugin-discord", // Discord integration (if configured)
+    "@elizaos/plugin-twitter", // Twitter integration (if configured)
+    // Custom NUBI plugins
+    "sessions", // Advanced session management
+    "twitter-monitor", // Twitter monitoring
+    "clickhouse-analytics", // Analytics and observability
   ],
 
   // Settings for natural responses
