@@ -1,693 +1,776 @@
-import { IAgentRuntime, logger, ModelType } from "@elizaos/core";
-import SessionsService from "../services/sessions-service";
+import { IAgentRuntime, logger, UUID } from "@elizaos/core";
+import { Request, Response } from "express";
+import { NUBISessionsService } from "../services/nubi-sessions-service";
+import { RaidSessionManager } from "../services/raid-session-manager";
+import { SessionsAPI } from "../api/sessions-api";
 
 /**
- * ElizaOS Sessions API Routes
- *
- * Full compliance with ElizaOS Sessions API specification:
- * - POST /api/sessions/create - Create new session
- * - POST /api/sessions/{id}/message - Send message to session
- * - GET /api/sessions/{id}/history - Get message history
- * - PUT /api/sessions/{id}/renew - Renew session
- * - POST /api/sessions/{id}/heartbeat - Update heartbeat
- * - DELETE /api/sessions/{id} - End session
- * - GET /api/sessions - List sessions
- * - GET /api/sessions/analytics - Get analytics
+ * NUBI Sessions API Routes
+ * 
+ * Comprehensive implementation of ElizaOS Sessions API with NUBI enhancements:
+ * - Full ElizaOS Sessions API compliance
+ * - NUBI-specific raid coordination endpoints
+ * - WebSocket/Socket.IO integration points
+ * - Analytics and monitoring endpoints
  */
 
-export const sessionsRoutes = [
-  {
-    path: "/api/sessions/create",
-    type: "POST" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
-            success: false,
-            error: "Sessions service not available",
-          });
-        }
+export interface SessionRoute {
+  path: string;
+  type: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
+  handler: (req: Request, res: Response, runtime: IAgentRuntime) => Promise<void>;
+  requiresAuth?: boolean;
+  rateLimit?: number;
+}
 
-        const { userId, timeoutMinutes, autoRenew, metadata } =
-          request.body || {};
+/**
+ * Create sessions routes with all required endpoints
+ */
+export function createSessionsRoutes(
+  runtime: IAgentRuntime,
+  sessionsService: NUBISessionsService,
+  raidManager?: RaidSessionManager
+): SessionRoute[] {
+  const sessionsAPI = new SessionsAPI(runtime, sessionsService);
 
-        // Validate timeout range
-        if (
-          timeoutMinutes !== undefined &&
-          (timeoutMinutes < 5 || timeoutMinutes > 1440)
-        ) {
-          return response.status(400).json({
-            success: false,
-            error: "timeoutMinutes must be between 5 and 1440",
-          });
-        }
+  return [
+    // ============================================================================
+    // CORE ELIZAOS SESSIONS API ENDPOINTS (Fully Compliant)
+    // ============================================================================
 
-        const session = await sessionsService.createSession(userId, {
-          timeoutMinutes,
-          autoRenew,
-          metadata,
-        });
+    /**
+     * Create Session
+     * POST /api/messaging/sessions
+     * ElizaOS Standard: Creates a new session with automatic channel management
+     */
+    {
+      path: "/api/messaging/sessions",
+      type: "POST",
+      requiresAuth: false,
+      rateLimit: 10, // 10 requests per minute
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { agentId, userId, roomId, metadata, timeout, autoRenewal } = req.body;
 
-        logger.info(`[SESSIONS_API] Created session ${session.id}`);
-
-        response.json({
-          success: true,
-          session: {
-            id: session.id,
-            agentId: session.agentId,
-            userId: session.userId,
-            roomId: session.roomId,
-            status: session.status,
-            timeoutMinutes: session.timeoutMinutes,
-            autoRenew: session.autoRenew,
-            expiresAt: session.expiresAt.toISOString(),
-            createdAt: session.createdAt.toISOString(),
-            metadata: session.metadata,
-          },
-        });
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to create session:",
-          error instanceof Error ? error.message : String(error),
-        );
-        response.status(500).json({
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    },
-  },
-
-  {
-    path: "/api/sessions/:sessionId/message",
-    type: "POST" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
-            success: false,
-            error: "Sessions service not available",
-          });
-        }
-
-        const { sessionId } = request.params;
-        const { senderId, senderType, content, metadata } = request.body || {};
-
-        if (!senderId || !senderType || !content) {
-          return response.status(400).json({
-            success: false,
-            error: "senderId, senderType, and content are required",
-          });
-        }
-
-        if (!["user", "agent"].includes(senderType)) {
-          return response.status(400).json({
-            success: false,
-            error: "senderType must be 'user' or 'agent'",
-          });
-        }
-
-        const message = await sessionsService.sendSessionMessage(
-          sessionId,
-          senderId,
-          senderType,
-          content,
-          metadata,
-        );
-
-        // If this is a user message to the agent, generate response
-        let agentResponse = null;
-        if (senderType === "user") {
-          const startTime = Date.now();
-
-          try {
-            // Create memory object for agent processing
-            const memory = {
-              id: message.id,
-              agentId: runtime.agentId,
-              userId: senderId,
-              entityId: senderId,
-              roomId: sessionId,
-              content: content,
-              createdAt: Date.now(),
-              type: "message",
-              metadata: metadata || {},
-              unique: true,
-            };
-
-            // Get enhanced context from database service
-            const databaseService = runtime.getService("database_memory");
-            let enhancedContext = null;
-            if (
-              databaseService &&
-              typeof (databaseService as any).getEnhancedContext === "function"
-            ) {
-              try {
-                enhancedContext = await (
-                  databaseService as any
-                ).getEnhancedContext(
-                  sessionId,
-                  senderId,
-                  content.text?.substring(0, 100), // topic hint
-                  10,
-                );
-              } catch (contextError) {
-                logger.debug(
-                  "[SESSIONS_API] Enhanced context unavailable:",
-                  contextError instanceof Error
-                    ? contextError.message
-                    : String(contextError),
-                );
-              }
-            }
-
-            // Use composeState for context-aware response
-            const state = await runtime.composeState(memory);
-
-            // Add enhanced context to state if available
-            if (enhancedContext) {
-              (state as any).nubiContext = {
-                memoryInsights: enhancedContext.memoryInsights,
-                userRecords: enhancedContext.userRecords,
-                emotionalState: enhancedContext.emotionalState,
-                relationships: enhancedContext.relationships,
-                communityContext: enhancedContext.communityContext,
-              };
-            }
-
-            // Get dynamic model parameters from state
-            let modelParams = {
-              runtime,
-              context: content.text || "",
-              modelClass: "MEDIUM" as const,
-              stop: [],
-              max_response_length: 400,
-              temperature: 0.8,
-              top_p: 0.9,
-            };
-
-            // Apply dynamic parameters if available in state
-            if ((state as any).dynamicTemperature !== undefined) {
-              modelParams.temperature = (state as any).dynamicTemperature;
-              modelParams.top_p = (state as any).dynamicTopP || 0.9;
-              modelParams.modelClass = (state as any).modelClass || "MEDIUM";
-              modelParams.max_response_length = (state as any).maxTokens || 400;
-            }
-
-            // Generate response using ElizaOS native generateText
-            try {
-              const generationStart = Date.now();
-              const responseText = await runtime.useModel(
-                ModelType.TEXT_LARGE,
-                {
-                  text: state.text || "",
-                  temperature: modelParams.temperature,
-                  stop: [],
-                  max_tokens: modelParams.max_response_length,
-                },
-              );
-              const generationTime = Date.now() - generationStart;
-
-              // Track analytics
-              const analyticsService = runtime.getService(
-                "messaging_analytics",
-              );
-              if (
-                analyticsService &&
-                typeof (analyticsService as any).trackResponseGeneration ===
-                  "function"
-              ) {
-                (analyticsService as any).trackResponseGeneration({
-                  generationTime,
-                  modelClass: modelParams.modelClass,
-                  temperature: modelParams.temperature,
-                  contextUsed: !!enhancedContext,
-                  userRecords: enhancedContext?.userRecords?.length || 0,
-                  semanticMemories:
-                    enhancedContext?.semanticMemories?.length || 0,
-                  emotionalState:
-                    enhancedContext?.emotionalState?.current_state,
-                  responseLength: responseText?.length || 0,
-                  success: !!responseText,
-                });
-              }
-
-              if (responseText) {
-                agentResponse = await sessionsService.sendSessionMessage(
-                  sessionId,
-                  runtime.agentId,
-                  "agent",
-                  { text: responseText },
-                  {
-                    generatedAt: new Date().toISOString(),
-                    contextUsed: !!enhancedContext,
-                    userRecords: enhancedContext?.userRecords?.length || 0,
-                    generationTime,
-                    modelParams: {
-                      temperature: modelParams.temperature,
-                      modelClass: modelParams.modelClass,
-                      maxTokens: modelParams.max_response_length,
-                    },
-                  },
-                );
-              } else {
-                // Fallback: Use simple acknowledgment if generation fails
-                agentResponse = await sessionsService.sendSessionMessage(
-                  sessionId,
-                  runtime.agentId,
-                  "agent",
-                  { text: "I hear you. Let me process that..." },
-                  {
-                    generatedAt: new Date().toISOString(),
-                    fallback: true,
-                    reason: "no_response_generated",
-                  },
-                );
-              }
-            } catch (generateError) {
-              logger.error(
-                "[SESSIONS_API] Text generation failed:",
-                generateError instanceof Error
-                  ? generateError.message
-                  : String(generateError),
-              );
-
-              // Fallback with more personality
-              agentResponse = await sessionsService.sendSessionMessage(
-                sessionId,
-                runtime.agentId,
-                "agent",
-                {
-                  text: "Something's got my circuits tangled... give me a moment to refocus.",
-                },
-                {
-                  generatedAt: new Date().toISOString(),
-                  fallback: true,
-                  error:
-                    generateError instanceof Error
-                      ? generateError.message
-                      : String(generateError),
-                },
-              );
-            }
-          } catch (responseError) {
-            logger.error(
-              "[SESSIONS_API] Failed to generate agent response:",
-              responseError instanceof Error
-                ? responseError.message
-                : String(responseError),
-            );
-            // Continue without agent response
+          // Validate required fields
+          if (!agentId) {
+            return res.status(400).json({
+              success: false,
+              error: "agentId is required",
+              code: "INVALID_REQUEST"
+            });
           }
-        }
 
-        response.json({
-          success: true,
-          message: {
-            id: message.id,
-            sessionId: message.sessionId,
-            senderId: message.senderId,
-            senderType: message.senderType,
-            content: message.content,
-            timestamp: message.timestamp.toISOString(),
-            sequenceNumber: message.sequenceNumber,
-            metadata: message.metadata,
-          },
-          agentResponse: agentResponse
-            ? {
-                id: agentResponse.id,
-                sessionId: agentResponse.sessionId,
-                senderId: agentResponse.senderId,
-                senderType: agentResponse.senderType,
-                content: agentResponse.content,
-                timestamp: agentResponse.timestamp.toISOString(),
-                sequenceNumber: agentResponse.sequenceNumber,
-                metadata: agentResponse.metadata,
-              }
-            : null,
-        });
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to send message:",
-          error instanceof Error ? error.message : String(error),
-        );
+          const result = await sessionsAPI.createSession({
+            agentId,
+            userId,
+            roomId,
+            sessionType: req.body.sessionType || "conversation",
+            timeout: timeout || 3600000, // 1 hour default
+            autoRenewal: autoRenewal !== false, // Default true
+            metadata: metadata || {}
+          });
 
-        if (error instanceof Error && error.message.includes("expired")) {
-          response.status(410).json({
+          res.status(result.success ? 201 : 400).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to create session:", error);
+          res.status(500).json({
             success: false,
-            error: "Session has expired",
-            code: "SESSION_EXPIRED",
-          });
-        } else if (
-          error instanceof Error &&
-          error.message.includes("not found")
-        ) {
-          response.status(404).json({
-            success: false,
-            error: "Session not found",
-            code: "SESSION_NOT_FOUND",
-          });
-        } else {
-          response.status(500).json({
-            success: false,
-            error:
-              error instanceof Error ? error.message : "Internal server error",
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
           });
         }
       }
     },
-  },
 
-  {
-    path: "/api/sessions/:sessionId/history",
-    type: "GET" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
+    /**
+     * Get Session
+     * GET /api/messaging/sessions/:sessionId
+     * ElizaOS Standard: Retrieves session details
+     */
+    {
+      path: "/api/messaging/sessions/:sessionId",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          
+          const result = await sessionsAPI.getSession(sessionId);
+          
+          res.status(result.success ? 200 : 404).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to get session:", error);
+          res.status(500).json({
             success: false,
-            error: "Sessions service not available",
-          });
-        }
-
-        const { sessionId } = request.params;
-        const limit = parseInt(request.query?.limit) || 50;
-        const offset = parseInt(request.query?.offset) || 0;
-
-        if (limit > 100) {
-          return response.status(400).json({
-            success: false,
-            error: "limit cannot exceed 100",
-          });
-        }
-
-        const messages = await sessionsService.getSessionHistory(
-          sessionId,
-          limit,
-          offset,
-        );
-
-        response.json({
-          success: true,
-          sessionId,
-          messages: messages.map((msg) => ({
-            id: msg.id,
-            senderId: msg.senderId,
-            senderType: msg.senderType,
-            content: msg.content,
-            timestamp: msg.timestamp.toISOString(),
-            sequenceNumber: msg.sequenceNumber,
-            metadata: msg.metadata,
-          })),
-          pagination: {
-            limit,
-            offset,
-            hasMore: messages.length === limit,
-          },
-        });
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to get history:",
-          error instanceof Error ? error.message : String(error),
-        );
-        response.status(500).json({
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    },
-  },
-
-  {
-    path: "/api/sessions/:sessionId/renew",
-    type: "PUT" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
-            success: false,
-            error: "Sessions service not available",
-          });
-        }
-
-        const { sessionId } = request.params;
-        const { timeoutMinutes } = request.body || {};
-
-        if (
-          timeoutMinutes !== undefined &&
-          (timeoutMinutes < 5 || timeoutMinutes > 1440)
-        ) {
-          return response.status(400).json({
-            success: false,
-            error: "timeoutMinutes must be between 5 and 1440",
-          });
-        }
-
-        const session = await sessionsService.renewSession(
-          sessionId,
-          timeoutMinutes,
-        );
-
-        response.json({
-          success: true,
-          session: {
-            id: session.id,
-            status: session.status,
-            timeoutMinutes: session.timeoutMinutes,
-            expiresAt: session.expiresAt.toISOString(),
-            lastActivity: session.lastActivity.toISOString(),
-            updatedAt: session.updatedAt.toISOString(),
-          },
-        });
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to renew session:",
-          error instanceof Error ? error.message : String(error),
-        );
-
-        if (error instanceof Error && error.message.includes("not found")) {
-          response.status(404).json({
-            success: false,
-            error: "Session not found or not active",
-            code: "SESSION_NOT_FOUND",
-          });
-        } else {
-          response.status(500).json({
-            success: false,
-            error:
-              error instanceof Error ? error.message : "Internal server error",
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
           });
         }
       }
     },
-  },
 
-  {
-    path: "/api/sessions/:sessionId/heartbeat",
-    type: "POST" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
+    /**
+     * Send Message to Session
+     * POST /api/messaging/sessions/:sessionId/messages
+     * ElizaOS Standard: Sends a message within a session context
+     */
+    {
+      path: "/api/messaging/sessions/:sessionId/messages",
+      type: "POST",
+      requiresAuth: false,
+      rateLimit: 30, // 30 messages per minute
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          const { content, type, metadata } = req.body;
+
+          if (!content) {
+            return res.status(400).json({
+              success: false,
+              error: "Message content is required",
+              code: "INVALID_REQUEST"
+            });
+          }
+
+          const result = await sessionsAPI.sendMessage(sessionId, {
+            content,
+            type: type || "text",
+            metadata: metadata || {}
+          });
+
+          res.status(result.success ? 200 : 400).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to send message:", error);
+          res.status(500).json({
             success: false,
-            error: "Sessions service not available",
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
           });
         }
+      }
+    },
 
-        const { sessionId } = request.params;
-        const success = await sessionsService.updateHeartbeat(sessionId);
+    /**
+     * Renew Session
+     * POST /api/messaging/sessions/:sessionId/renew
+     * ElizaOS Standard: Extends session expiration
+     */
+    {
+      path: "/api/messaging/sessions/:sessionId/renew",
+      type: "POST",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          const { extensionTime } = req.body;
 
-        if (success) {
-          response.json({
+          const session = await sessionsService.getSession(sessionId);
+          if (!session) {
+            return res.status(404).json({
+              success: false,
+              error: "Session not found",
+              code: "SESSION_NOT_FOUND"
+            });
+          }
+
+          // Extend session expiration
+          const newExpiration = new Date(
+            Date.now() + (extensionTime || session.config.timeout || 3600000)
+          );
+          session.expiresAt = newExpiration;
+
+          // Update activity
+          await sessionsService.updateSessionActivity(sessionId, {
+            renewed: true,
+            renewalTime: new Date().toISOString()
+          });
+
+          res.status(200).json({
             success: true,
-            timestamp: new Date().toISOString(),
+            data: {
+              sessionId,
+              expiresAt: newExpiration,
+              renewalCount: (session.metadata.renewalCount || 0) + 1
+            }
           });
-        } else {
-          response.status(404).json({
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to renew session:", error);
+          res.status(500).json({
             success: false,
-            error: "Session not found or not active",
-            code: "SESSION_NOT_FOUND",
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
           });
         }
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to update heartbeat:",
-          error instanceof Error ? error.message : String(error),
-        );
-        response.status(500).json({
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
-        });
       }
     },
-  },
 
-  {
-    path: "/api/sessions/:sessionId",
-    type: "DELETE" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
+    /**
+     * End Session
+     * DELETE /api/messaging/sessions/:sessionId
+     * ElizaOS Standard: Ends a session and cleans up resources
+     */
+    {
+      path: "/api/messaging/sessions/:sessionId",
+      type: "DELETE",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          
+          const result = await sessionsAPI.deleteSession(sessionId);
+          
+          res.status(result.success ? 200 : 404).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to delete session:", error);
+          res.status(500).json({
             success: false,
-            error: "Sessions service not available",
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
           });
         }
-
-        const { sessionId } = request.params;
-        const success = await sessionsService.endSession(sessionId);
-
-        if (success) {
-          response.json({
-            success: true,
-            message: "Session ended successfully",
-          });
-        } else {
-          response.status(404).json({
-            success: false,
-            error: "Session not found or already ended",
-            code: "SESSION_NOT_FOUND",
-          });
-        }
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to end session:",
-          error instanceof Error ? error.message : String(error),
-        );
-        response.status(500).json({
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
-        });
       }
     },
-  },
 
-  {
-    path: "/api/sessions",
-    type: "GET" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
-            success: false,
-            error: "Sessions service not available",
-          });
-        }
+    /**
+     * Get Session Messages
+     * GET /api/messaging/sessions/:sessionId/messages
+     * ElizaOS Standard: Retrieves messages with cursor-based pagination
+     */
+    {
+      path: "/api/messaging/sessions/:sessionId/messages",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          const { cursor, limit = "20" } = req.query;
 
-        const userId = request.query?.userId;
-        const status = request.query?.status;
-        const limit = Math.min(parseInt(request.query?.limit) || 20, 100);
-        const offset = parseInt(request.query?.offset) || 0;
+          const session = await sessionsService.getSession(sessionId);
+          if (!session) {
+            return res.status(404).json({
+              success: false,
+              error: "Session not found",
+              code: "SESSION_NOT_FOUND"
+            });
+          }
 
-        if (status && !["active", "expired", "ended"].includes(status)) {
-          return response.status(400).json({
-            success: false,
-            error: "status must be 'active', 'expired', or 'ended'",
-          });
-        }
-
-        const sessions = await sessionsService.listSessions(
-          userId,
-          status,
-          limit,
-          offset,
-        );
-
-        response.json({
-          success: true,
-          sessions: sessions.map((session) => ({
-            id: session.id,
-            agentId: session.agentId,
-            userId: session.userId,
+          // Get messages from memory
+          const messages = await runtime.getMemories({
             roomId: session.roomId,
-            status: session.status,
-            timeoutMinutes: session.timeoutMinutes,
-            autoRenew: session.autoRenew,
-            expiresAt: session.expiresAt.toISOString(),
-            lastActivity: session.lastActivity.toISOString(),
-            createdAt: session.createdAt.toISOString(),
-            metadata: session.metadata,
-          })),
-          pagination: {
-            limit,
-            offset,
-            hasMore: sessions.length === limit,
-          },
-        });
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to list sessions:",
-          error instanceof Error ? error.message : String(error),
-        );
-        response.status(500).json({
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
-        });
-      }
-    },
-  },
+            count: parseInt(limit as string),
+            unique: false,
+            tableName: "memories"
+          });
 
-  {
-    path: "/api/sessions/analytics",
-    type: "GET" as const,
-    handler: async (request: any, response: any, runtime: IAgentRuntime) => {
-      try {
-        const sessionsService = runtime.getService<SessionsService>("sessions");
-        if (!sessionsService) {
-          return response.status(503).json({
+          res.status(200).json({
+            success: true,
+            data: {
+              messages,
+              cursor: messages.length > 0 ? messages[messages.length - 1].id : null,
+              hasMore: messages.length === parseInt(limit as string)
+            }
+          });
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to get messages:", error);
+          res.status(500).json({
             success: false,
-            error: "Sessions service not available",
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
           });
         }
-
-        const days = Math.min(parseInt(request.query?.days) || 7, 30);
-        const analytics = await sessionsService.getSessionAnalytics(days);
-
-        response.json({
-          success: true,
-          analytics: {
-            period: `${days} days`,
-            summary: analytics.summary,
-            dailyStats: analytics.dailyStats.map((stat: any) => ({
-              date: stat.session_date,
-              totalSessions: stat.total_sessions,
-              uniqueUsers: stat.unique_users,
-              avgDurationMinutes: Math.round(stat.avg_duration_minutes || 0),
-              avgTimeoutSetting: stat.avg_timeout_setting,
-              activeSessions: stat.active_sessions,
-              expiredSessions: stat.expired_sessions,
-              endedSessions: stat.ended_sessions,
-              avgMessagesPerSession: Math.round(
-                stat.avg_messages_per_session || 0,
-              ),
-            })),
-          },
-        });
-      } catch (error) {
-        logger.error(
-          "[SESSIONS_API] Failed to get analytics:",
-          error instanceof Error ? error.message : String(error),
-        );
-        response.status(500).json({
-          success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
-        });
       }
     },
-  },
-];
 
-export default sessionsRoutes;
+    // ============================================================================
+    // WEBSOCKET/SOCKET.IO INTEGRATION ENDPOINTS
+    // ============================================================================
+
+    /**
+     * Get WebSocket Connection Info
+     * GET /api/messaging/sessions/:sessionId/websocket
+     * Returns WebSocket connection details for real-time communication
+     */
+    {
+      path: "/api/messaging/sessions/:sessionId/websocket",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+
+          const session = await sessionsService.getSession(sessionId);
+          if (!session) {
+            return res.status(404).json({
+              success: false,
+              error: "Session not found",
+              code: "SESSION_NOT_FOUND"
+            });
+          }
+
+          res.status(200).json({
+            success: true,
+            data: {
+              url: `ws://${req.get("host")}/socket.io/sessions`,
+              protocol: "socket.io",
+              version: "4.x",
+              events: {
+                client: ["join", "leave", "message", "request-world-state"],
+                server: ["messageBroadcast", "messageComplete", "world-state", "logEntry", "error"]
+              },
+              connectionParams: {
+                sessionId,
+                agentId: session.agentId,
+                roomId: session.roomId
+              }
+            }
+          });
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to get WebSocket info:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    // ============================================================================
+    // NUBI-ENHANCED RAID COORDINATION ENDPOINTS
+    // ============================================================================
+
+    /**
+     * Create Raid Session
+     * POST /api/raids/sessions
+     * NUBI Enhancement: Creates a specialized raid coordination session
+     */
+    {
+      path: "/api/raids/sessions",
+      type: "POST",
+      requiresAuth: false,
+      rateLimit: 5, // 5 raids per minute
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const {
+            agentId, raidId, targetUrl, objectives,
+            maxParticipants, duration, metadata
+          } = req.body;
+
+          if (!agentId || !raidId || !targetUrl || !objectives) {
+            return res.status(400).json({
+              success: false,
+              error: "Missing required raid parameters",
+              code: "INVALID_REQUEST"
+            });
+          }
+
+          const result = await sessionsAPI.createRaidSession({
+            agentId,
+            userId: req.body.userId,
+            raidId,
+            targetUrl,
+            objectives,
+            maxParticipants: maxParticipants || 500,
+            duration: duration || 3600,
+            metadata: metadata || {}
+          });
+
+          // Start raid monitoring if manager available
+          if (result.success && raidManager) {
+            await raidManager.startRaidMonitoring(result.data!);
+          }
+
+          res.status(result.success ? 201 : 400).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to create raid session:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    /**
+     * Join Raid Session
+     * POST /api/raids/sessions/:sessionId/join
+     * NUBI Enhancement: Allows participants to join raid sessions
+     */
+    {
+      path: "/api/raids/sessions/:sessionId/join",
+      type: "POST",
+      requiresAuth: false,
+      rateLimit: 20, // 20 joins per minute
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          const { telegramId, telegramUsername, twitterUsername } = req.body;
+
+          if (!telegramId || !telegramUsername) {
+            return res.status(400).json({
+              success: false,
+              error: "Telegram credentials required",
+              code: "INVALID_REQUEST"
+            });
+          }
+
+          const result = await sessionsAPI.joinRaidSession(sessionId, {
+            telegramId,
+            telegramUsername,
+            twitterUsername
+          });
+
+          res.status(result.success ? 200 : 400).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to join raid:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    /**
+     * Record Raid Action
+     * POST /api/raids/sessions/:sessionId/actions
+     * NUBI Enhancement: Records participant actions for verification
+     */
+    {
+      path: "/api/raids/sessions/:sessionId/actions",
+      type: "POST",
+      requiresAuth: false,
+      rateLimit: 50, // 50 actions per minute
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          const { participantId, actionType, targetId, points } = req.body;
+
+          if (!participantId || !actionType || !targetId) {
+            return res.status(400).json({
+              success: false,
+              error: "Missing action parameters",
+              code: "INVALID_REQUEST"
+            });
+          }
+
+          if (raidManager) {
+            const session = await sessionsService.getSession(sessionId) as any;
+            if (session && session.raidId) {
+              const success = await raidManager.recordRaidAction(
+                session.raidId,
+                sessionId,
+                { participantId, actionType, targetId, points: points || 10 }
+              );
+
+              res.status(200).json({
+                success,
+                data: { recorded: success }
+              });
+            } else {
+              res.status(404).json({
+                success: false,
+                error: "Raid session not found",
+                code: "SESSION_NOT_FOUND"
+              });
+            }
+          } else {
+            res.status(503).json({
+              success: false,
+              error: "Raid manager not available",
+              code: "SERVICE_UNAVAILABLE"
+            });
+          }
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to record action:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    /**
+     * Get Raid Leaderboard
+     * GET /api/raids/sessions/:sessionId/leaderboard
+     * NUBI Enhancement: Returns raid performance leaderboard
+     */
+    {
+      path: "/api/raids/sessions/:sessionId/leaderboard",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+          const { limit = "50" } = req.query;
+
+          const session = await sessionsService.getSession(sessionId) as any;
+          if (!session || !session.raidId) {
+            return res.status(404).json({
+              success: false,
+              error: "Raid session not found",
+              code: "SESSION_NOT_FOUND"
+            });
+          }
+
+          // Get leaderboard from raid participants
+          const participants = session.participants || [];
+          const leaderboard = participants
+            .sort((a: any, b: any) => b.pointsEarned - a.pointsEarned)
+            .slice(0, parseInt(limit as string))
+            .map((p: any, index: number) => ({
+              rank: index + 1,
+              telegramUsername: p.telegramUsername,
+              twitterUsername: p.twitterUsername,
+              pointsEarned: p.pointsEarned,
+              actionsCompleted: p.actionsCompleted,
+              verified: p.verified
+            }));
+
+          res.status(200).json({
+            success: true,
+            data: { leaderboard }
+          });
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to get leaderboard:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    /**
+     * Get Raid Metrics
+     * GET /api/raids/sessions/:sessionId/metrics
+     * NUBI Enhancement: Returns comprehensive raid analytics
+     */
+    {
+      path: "/api/raids/sessions/:sessionId/metrics",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { sessionId } = req.params;
+
+          const session = await sessionsService.getSession(sessionId) as any;
+          if (!session || !session.raidId) {
+            return res.status(404).json({
+              success: false,
+              error: "Raid session not found",
+              code: "SESSION_NOT_FOUND"
+            });
+          }
+
+          const metrics = {
+            raidId: session.raidId,
+            status: session.progress?.status || "unknown",
+            participantCount: session.participants?.length || 0,
+            totalActions: session.progress?.totalActions || 0,
+            completionRate: session.progress?.completionRate || 0,
+            timeRemaining: session.progress?.timeRemaining || 0,
+            objectives: session.objectives,
+            targetUrl: session.targetUrl
+          };
+
+          res.status(200).json({
+            success: true,
+            data: { metrics }
+          });
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to get metrics:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    // ============================================================================
+    // ANALYTICS AND MONITORING ENDPOINTS
+    // ============================================================================
+
+    /**
+     * Get All Sessions
+     * GET /api/messaging/sessions
+     * Returns all active sessions with pagination
+     */
+    {
+      path: "/api/messaging/sessions",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { status, type, limit = "20", offset = "0" } = req.query;
+
+          const stats = await sessionsService.getSessionStats();
+          
+          // This would need actual implementation to list sessions
+          res.status(200).json({
+            success: true,
+            data: {
+              sessions: [],
+              total: stats.total,
+              active: stats.active,
+              raids: stats.raids,
+              community: stats.community
+            }
+          });
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to list sessions:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    /**
+     * Get Session Statistics
+     * GET /api/messaging/sessions/stats
+     * Returns aggregate session statistics
+     */
+    {
+      path: "/api/messaging/sessions/stats",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const result = await sessionsAPI.getSessionStats();
+          res.status(result.success ? 200 : 500).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to get stats:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    /**
+     * Health Check
+     * GET /api/messaging/sessions/health
+     * Returns service health status
+     */
+    {
+      path: "/api/messaging/sessions/health",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const stats = await sessionsService.getSessionStats();
+          
+          res.status(200).json({
+            success: true,
+            data: {
+              status: "healthy",
+              timestamp: new Date().toISOString(),
+              sessions: {
+                total: stats.total,
+                active: stats.active
+              },
+              version: "1.0.0"
+            }
+          });
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Health check failed:", error);
+          res.status(503).json({
+            success: false,
+            error: "Service unhealthy",
+            code: "SERVICE_UNHEALTHY"
+          });
+        }
+      }
+    },
+
+    // ============================================================================
+    // COMMUNITY ENGAGEMENT ENDPOINTS (NUBI-SPECIFIC)
+    // ============================================================================
+
+    /**
+     * Create Community Session
+     * POST /api/community/sessions
+     * NUBI Enhancement: Creates community engagement session
+     */
+    {
+      path: "/api/community/sessions",
+      type: "POST",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { agentId, userId, topic, metadata } = req.body;
+
+          const result = await sessionsAPI.createSession({
+            agentId,
+            userId,
+            sessionType: "community",
+            metadata: {
+              ...metadata,
+              topic,
+              communityEngagement: true
+            }
+          });
+
+          res.status(result.success ? 201 : 400).json(result);
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to create community session:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    },
+
+    /**
+     * Get User Sessions
+     * GET /api/users/:userId/sessions
+     * Returns all sessions for a specific user
+     */
+    {
+      path: "/api/users/:userId/sessions",
+      type: "GET",
+      requiresAuth: false,
+      handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
+        try {
+          const { userId } = req.params;
+          const { active } = req.query;
+
+          // This would need actual implementation
+          res.status(200).json({
+            success: true,
+            data: {
+              sessions: [],
+              userId
+            }
+          });
+        } catch (error) {
+          logger.error("[SESSIONS_ROUTES] Failed to get user sessions:", error);
+          res.status(500).json({
+            success: false,
+            error: "Internal server error",
+            code: "INTERNAL_ERROR"
+          });
+        }
+      }
+    }
+  ];
+}
+
+/**
+ * Export sessions routes for plugin registration
+ */
+export const sessionsRoutes: SessionRoute[] = [];

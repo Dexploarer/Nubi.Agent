@@ -141,6 +141,11 @@
     "test:integration": "bun test src/__tests__/integration.test.ts",
     "test:unit": "bun test src/__tests__/*.test.ts",
     "test:all": "bun test src/**/*.test.ts",
+    "test:sessions": "bun test src/__tests__/sessions/*.test.ts",
+    "test:sessions:watch": "bun test src/__tests__/sessions/*.test.ts --watch",
+    "sessions:dev": "NODE_ENV=development SESSIONS_API_ENABLED=true SOCKETIO_SESSIONS_PORT=3001 elizaos dev",
+    "sessions:migrate": "cd supabase && supabase db push --local",
+    "sessions:reset": "cd supabase && supabase db reset --local",
     "setup:mcp": "bun scripts/setup-mcp.ts",
     "mcp:test": "npx -y @promptordie/xmcpx@latest --help"
   },

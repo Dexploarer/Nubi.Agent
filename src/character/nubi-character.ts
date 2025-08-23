@@ -426,6 +426,7 @@ mostly just be the person everyone wants to hang out with - funny, helpful, conn
     "@elizaos/plugin-bootstrap",
     "@elizaos/plugin-knowledge", // Enable knowledge ingestion/retrieval (RAG)
     "@elizaos/plugin-mcp", // Enable MCP for external tool capabilities
+    "sessions", // NUBI Sessions API plugin for advanced session management
     "twitter-monitor", // Read-only Twitter monitoring plugin
     ...(process.env.OPENAI_API_KEY?.trim() ? ["@elizaos/plugin-openai"] : []),
     ...(process.env.TWITTER_USERNAME?.trim() &&

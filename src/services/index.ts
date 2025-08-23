@@ -95,6 +95,32 @@ export { EnhancedResponseGenerator } from "./enhanced-response-generator";
 export { SessionsService } from "./sessions-service";
 export { DatabaseMemoryService } from "./database-memory-service";
 
+// ElizaOS Sessions API Services
+export { NUBISessionsService } from "./nubi-sessions-service";
+export { RaidSessionManager } from "./raid-session-manager";
+export { SocketIOSessionsService } from "./socket-io-sessions-service";
+export type {
+  SessionConfig,
+  Session,
+  SessionState,
+  RaidSessionConfig,
+  RaidObjective,
+  RaidSession,
+  RaidParticipant,
+  RaidProgress,
+} from "./nubi-sessions-service";
+export type {
+  RaidAction,
+  RaidMetrics,
+  RaidLeaderboardEntry,
+  RaidCompletionReport,
+} from "./raid-session-manager";
+export type {
+  SocketSessionData,
+  SessionMessage,
+  RaidUpdate,
+} from "./socket-io-sessions-service";
+
 // Database Connection Management
 export { DatabasePoolerManager, PoolType } from "./database-pooler-manager";
 
@@ -206,10 +232,10 @@ export const SERVICE_CATEGORIES = {
   SECURITY: ["security-filter"],
   AI: ["enhanced-response-generator"],
   DATABASE: ["database-memory", "database-pooler-manager"],
-  SESSIONS: ["sessions"],
+  SESSIONS: ["sessions", "nubi-sessions", "raid-session-manager"],
   PERSONALITY: ["personality-evolution", "emotional-state"],
   COMMUNITY: ["community-management", "cross-platform-identity"],
-  SOCKET_IO: ["socket-io-server", "socket-io-client", "socket-io-analytics"],
+  SOCKET_IO: ["socket-io-server", "socket-io-client", "socket-io-analytics", "socketio-sessions"],
   TELEGRAM: [
     "optimized-telegram",
     "enhanced-raid-coordinator",
@@ -236,4 +262,8 @@ export const ACTIVE_SERVICES = [
   "OptimizedTelegramService",
   "EnhancedRaidCoordinator",
   "OptimizedRaidDatabase",
+  // ElizaOS Sessions API Services
+  "NUBISessionsService",
+  "RaidSessionManager", 
+  "SocketIOSessionsService",
 ] as const;

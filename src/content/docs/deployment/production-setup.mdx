@@ -1,0 +1,1144 @@
+---
+title: Production Setup
+description: Comprehensive guide for deploying NUBI to production environments with enterprise-grade reliability and security
+sidebar:
+  order: 1
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+This guide covers deploying NUBI to production environments with enterprise-grade reliability, security, and scalability considerations.
+
+## Infrastructure Requirements
+
+### Minimum System Requirements
+
+Production NUBI deployments require robust infrastructure to handle community load and real-time coordination:
+
+<Tabs>
+  <TabItem label="Small Community (< 1,000 users)">
+```yaml
+compute:
+  cpu: 4 cores (3.0+ GHz)
+  memory: 16 GB RAM
+  storage: 100 GB SSD
+  network: 1 Gbps connection
+
+database:
+  postgresql: 
+    version: "15+"
+    memory: 4 GB
+    storage: 50 GB SSD
+    connections: 200
+
+redis:
+  memory: 2 GB
+  storage: 10 GB
+  
+services:
+  concurrent_raids: 10
+  websocket_connections: 500
+  api_requests_per_minute: 10000
+```
+  </TabItem>
+  
+  <TabItem label="Medium Community (1,000 - 10,000 users)">
+```yaml
+compute:
+  cpu: 8 cores (3.2+ GHz)
+  memory: 32 GB RAM
+  storage: 500 GB SSD
+  network: 2 Gbps connection
+
+database:
+  postgresql: 
+    version: "15+"
+    memory: 16 GB
+    storage: 200 GB SSD
+    connections: 500
+    read_replicas: 2
+
+redis:
+  memory: 8 GB
+  storage: 50 GB
+  cluster: true
+  
+load_balancer:
+  instances: 2
+  health_checks: true
+  ssl_termination: true
+  
+services:
+  concurrent_raids: 50
+  websocket_connections: 5000
+  api_requests_per_minute: 50000
+```
+  </TabItem>
+  
+  <TabItem label="Large Community (10,000+ users)">
+```yaml
+compute:
+  application_servers: 3+
+  cpu_per_server: 16 cores (3.5+ GHz)
+  memory_per_server: 64 GB RAM
+  storage_per_server: 1 TB NVMe SSD
+  network: 10 Gbps connection
+
+database:
+  postgresql: 
+    version: "15+"
+    primary:
+      memory: 64 GB
+      storage: 1 TB NVMe SSD
+      connections: 1000
+    read_replicas: 4
+    connection_pooling: true
+  
+  redis:
+    memory: 32 GB
+    storage: 200 GB
+    cluster: true
+    nodes: 6
+    
+load_balancer:
+  instances: 3
+  auto_scaling: true
+  global_load_balancing: true
+  ddos_protection: true
+  
+cdn:
+  enabled: true
+  edge_locations: global
+  
+services:
+  concurrent_raids: 200+
+  websocket_connections: 50000+
+  api_requests_per_minute: 500000+
+```
+  </TabItem>
+</Tabs>
+
+### Cloud Provider Recommendations
+
+NUBI is cloud-agnostic but optimized for specific provider services:
+
+<Tabs>
+  <TabItem label="AWS Deployment">
+```yaml
+# AWS Infrastructure as Code (Terraform)
+# aws/main.tf
+
+provider "aws" {
+  region = var.aws_region
+}
+
+# VPC Configuration
+resource "aws_vpc" "nubi_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  
+  tags = {
+    Name        = "nubi-production-vpc"
+    Environment = "production"
+    Project     = "nubi"
+  }
+}
+
+# ECS Cluster for Application
+resource "aws_ecs_cluster" "nubi_cluster" {
+  name = "nubi-production"
+  
+  capacity_providers = ["FARGATE", "FARGATE_SPOT"]
+  
+  default_capacity_provider_strategy {
+    capacity_provider = "FARGATE"
+    weight           = 1
+  }
+  
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+}
+
+# RDS PostgreSQL Database
+resource "aws_db_instance" "nubi_postgres" {
+  identifier = "nubi-postgres-prod"
+  
+  engine         = "postgres"
+  engine_version = "15.4"
+  instance_class = "db.r6g.xlarge"
+  
+  allocated_storage     = 200
+  max_allocated_storage = 1000
+  storage_type         = "gp3"
+  storage_encrypted    = true
+  
+  db_name  = "nubi_production"
+  username = "nubi_admin"
+  password = var.db_password
+  
+  backup_retention_period = 30
+  backup_window          = "03:00-04:00"
+  maintenance_window     = "sun:04:00-sun:05:00"
+  
+  multi_az = true
+  
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  db_subnet_group_name   = aws_db_subnet_group.nubi_db.name
+  
+  skip_final_snapshot = false
+  final_snapshot_identifier = "nubi-postgres-final-snapshot"
+  
+  tags = {
+    Name        = "nubi-production-db"
+    Environment = "production"
+  }
+}
+
+# ElastiCache Redis Cluster
+resource "aws_elasticache_replication_group" "nubi_redis" {
+  replication_group_id         = "nubi-redis-prod"
+  description                  = "Redis cluster for NUBI production"
+  
+  node_type            = "cache.r6g.xlarge"
+  num_cache_clusters   = 3
+  port                 = 6379
+  parameter_group_name = "default.redis7"
+  
+  subnet_group_name  = aws_elasticache_subnet_group.nubi_cache.name
+  security_group_ids = [aws_security_group.redis.id]
+  
+  at_rest_encryption_enabled = true
+  transit_encryption_enabled = true
+  auth_token                = var.redis_auth_token
+  
+  automatic_failover_enabled = true
+  multi_az_enabled          = true
+  
+  tags = {
+    Name        = "nubi-production-redis"
+    Environment = "production"
+  }
+}
+
+# Application Load Balancer
+resource "aws_lb" "nubi_alb" {
+  name               = "nubi-production-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  subnets           = aws_subnet.public[*].id
+  
+  enable_deletion_protection = true
+  enable_http2              = true
+  
+  access_logs {
+    bucket  = aws_s3_bucket.nubi_logs.bucket
+    prefix  = "alb"
+    enabled = true
+  }
+  
+  tags = {
+    Name        = "nubi-production-alb"
+    Environment = "production"
+  }
+}
+```
+  </TabItem>
+  
+  <TabItem label="Google Cloud Platform">
+```yaml
+# GCP Deployment Configuration
+# gcp/main.tf
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+# GKE Cluster
+resource "google_container_cluster" "nubi_cluster" {
+  name     = "nubi-production"
+  location = var.region
+  
+  remove_default_node_pool = true
+  initial_node_count       = 1
+  
+  network    = google_compute_network.vpc.name
+  subnetwork = google_compute_subnetwork.subnet.name
+  
+  # Security configuration
+  master_auth {
+    client_certificate_config {
+      issue_client_certificate = false
+    }
+  }
+  
+  workload_identity_config {
+    workload_pool = "${var.project_id}.svc.id.goog"
+  }
+  
+  # Enable network policy
+  network_policy {
+    enabled = true
+  }
+  
+  # Private cluster configuration
+  private_cluster_config {
+    enable_private_nodes    = true
+    enable_private_endpoint = false
+    master_ipv4_cidr_block = "172.16.0.0/28"
+  }
+  
+  ip_allocation_policy {}
+}
+
+# Node pool
+resource "google_container_node_pool" "nubi_nodes" {
+  name       = "nubi-node-pool"
+  location   = var.region
+  cluster    = google_container_cluster.nubi_cluster.name
+  node_count = 3
+  
+  node_config {
+    preemptible  = false
+    machine_type = "e2-standard-8"
+    disk_size_gb = 100
+    disk_type    = "pd-ssd"
+    
+    service_account = google_service_account.gke_node.email
+    oauth_scopes = [
+      "https://www.googleapis.com/auth/cloud-platform"
+    ]
+    
+    labels = {
+      env     = "production"
+      project = "nubi"
+    }
+  }
+  
+  autoscaling {
+    min_node_count = 3
+    max_node_count = 20
+  }
+  
+  management {
+    auto_repair  = true
+    auto_upgrade = true
+  }
+}
+
+# Cloud SQL PostgreSQL
+resource "google_sql_database_instance" "nubi_postgres" {
+  name             = "nubi-postgres-prod"
+  database_version = "POSTGRES_15"
+  region          = var.region
+  
+  settings {
+    tier = "db-custom-8-32768"
+    
+    disk_size         = 200
+    disk_type         = "PD_SSD"
+    disk_autoresize   = true
+    
+    backup_configuration {
+      enabled                        = true
+      start_time                    = "03:00"
+      location                      = var.region
+      point_in_time_recovery_enabled = true
+      backup_retention_settings {
+        retained_backups = 30
+      }
+    }
+    
+    ip_configuration {
+      ipv4_enabled    = false
+      private_network = google_compute_network.vpc.self_link
+    }
+    
+    database_flags {
+      name  = "max_connections"
+      value = "500"
+    }
+  }
+}
+
+# Redis Memorystore
+resource "google_redis_instance" "nubi_redis" {
+  name           = "nubi-redis-prod"
+  tier           = "STANDARD_HA"
+  memory_size_gb = 16
+  region         = var.region
+  
+  redis_version = "REDIS_7_0"
+  
+  authorized_network = google_compute_network.vpc.self_link
+  
+  persistence_config {
+    persistence_mode = "RDB"
+    rdb_snapshot_period = "ONE_HOUR"
+  }
+  
+  maintenance_policy {
+    weekly_maintenance_window {
+      day = "SUNDAY"
+      start_time {
+        hours   = 3
+        minutes = 0
+      }
+    }
+  }
+  
+  labels = {
+    environment = "production"
+    project     = "nubi"
+  }
+}
+```
+  </TabItem>
+  
+  <TabItem label="Azure Deployment">
+```yaml
+# Azure Resource Manager Template
+# azure/main.bicep
+
+param location string = resourceGroup().location
+param environmentName string = 'production'
+
+// Container Apps Environment
+resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2022-03-01' = {
+  name: 'nubi-${environmentName}-env'
+  location: location
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalyticsWorkspace.properties.customerId
+        sharedKey: logAnalyticsWorkspace.listKeys().primarySharedKey
+      }
+    }
+  }
+}
+
+// PostgreSQL Flexible Server
+resource postgresqlServer 'Microsoft.DBforPostgreSQL/flexibleServers@2022-12-01' = {
+  name: 'nubi-postgres-${environmentName}'
+  location: location
+  sku: {
+    name: 'Standard_D8s_v3'
+    tier: 'GeneralPurpose'
+  }
+  properties: {
+    version: '15'
+    administratorLogin: 'nubiadmin'
+    administratorLoginPassword: postgresPassword
+    
+    storage: {
+      storageSizeGB: 512
+      autoGrow: 'Enabled'
+    }
+    
+    backup: {
+      backupRetentionDays: 30
+      geoRedundantBackup: 'Enabled'
+    }
+    
+    highAvailability: {
+      mode: 'ZoneRedundant'
+    }
+    
+    network: {
+      delegatedSubnetResourceId: subnet.id
+      privateDnsZoneArmResourceId: privateDnsZone.id
+    }
+  }
+}
+
+// Azure Cache for Redis
+resource redisCache 'Microsoft.Cache/Redis@2022-06-01' = {
+  name: 'nubi-redis-${environmentName}'
+  location: location
+  properties: {
+    sku: {
+      name: 'Premium'
+      family: 'P'
+      capacity: 2
+    }
+    redisConfiguration: {
+      'rdb-backup-enabled': 'true'
+      'rdb-backup-frequency': '60'
+      'rdb-backup-max-snapshot-count': '1'
+    }
+    enableNonSslPort: false
+    minimumTlsVersion: '1.2'
+  }
+}
+
+// Application Gateway
+resource applicationGateway 'Microsoft.Network/applicationGateways@2022-07-01' = {
+  name: 'nubi-appgw-${environmentName}'
+  location: location
+  properties: {
+    sku: {
+      name: 'WAF_v2'
+      tier: 'WAF_v2'
+      capacity: 2
+    }
+    
+    webApplicationFirewallConfiguration: {
+      enabled: true
+      firewallMode: 'Prevention'
+      ruleSetType: 'OWASP'
+      ruleSetVersion: '3.2'
+    }
+    
+    gatewayIPConfigurations: [
+      {
+        name: 'appGatewayIpConfig'
+        properties: {
+          subnet: {
+            id: subnetAppGw.id
+          }
+        }
+      }
+    ]
+    
+    frontendIPConfigurations: [
+      {
+        name: 'appGatewayFrontendIP'
+        properties: {
+          publicIPAddress: {
+            id: publicIP.id
+          }
+        }
+      }
+    ]
+    
+    // Additional gateway configuration...
+  }
+}
+```
+  </TabItem>
+</Tabs>
+
+## Environment Configuration
+
+### Production Environment Variables
+
+Configure NUBI for production with secure environment variables:
+
+<Tabs>
+  <TabItem label="Core Configuration">
+```bash
+# .env.production
+# Core Application Settings
+NODE_ENV=production
+PORT=3000
+HOST=0.0.0.0
+
+# Application URLs
+APP_URL=https://anubis.chat
+API_URL=https://api.anubis.chat
+WEBSOCKET_URL=wss://api.anubis.chat
+
+# Database Configuration
+DATABASE_URL=postgresql://user:password@host:5432/nubi_production
+DATABASE_POOL_MIN=5
+DATABASE_POOL_MAX=20
+DATABASE_SSL=true
+DATABASE_SSL_REJECT_UNAUTHORIZED=true
+
+# Redis Configuration
+REDIS_URL=redis://user:password@host:6379/0
+REDIS_CLUSTER_MODE=true
+REDIS_TLS=true
+
+# ElizaOS Configuration
+ELIZAOS_LOG_LEVEL=info
+ELIZAOS_MEMORY_PROVIDER=database
+ELIZAOS_CACHE_PROVIDER=redis
+
+# Security Settings
+JWT_SECRET=your-super-secret-jwt-key-min-64-chars-for-production-security
+JWT_EXPIRY=24h
+JWT_REFRESH_EXPIRY=7d
+
+SESSION_SECRET=your-session-secret-key-for-cookie-signing-production
+SESSION_MAX_AGE=86400000
+
+BCRYPT_ROUNDS=12
+PASSWORD_MIN_LENGTH=8
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000  # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_SKIP_SUCCESS_RESPONSES=false
+
+# CORS Configuration
+CORS_ORIGIN=https://anubis.chat,https://app.anubis.chat
+CORS_CREDENTIALS=true
+```
+  </TabItem>
+  
+  <TabItem label="Platform Integration">
+```bash
+# Platform API Keys
+TELEGRAM_BOT_TOKEN=your-telegram-bot-token-from-botfather
+TELEGRAM_WEBHOOK_SECRET=webhook-secret-for-security
+TELEGRAM_WEBHOOK_URL=https://api.anubis.chat/webhooks/telegram
+
+DISCORD_BOT_TOKEN=your-discord-bot-token-from-developer-portal
+DISCORD_CLIENT_ID=your-discord-application-client-id
+DISCORD_CLIENT_SECRET=your-discord-application-client-secret
+DISCORD_GUILD_ID=your-main-discord-server-id
+
+TWITTER_API_KEY=your-twitter-api-key
+TWITTER_API_SECRET=your-twitter-api-secret
+TWITTER_ACCESS_TOKEN=your-twitter-access-token
+TWITTER_ACCESS_TOKEN_SECRET=your-twitter-access-token-secret
+TWITTER_BEARER_TOKEN=your-twitter-bearer-token
+
+# External Services
+OPENAI_API_KEY=your-openai-api-key-for-ai-features
+ANTHROPIC_API_KEY=your-anthropic-api-key-if-using-claude
+
+# Monitoring & Analytics
+SENTRY_DSN=https://your-sentry-dsn-for-error-tracking
+DATADOG_API_KEY=your-datadog-api-key-for-metrics
+GOOGLE_ANALYTICS_ID=your-google-analytics-tracking-id
+
+# Email Configuration (for notifications)
+SMTP_HOST=smtp.yourmailprovider.com
+SMTP_PORT=587
+SMTP_USER=noreply@anubis.chat
+SMTP_PASS=your-smtp-password
+SMTP_FROM=NUBI <noreply@anubis.chat>
+
+# File Storage (for uploads/media)
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_REGION=us-west-2
+S3_BUCKET_NAME=nubi-production-assets
+CLOUDFRONT_DOMAIN=cdn.anubis.chat
+```
+  </TabItem>
+  
+  <TabItem label="Performance & Scaling">
+```bash
+# Performance Configuration
+CLUSTER_WORKERS=auto  # Use all CPU cores
+WORKER_MEMORY_LIMIT=2048
+WORKER_TIMEOUT=30000
+
+# Database Performance
+DATABASE_STATEMENT_TIMEOUT=10000
+DATABASE_QUERY_TIMEOUT=5000
+DATABASE_IDLE_TIMEOUT=30000
+DATABASE_ACQUIRE_TIMEOUT=60000
+
+# Redis Performance
+REDIS_COMMAND_TIMEOUT=5000
+REDIS_CONNECT_TIMEOUT=10000
+REDIS_RETRY_ATTEMPTS=3
+REDIS_RETRY_DELAY=200
+
+# WebSocket Configuration
+WEBSOCKET_MAX_CONNECTIONS=10000
+WEBSOCKET_PING_INTERVAL=25000
+WEBSOCKET_PING_TIMEOUT=60000
+WEBSOCKET_COMPRESS=true
+
+# HTTP Configuration
+HTTP_KEEP_ALIVE_TIMEOUT=65000
+HTTP_HEADERS_TIMEOUT=66000
+HTTP_MAX_SOCKETS=1024
+HTTP_REQUEST_TIMEOUT=120000
+
+# Caching
+CACHE_TTL_DEFAULT=300  # 5 minutes
+CACHE_TTL_LONG=3600    # 1 hour
+CACHE_TTL_SHORT=60     # 1 minute
+
+# Background Jobs
+QUEUE_CONCURRENCY=10
+QUEUE_MAX_STALLED=5
+QUEUE_RETRY_ATTEMPTS=3
+QUEUE_RETRY_DELAY=5000
+
+# Monitoring
+HEALTH_CHECK_INTERVAL=30000
+METRICS_COLLECTION_INTERVAL=60000
+LOG_RETENTION_DAYS=30
+```
+  </TabItem>
+</Tabs>
+
+## SSL/TLS Configuration
+
+### Certificate Management
+
+Production NUBI requires proper SSL/TLS certificates:
+
+<Tabs>
+  <TabItem label="Let's Encrypt (Recommended)">
+```bash
+# Install Certbot
+sudo apt-get update
+sudo apt-get install certbot python3-certbot-nginx
+
+# Generate certificates for all domains
+sudo certbot --nginx -d anubis.chat -d www.anubis.chat -d api.anubis.chat
+
+# Automatic renewal setup
+echo "0 12 * * * /usr/bin/certbot renew --quiet" | sudo crontab -
+
+# Nginx configuration with SSL
+# /etc/nginx/sites-available/nubi-production
+server {
+    listen 80;
+    server_name anubis.chat www.anubis.chat api.anubis.chat;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name anubis.chat www.anubis.chat;
+    
+    ssl_certificate /etc/letsencrypt/live/anubis.chat/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/anubis.chat/privkey.pem;
+    
+    # SSL configuration
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:50m;
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    
+    # Modern configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off;
+    
+    # Security headers
+    add_header Strict-Transport-Security "max-age=63072000" always;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-Frame-Options DENY;
+    add_header X-XSS-Protection "1; mode=block";
+    
+    # Proxy to Node.js application
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+    
+    # WebSocket proxy
+    location /socket.io/ {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+    }
+}
+```
+  </TabItem>
+  
+  <TabItem label="Custom CA Certificate">
+```bash
+# Custom certificate configuration for enterprise environments
+# Generate private key
+openssl genrsa -out anubis.chat.key 4096
+
+# Generate certificate signing request
+openssl req -new -key anubis.chat.key -out anubis.chat.csr -config <(
+cat <<EOF
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+C=US
+ST=State
+L=City
+O=Organization
+OU=IT Department
+CN=anubis.chat
+
+[v3_req]
+keyUsage = keyEncipherment, dataEncipherment
+extendedKeyUsage = serverAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = anubis.chat
+DNS.2 = www.anubis.chat
+DNS.3 = api.anubis.chat
+DNS.4 = *.anubis.chat
+EOF
+)
+
+# Submit CSR to your Certificate Authority
+# Once you receive the certificate, install it:
+
+# Nginx SSL configuration for custom certificate
+server {
+    listen 443 ssl http2;
+    server_name anubis.chat www.anubis.chat api.anubis.chat;
+    
+    ssl_certificate /etc/ssl/certs/anubis.chat.crt;
+    ssl_certificate_key /etc/ssl/private/anubis.chat.key;
+    ssl_trusted_certificate /etc/ssl/certs/ca-bundle.crt;
+    
+    # Enhanced SSL configuration for enterprise
+    ssl_session_timeout 5m;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+    
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+    
+    # Perfect Forward Secrecy
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256';
+    ssl_prefer_server_ciphers on;
+    
+    # HSTS
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    
+    # Additional security headers
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'" always;
+    
+    # Rest of configuration...
+}
+```
+  </TabItem>
+</Tabs>
+
+## Process Management
+
+### Production Process Management
+
+Use PM2 for robust process management in production:
+
+<Tabs>
+  <TabItem label="PM2 Configuration">
+```javascript
+// ecosystem.config.js
+module.exports = {
+  apps: [
+    {
+      name: 'nubi-production',
+      script: 'dist/index.js',
+      instances: 'max', // Use all CPU cores
+      exec_mode: 'cluster',
+      
+      // Environment
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      },
+      
+      // Performance
+      max_memory_restart: '2G',
+      min_uptime: '10s',
+      max_restarts: 10,
+      
+      // Logging
+      log_file: '/var/log/nubi/combined.log',
+      out_file: '/var/log/nubi/out.log',
+      error_file: '/var/log/nubi/error.log',
+      log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
+      merge_logs: true,
+      
+      // Monitoring
+      monitoring: true,
+      pmx: true,
+      
+      // Auto restart on file changes (disable in production)
+      watch: false,
+      ignore_watch: ['node_modules', 'logs'],
+      
+      // Source maps for better error tracking
+      source_map_support: true,
+      
+      // Graceful shutdown
+      kill_timeout: 5000,
+      wait_ready: true,
+      listen_timeout: 3000,
+      
+      // Health checks
+      health_check_http: {
+        path: '/health',
+        port: 3000,
+        max_restarts: 3
+      }
+    },
+    
+    // Background job processor
+    {
+      name: 'nubi-worker',
+      script: 'dist/worker.js',
+      instances: 2,
+      exec_mode: 'fork',
+      
+      env: {
+        NODE_ENV: 'production',
+        WORKER_TYPE: 'background'
+      },
+      
+      max_memory_restart: '1G',
+      min_uptime: '10s',
+      max_restarts: 5,
+      
+      // Worker-specific logging
+      log_file: '/var/log/nubi/worker.log',
+      error_file: '/var/log/nubi/worker-error.log',
+      
+      // Cron-like restart (daily at 3 AM)
+      cron_restart: '0 3 * * *'
+    }
+  ],
+  
+  // Deployment configuration
+  deploy: {
+    production: {
+      user: 'deploy',
+      host: ['server1.anubis.chat', 'server2.anubis.chat'],
+      ref: 'origin/main',
+      repo: 'git@github.com:anubis-chat/nubi.git',
+      path: '/var/www/nubi',
+      
+      'pre-deploy-local': '',
+      'post-deploy': 'npm ci && npm run build && pm2 reload ecosystem.config.js --env production',
+      'pre-setup': '',
+      
+      // Environment variables for deployment
+      env: {
+        NODE_ENV: 'production'
+      }
+    }
+  }
+}
+```
+  </TabItem>
+  
+  <TabItem label="Systemd Service">
+```ini
+# /etc/systemd/system/nubi.service
+[Unit]
+Description=NUBI - AI Community Management Platform
+Documentation=https://docs.anubis.chat
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User=nubi
+Group=nubi
+WorkingDirectory=/opt/nubi
+ExecStart=/usr/bin/node dist/index.js
+ExecReload=/bin/kill -USR2 $MAINPID
+
+# Environment
+Environment=NODE_ENV=production
+EnvironmentFile=/opt/nubi/.env.production
+
+# Process management
+Restart=always
+RestartSec=10
+StartLimitInterval=60
+StartLimitBurst=3
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+TasksMax=4096
+
+# Security
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/nubi/logs /opt/nubi/uploads
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nubi
+
+# Graceful shutdown
+TimeoutStopSec=30
+KillSignal=SIGTERM
+KillMode=mixed
+
+[Install]
+WantedBy=multi-user.target
+```
+  </TabItem>
+  
+  <TabItem label="Docker Compose Production">
+```yaml
+# docker-compose.prod.yml
+version: '3.8'
+
+services:
+  nubi-app:
+    image: nubi/app:latest
+    container_name: nubi-production
+    restart: unless-stopped
+    
+    ports:
+      - "3000:3000"
+    
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.production
+    
+    depends_on:
+      - postgres
+      - redis
+    
+    networks:
+      - nubi-network
+    
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+  
+  postgres:
+    image: postgres:15-alpine
+    container_name: nubi-postgres
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: nubi_production
+      POSTGRES_USER: nubi
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    
+    networks:
+      - nubi-network
+    
+    # Production PostgreSQL configuration
+    command: >
+      postgres
+      -c max_connections=500
+      -c shared_buffers=256MB
+      -c effective_cache_size=1GB
+      -c maintenance_work_mem=64MB
+      -c checkpoint_completion_target=0.9
+      -c wal_buffers=16MB
+      -c default_statistics_target=100
+      -c random_page_cost=1.1
+      -c effective_io_concurrency=200
+      -c work_mem=4MB
+      -c min_wal_size=1GB
+      -c max_wal_size=4GB
+  
+  redis:
+    image: redis:7-alpine
+    container_name: nubi-redis
+    restart: unless-stopped
+    
+    command: >
+      redis-server
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --appendonly yes
+      --appendfsync everysec
+    
+    volumes:
+      - redis_data:/data
+    
+    networks:
+      - nubi-network
+  
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: nubi-nginx
+    restart: unless-stopped
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/sites:/etc/nginx/conf.d
+      - ./ssl:/etc/ssl/certs
+      - ./logs/nginx:/var/log/nginx
+    
+    depends_on:
+      - nubi-app
+    
+    networks:
+      - nubi-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  nubi-network:
+    driver: bridge
+```
+  </TabItem>
+</Tabs>
+
+This comprehensive production setup guide ensures your NUBI deployment meets enterprise standards for reliability, security, and performance while maintaining the flexibility to scale with your community's growth.

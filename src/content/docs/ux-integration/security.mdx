@@ -27,26 +27,26 @@ graph TB
     B --> D[Content Analysis]
     B --> E[Session Validation]
     B --> F[Threat Detection]
-    
+
     C --> G{Rate Limit OK?}
     G -->|No| H[Rate Limit Response]
     G -->|Yes| I[Pattern Filtering]
-    
+
     D --> I
     E --> I
     F --> I
-    
+
     I --> J[XSS Prevention]
     J --> K[Injection Detection]
     K --> L[Spam Classification]
     L --> M[Scam Detection]
-    
+
     M --> N{All Checks Pass?}
     N -->|No| O[Security Block]
     N -->|Yes| P[Enhanced Logging]
-    
+
     P --> Q[Layer 2: Classification]
-    
+
     H --> R[Security Analytics]
     O --> R
     R --> S[Threat Intelligence]
@@ -61,13 +61,15 @@ NUBI implements a sophisticated **adaptive rate limiting** system that prevents 
     **5 messages per minute** per user with sliding window tracking and burst allowance for natural conversation flow.
   </Card>
 
-  <Card title="📈 Exponential Backoff" icon="chart">
-    **Progressive penalties** for violators with exponential backoff and reputation-based recovery mechanisms.
-  </Card>
+<Card title="📈 Exponential Backoff" icon="chart">
+  **Progressive penalties** for violators with exponential backoff and
+  reputation-based recovery mechanisms.
+</Card>
 
-  <Card title="🎯 Adaptive Thresholds" icon="approve-check">
-    **Dynamic adjustment** based on user behavior, platform context, and system load conditions.
-  </Card>
+<Card title="🎯 Adaptive Thresholds" icon="approve-check">
+  **Dynamic adjustment** based on user behavior, platform context, and system
+  load conditions.
+</Card>
 
   <Card title="🔄 Distributed Tracking" icon="setting">
     **Cross-platform coordination** ensuring consistent limits across Discord, Telegram, and web interfaces.
@@ -359,13 +361,15 @@ Advanced content filtering protects against spam, scams, and malicious content w
     **Multi-layered filtering** with regex patterns, machine learning models, and behavioral analysis for comprehensive threat detection.
   </Card>
 
-  <Card title="🎯 Contextual Analysis" icon="approve-check">
-    **Context-aware filtering** that considers conversation history, user reputation, and platform norms to reduce false positives.
-  </Card>
+<Card title="🎯 Contextual Analysis" icon="approve-check">
+  **Context-aware filtering** that considers conversation history, user
+  reputation, and platform norms to reduce false positives.
+</Card>
 
-  <Card title="🔄 Dynamic Updates" icon="refresh">
-    **Real-time pattern updates** from threat intelligence feeds and community reporting to stay ahead of evolving attacks.
-  </Card>
+<Card title="🔄 Dynamic Updates" icon="refresh">
+  **Real-time pattern updates** from threat intelligence feeds and community
+  reporting to stay ahead of evolving attacks.
+</Card>
 
   <Card title="⚖️ Balanced Approach" icon="balance">
     **Performance optimization** with tiered filtering stages and smart caching to maintain sub-millisecond processing times.
@@ -1575,9 +1579,13 @@ export class SecurityMonitor {
 ---
 
 <div class="nubi-note">
-  <strong>🛡️ Security Benefits:</strong> This comprehensive security layer ensures NUBI maintains robust protection against diverse threats while delivering optimal performance and user experience across all platforms.
+  <strong>🛡️ Security Benefits:</strong> This comprehensive security layer
+  ensures NUBI maintains robust protection against diverse threats while
+  delivering optimal performance and user experience across all platforms.
 </div>
 
 <Aside type="tip">
-  **Architecture Complete**: You've now explored NUBI's complete UX Integration system. Continue with the [Database System](/database/overview/) to understand the data layer architecture.
+  **Architecture Complete**: You've now explored NUBI's complete UX Integration
+  system. Continue with the [Database System](/database/overview/) to understand
+  the data layer architecture.
 </Aside>

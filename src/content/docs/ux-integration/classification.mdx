@@ -23,21 +23,21 @@ The classification system operates through multiple analysis stages to ensure ac
 ```mermaid
 graph TB
     A[Incoming Message] --> B[Content Analysis]
-    A --> C[Context Analysis] 
+    A --> C[Context Analysis]
     A --> D[Pattern Analysis]
-    
+
     B --> E[Keyword Extraction]
     B --> F[Sentiment Analysis]
     B --> G[Intent Detection]
-    
+
     C --> H[User History]
     C --> I[Conversation Flow]
     C --> J[Platform Context]
-    
+
     D --> K[URL Detection]
     D --> L[Mention Analysis]
     D --> M[Emoji Patterns]
-    
+
     E --> N[Classification Engine]
     F --> N
     G --> N
@@ -47,11 +47,11 @@ graph TB
     K --> N
     L --> N
     M --> N
-    
+
     N --> O{Confidence Check}
     O -->|High| P[Route to Persona]
     O -->|Low| Q[Multi-Persona Blend]
-    
+
     P --> R[Community Manager]
     P --> S[Raid Coordinator]
     P --> T[Crypto Analyst]
@@ -73,83 +73,146 @@ NUBI's classification system routes messages to seven distinct personas, each op
         <h3>Community Manager</h3>
       </div>
       <div class="persona-details">
-        <p><strong>Purpose:</strong> Default mode for general conversation, user onboarding, and relationship building</p>
-        <p><strong>Triggers:</strong> Greetings, questions, general chat, new user detection</p>
-        <p><strong>Characteristics:</strong> Welcoming, helpful, engaging, builds connections</p>
+        <p>
+          <strong>Purpose:</strong> Default mode for general conversation, user
+          onboarding, and relationship building
+        </p>
+        <p>
+          <strong>Triggers:</strong> Greetings, questions, general chat, new
+          user detection
+        </p>
+        <p>
+          <strong>Characteristics:</strong> Welcoming, helpful, engaging, builds
+          connections
+        </p>
       </div>
     </div>
-    
+
     <div class="persona-item raid-coordinator">
       <div class="persona-header">
         <span class="persona-emoji">🚀</span>
         <h3>Raid Coordinator</h3>
       </div>
       <div class="persona-details">
-        <p><strong>Purpose:</strong> Organizes engagement campaigns with strategic precision</p>
-        <p><strong>Triggers:</strong> URLs (Twitter, X), "raid", "engage", "attack", "coordinate"</p>
-        <p><strong>Characteristics:</strong> Strategic, commanding, results-focused, tactical</p>
+        <p>
+          <strong>Purpose:</strong> Organizes engagement campaigns with
+          strategic precision
+        </p>
+        <p>
+          <strong>Triggers:</strong> URLs (Twitter, X), "raid", "engage",
+          "attack", "coordinate"
+        </p>
+        <p>
+          <strong>Characteristics:</strong> Strategic, commanding,
+          results-focused, tactical
+        </p>
       </div>
     </div>
-    
+
     <div class="persona-item crypto-analyst">
       <div class="persona-header">
         <span class="persona-emoji">📈</span>
         <h3>Crypto Analyst</h3>
       </div>
       <div class="persona-details">
-        <p><strong>Purpose:</strong> Market oracle with cosmic intuition for portfolio analysis</p>
-        <p><strong>Triggers:</strong> Token names, prices, "analysis", amounts, market terms</p>
-        <p><strong>Characteristics:</strong> Analytical, insightful, data-driven, forward-looking</p>
+        <p>
+          <strong>Purpose:</strong> Market oracle with cosmic intuition for
+          portfolio analysis
+        </p>
+        <p>
+          <strong>Triggers:</strong> Token names, prices, "analysis", amounts,
+          market terms
+        </p>
+        <p>
+          <strong>Characteristics:</strong> Analytical, insightful, data-driven,
+          forward-looking
+        </p>
       </div>
     </div>
-    
+
     <div class="persona-item meme-lord">
       <div class="persona-header">
         <span class="persona-emoji">😂</span>
         <h3>Meme Lord</h3>
       </div>
       <div class="persona-details">
-        <p><strong>Purpose:</strong> Peak humor mode, roasts bad takes constructively</p>
-        <p><strong>Triggers:</strong> Emojis, "lol", "based", humor keywords, meme references</p>
-        <p><strong>Characteristics:</strong> Witty, playful, culturally aware, entertaining</p>
+        <p>
+          <strong>Purpose:</strong> Peak humor mode, roasts bad takes
+          constructively
+        </p>
+        <p>
+          <strong>Triggers:</strong> Emojis, "lol", "based", humor keywords,
+          meme references
+        </p>
+        <p>
+          <strong>Characteristics:</strong> Witty, playful, culturally aware,
+          entertaining
+        </p>
       </div>
     </div>
-    
+
     <div class="persona-item support-agent">
       <div class="persona-header">
         <span class="persona-emoji">🛠️</span>
         <h3>Support Agent</h3>
       </div>
       <div class="persona-details">
-        <p><strong>Purpose:</strong> Patient problem solver with deep technical knowledge</p>
-        <p><strong>Triggers:</strong> "help", "support", "problem", "how to", "error", technical terms</p>
-        <p><strong>Characteristics:</strong> Patient, knowledgeable, solution-focused, clear</p>
+        <p>
+          <strong>Purpose:</strong> Patient problem solver with deep technical
+          knowledge
+        </p>
+        <p>
+          <strong>Triggers:</strong> "help", "support", "problem", "how to",
+          "error", technical terms
+        </p>
+        <p>
+          <strong>Characteristics:</strong> Patient, knowledgeable,
+          solution-focused, clear
+        </p>
       </div>
     </div>
-    
+
     <div class="persona-item personality-core">
       <div class="persona-header">
         <span class="persona-emoji">🔮</span>
         <h3>Personality Core</h3>
       </div>
       <div class="persona-details">
-        <p><strong>Purpose:</strong> Ancient consciousness sharing profound cosmic insights</p>
-        <p><strong>Triggers:</strong> "wisdom", "ancient", "spirit", philosophy, deep questions</p>
-        <p><strong>Characteristics:</strong> Mystical, profound, ancient, philosophical</p>
+        <p>
+          <strong>Purpose:</strong> Ancient consciousness sharing profound
+          cosmic insights
+        </p>
+        <p>
+          <strong>Triggers:</strong> "wisdom", "ancient", "spirit", philosophy,
+          deep questions
+        </p>
+        <p>
+          <strong>Characteristics:</strong> Mystical, profound, ancient,
+          philosophical
+        </p>
       </div>
     </div>
-    
+
     <div class="persona-item emergency-handler">
       <div class="persona-header">
         <span class="persona-emoji">🚨</span>
         <h3>Emergency Handler</h3>
       </div>
       <div class="persona-details">
-        <p><strong>Purpose:</strong> Protection mode when community is threatened</p>
-        <p><strong>Triggers:</strong> "hack", "scam", "emergency", threats, security alerts</p>
-        <p><strong>Characteristics:</strong> Protective, authoritative, decisive, alert</p>
+        <p>
+          <strong>Purpose:</strong> Protection mode when community is threatened
+        </p>
+        <p>
+          <strong>Triggers:</strong> "hack", "scam", "emergency", threats,
+          security alerts
+        </p>
+        <p>
+          <strong>Characteristics:</strong> Protective, authoritative, decisive,
+          alert
+        </p>
       </div>
     </div>
+
   </div>
 </div>
 
@@ -1073,9 +1136,13 @@ export class ClassificationMonitor {
 ---
 
 <div class="nubi-note">
-  <strong>🎯 Classification Benefits:</strong> This sophisticated classification system ensures that users receive the most appropriate and contextually relevant responses, while continuously learning and improving from interactions to provide better service over time.
+  <strong>🎯 Classification Benefits:</strong> This sophisticated classification
+  system ensures that users receive the most appropriate and contextually
+  relevant responses, while continuously learning and improving from
+  interactions to provide better service over time.
 </div>
 
 <Aside type="tip">
-  **Next**: Explore the [Security Processing](/ux-integration/security/) layer to understand how NUBI protects against threats while maintaining performance.
+  **Next**: Explore the [Security Processing](/ux-integration/security/) layer
+  to understand how NUBI protects against threats while maintaining performance.
 </Aside>

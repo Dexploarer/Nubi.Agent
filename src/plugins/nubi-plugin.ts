@@ -67,6 +67,11 @@ import { SocketIOServerService } from "../services";
 import { SocketIOClientService } from "../services";
 import { SocketIOAnalyticsService } from "../services";
 
+// ElizaOS Sessions API Services
+import { NUBISessionsService } from "../services";
+import { RaidSessionManager } from "../services";
+import { SocketIOSessionsService } from "../services";
+
 // Enhanced Telegram Raids functionality
 import { EnhancedTelegramRaidsService } from "../telegram-raids/elizaos-enhanced-telegram-raids";
 import OptimizedTelegramService from "../telegram-raids/optimized-telegram-service";
@@ -535,6 +540,11 @@ const nubiPlugin: Plugin = {
     SessionsService, // Session management and persistence
     DatabaseMemoryService, // Enhanced context retrieval with semantic search
     DatabasePoolerManager, // Multi-pool database connection manager
+
+    // ElizaOS Sessions API Services (new)
+    NUBISessionsService, // Full ElizaOS Sessions API implementation
+    RaidSessionManager, // Advanced raid session management
+    SocketIOSessionsService, // Real-time session WebSocket integration
 
     // Personality and emotional systems
     EmotionalStateService, // NUBI emotional state management

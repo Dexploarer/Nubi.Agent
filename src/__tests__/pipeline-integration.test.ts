@@ -71,7 +71,6 @@ describe("Two-Layer Pipeline Integration", () => {
   });
 
   describe("Layer 2: Socket.IO Intelligence Processing", () => {
-
     it("should identify and link users across platforms", async () => {
       // Initialize the service instead of start
       await socketService.initialize(runtime);
@@ -197,19 +196,40 @@ describe("Two-Layer Pipeline Integration", () => {
 
       // Test that we can classify messages to each expected prompt type
       const testCases = [
-        { message: "Welcome to our community!", expectedPrompt: "community-manager" },
-        { message: "Let's raid this tweet!", expectedPrompt: "raid-coordinator" },
+        {
+          message: "Welcome to our community!",
+          expectedPrompt: "community-manager",
+        },
+        {
+          message: "Let's raid this tweet!",
+          expectedPrompt: "raid-coordinator",
+        },
         { message: "SOL price analysis", expectedPrompt: "crypto-analyst" },
         { message: "This is hilarious 😂", expectedPrompt: "meme-lord" },
-        { message: "How do I connect my wallet?", expectedPrompt: "support-agent" },
-        { message: "Tell me about your thoughts on life", expectedPrompt: "personality-core" },
-        { message: "URGENT: Need help immediately!", expectedPrompt: "emergency-handler" }
+        {
+          message: "How do I connect my wallet?",
+          expectedPrompt: "support-agent",
+        },
+        {
+          message: "Tell me about your thoughts on life",
+          expectedPrompt: "personality-core",
+        },
+        {
+          message: "URGENT: Need help immediately!",
+          expectedPrompt: "emergency-handler",
+        },
       ];
 
       for (const testCase of testCases) {
-        const classification = await messageRouter.classifyMessage(testCase.message);
+        const classification = await messageRouter.classifyMessage(
+          testCase.message,
+        );
         // Check that the classification returns a valid prompt type from the expected list
-        expect(expectedPrompts.some(prompt => classification.selectedPrompt.includes(prompt))).toBe(true);
+        expect(
+          expectedPrompts.some((prompt) =>
+            classification.selectedPrompt.includes(prompt),
+          ),
+        ).toBe(true);
       }
     });
 
@@ -270,7 +290,7 @@ describe("Two-Layer Pipeline Integration", () => {
       // Test that the message router can handle cross-platform messages
       for (const platform of platforms) {
         const classification = await messageRouter.classifyMessage(
-          `Hello from ${platform}`
+          `Hello from ${platform}`,
         );
         expect(classification).toBeDefined();
         expect(classification.selectedPrompt).toBeDefined();
