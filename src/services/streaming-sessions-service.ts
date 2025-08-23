@@ -13,7 +13,7 @@ import { MessageRouter, MessageClassification } from "./message-router";
 
 /**
  * Streaming Sessions Service
- * 
+ *
  * Provides real-time streaming capabilities for ElizaOS Sessions:
  * - Server-Sent Events (SSE) for HTTP streaming
  * - WebSocket streaming via Socket.IO
@@ -34,7 +34,7 @@ export interface StreamChunk {
   sessionId: string;
   chunkId: string;
   content: string;
-  type: 'partial' | 'complete' | 'error' | 'metadata';
+  type: "partial" | "complete" | "error" | "metadata";
   metadata?: Record<string, any>;
   timestamp: Date;
   sequenceNumber: number;
@@ -57,7 +57,7 @@ export interface StreamContext {
 }
 
 export interface ResponseStrategy {
-  method: 'batch' | 'stream' | 'hybrid';
+  method: "batch" | "stream" | "hybrid";
   reasoning: string;
   estimatedDuration: number;
   estimatedTokens: number;
@@ -66,11 +66,12 @@ export interface ResponseStrategy {
 
 export class StreamingSessionsService extends Service {
   static serviceType = "streaming_sessions" as const;
-  capabilityDescription = "Real-time streaming for ElizaOS Sessions with intelligent routing";
+  capabilityDescription =
+    "Real-time streaming for ElizaOS Sessions with intelligent routing";
 
-  protected runtime: IAgentRuntime | undefined;
-  private sessionsService: NUBISessionsService;
-  private messageRouter: MessageRouter;
+  declare protected runtime: IAgentRuntime;
+  private sessionsService!: NUBISessionsService;
+  private messageRouter!: MessageRouter;
   private streamEmitter: EventEmitter;
   private activeStreams: Map<string, StreamContext> = new Map();
   private defaultConfig: StreamingConfig = {
@@ -82,14 +83,12 @@ export class StreamingSessionsService extends Service {
   };
 
   constructor(
-    runtime?: IAgentRuntime,
+    runtime: IAgentRuntime,
     sessionsService?: NUBISessionsService,
-    messageRouter?: MessageRouter
+    messageRouter?: MessageRouter,
   ) {
     super(runtime);
-    if (runtime) {
-      this.runtime = runtime;
-    }
+    this.runtime = runtime;
     if (sessionsService) {
       this.sessionsService = sessionsService;
     }
@@ -101,18 +100,26 @@ export class StreamingSessionsService extends Service {
 
   async start(): Promise<void> {
     try {
-      logger.info("[STREAMING_SESSIONS] Starting Streaming Sessions Service...");
+      logger.info(
+        "[STREAMING_SESSIONS] Starting Streaming Sessions Service...",
+      );
 
       if (!this.runtime) {
-        logger.warn("[STREAMING_SESSIONS] No runtime available, service will operate in limited mode");
+        logger.warn(
+          "[STREAMING_SESSIONS] No runtime available, service will operate in limited mode",
+        );
         return;
       }
 
       // Get dependencies if not provided
       if (!this.sessionsService) {
-        this.sessionsService = this.runtime.getService<NUBISessionsService>("nubi_sessions");
+        this.sessionsService = this.runtime.getService<NUBISessionsService>(
+          "nubi_sessions",
+        ) as NUBISessionsService;
         if (!this.sessionsService) {
-          throw new Error("NUBISessionsService is required for StreamingSessionsService");
+          throw new Error(
+            "NUBISessionsService is required for StreamingSessionsService",
+          );
         }
       }
 
@@ -120,16 +127,23 @@ export class StreamingSessionsService extends Service {
         this.messageRouter = new MessageRouter();
       }
 
-      logger.info("[STREAMING_SESSIONS] Streaming Sessions Service started successfully");
+      logger.info(
+        "[STREAMING_SESSIONS] Streaming Sessions Service started successfully",
+      );
     } catch (error) {
-      logger.error("[STREAMING_SESSIONS] Failed to start:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[STREAMING_SESSIONS] Failed to start:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
 
   async stop(): Promise<void> {
     try {
-      logger.info("[STREAMING_SESSIONS] Stopping Streaming Sessions Service...");
+      logger.info(
+        "[STREAMING_SESSIONS] Stopping Streaming Sessions Service...",
+      );
 
       // Clean up active streams
       for (const [streamId, context] of this.activeStreams) {
@@ -141,7 +155,10 @@ export class StreamingSessionsService extends Service {
 
       logger.info("[STREAMING_SESSIONS] Streaming Sessions Service stopped");
     } catch (error) {
-      logger.error("[STREAMING_SESSIONS] Failed to stop:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[STREAMING_SESSIONS] Failed to stop:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -151,51 +168,55 @@ export class StreamingSessionsService extends Service {
   async determineResponseStrategy(
     message: Memory,
     session: Session,
-    classification?: MessageClassification
+    classification?: MessageClassification,
   ): Promise<ResponseStrategy> {
     try {
       // Get message classification if not provided
       if (!classification) {
         classification = await this.messageRouter.classifyMessage(
-          (message.content as any)?.text || '',
-          message.entityId
+          (message.content as any)?.text || "",
+          message.entityId as string,
+          "general",
+          "stream-route"
         );
       }
 
       // Estimate complexity based on various factors
       const complexity = await this.estimateComplexity(message, classification);
-      
+
       // Determine strategy based on complexity and context
-      let method: 'batch' | 'stream' | 'hybrid' = 'batch';
-      let reasoning = '';
-      
-      if (complexity.estimatedTokens > this.defaultConfig.useStreamingThreshold) {
-        method = 'stream';
+      let method: "batch" | "stream" | "hybrid" = "batch";
+      let reasoning = "";
+
+      if (
+        complexity.estimatedTokens > this.defaultConfig.useStreamingThreshold
+      ) {
+        method = "stream";
         reasoning = `High token count (${complexity.estimatedTokens}) exceeds streaming threshold`;
       } else if (complexity.requiresAnalysis) {
-        method = 'hybrid';
-        reasoning = 'Complex analysis task benefits from progressive updates';
+        method = "hybrid";
+        reasoning = "Complex analysis task benefits from progressive updates";
       } else if (complexity.isCodeGeneration) {
-        method = 'stream';
-        reasoning = 'Code generation benefits from real-time streaming';
+        method = "stream";
+        reasoning = "Code generation benefits from real-time streaming";
       } else if (complexity.isSimpleQuery) {
-        method = 'batch';
-        reasoning = 'Simple query can be answered immediately';
+        method = "batch";
+        reasoning = "Simple query can be answered immediately";
       } else if (session.metadata?.preferStreaming) {
-        method = 'stream';
-        reasoning = 'User preference for streaming responses';
+        method = "stream";
+        reasoning = "User preference for streaming responses";
       }
 
       // Check for specific prompt types that benefit from streaming
       const streamingPromptTypes = [
-        'technical-expert',
-        'crypto-analyst',
-        'raid-coordinator-strategic',
-        'personality-core-philosophical'
+        "technical-expert",
+        "crypto-analyst",
+        "raid-coordinator-strategic",
+        "personality-core-philosophical",
       ];
 
       if (streamingPromptTypes.includes(classification.selectedPrompt)) {
-        method = 'stream';
+        method = "stream";
         reasoning = `Prompt type ${classification.selectedPrompt} benefits from streaming`;
       }
 
@@ -207,10 +228,13 @@ export class StreamingSessionsService extends Service {
         confidence: classification.confidenceScore,
       };
     } catch (error) {
-      logger.error("[STREAMING_SESSIONS] Failed to determine response strategy:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[STREAMING_SESSIONS] Failed to determine response strategy:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
-        method: 'batch',
-        reasoning: 'Error in strategy determination, defaulting to batch',
+        method: "batch",
+        reasoning: "Error in strategy determination, defaulting to batch",
         estimatedDuration: 1000,
         estimatedTokens: 100,
         confidence: 0.5,
@@ -223,7 +247,7 @@ export class StreamingSessionsService extends Service {
    */
   private async estimateComplexity(
     message: Memory,
-    classification: MessageClassification
+    classification: MessageClassification,
   ): Promise<{
     estimatedTokens: number;
     estimatedDuration: number;
@@ -231,27 +255,32 @@ export class StreamingSessionsService extends Service {
     isCodeGeneration: boolean;
     isSimpleQuery: boolean;
   }> {
-    const text = (message.content as any)?.text || '';
+    const text = (message.content as any)?.text || "";
     const words = text.split(/\s+/).length;
-    
+
     // Base token estimation (rough approximation)
     let estimatedTokens = words * 1.3;
-    
+
     // Adjust based on classification
     const complexPrompts = [
-      'crypto-analyst',
-      'technical-expert',
-      'raid-coordinator-strategic',
+      "crypto-analyst",
+      "technical-expert",
+      "raid-coordinator-strategic",
     ];
-    
+
     if (complexPrompts.includes(classification.selectedPrompt)) {
       estimatedTokens *= 3; // Complex responses tend to be longer
     }
 
     // Check for specific indicators
-    const requiresAnalysis = /analyze|explain|compare|evaluate|assess/i.test(text);
-    const isCodeGeneration = /code|implement|function|class|program/i.test(text);
-    const isSimpleQuery = words < 10 && /what|when|where|who|how much/i.test(text);
+    const requiresAnalysis = /analyze|explain|compare|evaluate|assess/i.test(
+      text,
+    );
+    const isCodeGeneration = /code|implement|function|class|program/i.test(
+      text,
+    );
+    const isSimpleQuery =
+      words < 10 && /what|when|where|who|how much/i.test(text);
 
     // Estimate duration based on tokens (rough approximation)
     const estimatedDuration = estimatedTokens * 20; // 20ms per token
@@ -271,16 +300,16 @@ export class StreamingSessionsService extends Service {
   async startStream(
     sessionId: string,
     message: Memory,
-    strategy: ResponseStrategy
+    strategy: ResponseStrategy,
   ): Promise<string> {
     const streamId = crypto.randomUUID();
-    
+
     const context: StreamContext = {
       streamId,
       sessionId,
       startTime: new Date(),
       chunks: [],
-      buffer: '',
+      buffer: "",
       isComplete: false,
       metadata: {
         strategy,
@@ -291,10 +320,12 @@ export class StreamingSessionsService extends Service {
 
     this.activeStreams.set(streamId, context);
 
-    logger.info(`[STREAMING_SESSIONS] Started stream ${streamId} for session ${sessionId}`);
-    
+    logger.info(
+      `[STREAMING_SESSIONS] Started stream ${streamId} for session ${sessionId}`,
+    );
+
     // Emit stream start event
-    this.streamEmitter.emit('stream:start', {
+    this.streamEmitter.emit("stream:start", {
       streamId,
       sessionId,
       strategy,
@@ -309,7 +340,7 @@ export class StreamingSessionsService extends Service {
   async sendChunk(
     streamId: string,
     content: string,
-    type: 'partial' | 'complete' | 'error' | 'metadata' = 'partial'
+    type: "partial" | "complete" | "error" | "metadata" = "partial",
   ): Promise<void> {
     const context = this.activeStreams.get(streamId);
     if (!context) {
@@ -329,9 +360,9 @@ export class StreamingSessionsService extends Service {
     context.buffer += content;
 
     // Emit chunk event
-    this.streamEmitter.emit('stream:chunk', chunk);
+    this.streamEmitter.emit("stream:chunk", chunk);
 
-    if (type === 'complete') {
+    if (type === "complete") {
       context.isComplete = true;
       await this.endStream(streamId, "Stream completed successfully");
     }
@@ -347,9 +378,9 @@ export class StreamingSessionsService extends Service {
     }
 
     context.isComplete = true;
-    
+
     // Emit stream end event
-    this.streamEmitter.emit('stream:end', {
+    this.streamEmitter.emit("stream:end", {
       streamId,
       sessionId: context.sessionId,
       reason,
@@ -361,27 +392,36 @@ export class StreamingSessionsService extends Service {
     // Store the complete response in memory if runtime is available
     if (this.runtime && context.buffer) {
       try {
-        await this.runtime.createMemory({
-          id: crypto.randomUUID() as UUID,
-          agentId: context.metadata.agentId || crypto.randomUUID() as UUID,
-          entityId: context.metadata.userId || crypto.randomUUID() as UUID,
-          roomId: context.sessionId as UUID,
-          content: {
-            text: context.buffer,
-            type: 'assistant_message',
-            streamId,
-            metadata: context.metadata,
+        await this.runtime.createMemory(
+          {
+            id: crypto.randomUUID() as UUID,
+            agentId: context.metadata.agentId || (crypto.randomUUID() as UUID),
+            entityId: context.metadata.userId || (crypto.randomUUID() as UUID),
+            roomId: context.sessionId as UUID,
+            content: {
+              text: context.buffer,
+              type: "assistant_message",
+              streamId,
+              metadata: context.metadata,
+            },
+            embedding: undefined,
+            createdAt: Date.now(),
           },
-          embedding: undefined,
-          createdAt: Date.now(),
-        }, "memories", false);
+          "memories",
+          false,
+        );
       } catch (error) {
-        logger.error(`[STREAMING_SESSIONS] Failed to store stream memory:`, error instanceof Error ? error.message : String(error));
+        logger.error(
+          `[STREAMING_SESSIONS] Failed to store stream memory:`,
+          error instanceof Error ? error.message : String(error),
+        );
       }
     }
 
     this.activeStreams.delete(streamId);
-    logger.info(`[STREAMING_SESSIONS] Ended stream ${streamId} for session ${context.sessionId}`);
+    logger.info(
+      `[STREAMING_SESSIONS] Ended stream ${streamId} for session ${context.sessionId}`,
+    );
   }
 
   /**
@@ -390,7 +430,7 @@ export class StreamingSessionsService extends Service {
   async processStreamingMessage(
     sessionId: string,
     message: Memory,
-    onChunk: (chunk: StreamChunk) => void
+    onChunk: (chunk: StreamChunk) => void,
   ): Promise<string> {
     const session = await this.sessionsService.getSession(sessionId);
     if (!session) {
@@ -399,40 +439,48 @@ export class StreamingSessionsService extends Service {
 
     // Classify the message
     const classification = await this.messageRouter.classifyMessage(
-      (message.content as any)?.text || '',
-      message.entityId
+      (message.content as any)?.text || "",
+      message.entityId as string,
+      "general",
+      "process-stream"
     );
 
     // Determine response strategy
-    const strategy = await this.determineResponseStrategy(message, session, classification);
-    
-    logger.info(`[STREAMING_SESSIONS] Using ${strategy.method} strategy for session ${sessionId}: ${strategy.reasoning}`);
+    const strategy = await this.determineResponseStrategy(
+      message,
+      session,
+      classification,
+    );
 
-    if (strategy.method === 'batch') {
+    logger.info(
+      `[STREAMING_SESSIONS] Using ${strategy.method} strategy for session ${sessionId}: ${strategy.reasoning}`,
+    );
+
+    if (strategy.method === "batch") {
       // Use regular processing for batch responses
       return this.processBatchMessage(sessionId, message);
     }
 
     // Start streaming
     const streamId = await this.startStream(sessionId, message, strategy);
-    
+
     // Set up chunk listener
     const chunkListener = (chunk: StreamChunk) => {
       if (chunk.sessionId === sessionId) {
         onChunk(chunk);
       }
     };
-    this.streamEmitter.on('stream:chunk', chunkListener);
+    this.streamEmitter.on("stream:chunk", chunkListener);
 
     try {
       // Simulate streaming response (in production, this would connect to LLM streaming API)
       await this.simulateStreamingResponse(streamId, message, strategy);
-      
+
       const context = this.activeStreams.get(streamId);
-      return context?.buffer || '';
+      return context?.buffer || "";
     } finally {
       // Clean up listener
-      this.streamEmitter.off('stream:chunk', chunkListener);
+      this.streamEmitter.off("stream:chunk", chunkListener);
     }
   }
 
@@ -441,16 +489,16 @@ export class StreamingSessionsService extends Service {
    */
   private async processBatchMessage(
     sessionId: string,
-    message: Memory
+    message: Memory,
   ): Promise<string> {
     if (!this.runtime) {
       return "Runtime not available for processing";
     }
 
     const responses: Memory[] = [];
-    await this.runtime.processActions(message, responses, undefined);
-    
-    return (responses[0]?.content as any)?.text || 'Message processed';
+    await this.runtime.processActions(message, responses, undefined, undefined);
+
+    return (responses[0]?.content as any)?.text || "Message processed";
   }
 
   /**
@@ -459,7 +507,7 @@ export class StreamingSessionsService extends Service {
   private async simulateStreamingResponse(
     streamId: string,
     message: Memory,
-    strategy: ResponseStrategy
+    strategy: ResponseStrategy,
   ): Promise<void> {
     const sampleResponse = `Based on the ${strategy.method} strategy, I'm processing your request about: "${(message.content as any)?.text}". 
     
@@ -469,19 +517,23 @@ export class StreamingSessionsService extends Service {
     ${strategy.reasoning}`;
 
     // Split response into chunks
-    const words = sampleResponse.split(' ');
+    const words = sampleResponse.split(" ");
     const chunkSize = 3; // Words per chunk
 
     for (let i = 0; i < words.length; i += chunkSize) {
-      const chunk = words.slice(i, Math.min(i + chunkSize, words.length)).join(' ');
-      await this.sendChunk(streamId, chunk + ' ', 'partial');
-      
+      const chunk = words
+        .slice(i, Math.min(i + chunkSize, words.length))
+        .join(" ");
+      await this.sendChunk(streamId, chunk + " ", "partial");
+
       // Simulate processing delay
-      await new Promise(resolve => setTimeout(resolve, this.defaultConfig.flushInterval));
+      await new Promise((resolve) =>
+        setTimeout(resolve, this.defaultConfig.flushInterval),
+      );
     }
 
     // Send completion
-    await this.sendChunk(streamId, '', 'complete');
+    await this.sendChunk(streamId, "", "complete");
   }
 
   /**
@@ -503,7 +555,7 @@ export class StreamingSessionsService extends Service {
    */
   getSessionStreams(sessionId: string): StreamContext[] {
     return Array.from(this.activeStreams.values()).filter(
-      context => context.sessionId === sessionId
+      (context) => context.sessionId === sessionId,
     );
   }
 }

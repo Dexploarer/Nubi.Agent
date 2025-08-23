@@ -5,7 +5,7 @@ sidebar:
   order: 1
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 NUBI's raid coordination system orchestrates complex multi-platform social media campaigns with intelligent target selection, engagement verification, and real-time performance tracking.
 
@@ -21,27 +21,27 @@ graph TB
         RF[RaidFlow]
         RT[RaidTracker]
     end
-    
+
     subgraph "Intelligence Layer"
         LDS[LinkDetectionService]
         EV[EngagementVerifier]
         MS[ModerationService]
     end
-    
+
     subgraph "External Platforms"
         TG[Telegram]
         X[X/Twitter]
         DC[Discord]
         WS[WebSocket]
     end
-    
+
     RC --> UIF
     RC --> RF
     RC --> RT
     UIF --> LDS
     RF --> EV
     RT --> MS
-    
+
     RC --> TG
     RC --> X
     RC --> DC
@@ -165,32 +165,32 @@ Advanced target analysis determines raid viability and optimal strategies:
 
 ```typescript
 interface TargetAnalysis {
-  url: string
-  platform: string
-  contentType: 'post' | 'profile' | 'thread' | 'space'
-  
+  url: string;
+  platform: string;
+  contentType: "post" | "profile" | "thread" | "space";
+
   // Engagement metrics
-  currentEngagement: EngagementMetrics
-  historicalPerformance: HistoricalData
-  audienceInsights: AudienceProfile
-  
+  currentEngagement: EngagementMetrics;
+  historicalPerformance: HistoricalData;
+  audienceInsights: AudienceProfile;
+
   // Strategic assessment
-  raidability: number // 0-1 score
-  optimalStrategy: RaidStrategy
-  riskFactors: RiskFactor[]
-  
+  raidability: number; // 0-1 score
+  optimalStrategy: RaidStrategy;
+  riskFactors: RiskFactor[];
+
   // Timing optimization
-  peakEngagementHours: number[]
-  competitorActivity: CompetitorInsight[]
-  platformSpecificFactors: PlatformFactors
+  peakEngagementHours: number[];
+  competitorActivity: CompetitorInsight[];
+  platformSpecificFactors: PlatformFactors;
 }
 
 class TargetAnalyzer {
   async analyzeTarget(url: string): Promise<TargetAnalysis> {
-    const platformData = await this.extractPlatformData(url)
-    const engagementHistory = await this.getEngagementHistory(platformData)
-    const audienceProfile = await this.analyzeAudience(platformData)
-    
+    const platformData = await this.extractPlatformData(url);
+    const engagementHistory = await this.getEngagementHistory(platformData);
+    const audienceProfile = await this.analyzeAudience(platformData);
+
     return {
       ...platformData,
       currentEngagement: await this.getCurrentMetrics(platformData),
@@ -201,8 +201,8 @@ class TargetAnalyzer {
       riskFactors: this.assessRisks(platformData),
       peakEngagementHours: this.findPeakHours(engagementHistory),
       competitorActivity: await this.analyzeCompetitors(platformData),
-      platformSpecificFactors: this.getPlatformFactors(platformData.platform)
-    }
+      platformSpecificFactors: this.getPlatformFactors(platformData.platform),
+    };
   }
 }
 ```
@@ -213,32 +213,32 @@ The system uses machine learning to optimize raid strategies:
 
 ```typescript
 interface RaidStrategy {
-  approach: 'aggressive' | 'moderate' | 'subtle'
-  phasedExecution: Phase[]
-  contentGuidelines: ContentGuide[]
-  timingWindows: TimeWindow[]
-  participantAllocation: ParticipantAllocation
+  approach: "aggressive" | "moderate" | "subtle";
+  phasedExecution: Phase[];
+  contentGuidelines: ContentGuide[];
+  timingWindows: TimeWindow[];
+  participantAllocation: ParticipantAllocation;
 }
 
 class StrategyOptimizer {
   async optimizeStrategy(
-    target: TargetAnalysis, 
-    participants: Participant[]
+    target: TargetAnalysis,
+    participants: Participant[],
   ): Promise<RaidStrategy> {
     // Machine learning model for strategy optimization
     const mlPrediction = await this.mlModel.predict({
       targetMetrics: target,
-      participantProfiles: participants.map(p => p.profile),
-      historicalSuccess: await this.getHistoricalSuccessData()
-    })
-    
+      participantProfiles: participants.map((p) => p.profile),
+      historicalSuccess: await this.getHistoricalSuccessData(),
+    });
+
     return {
       approach: this.determineApproach(mlPrediction),
       phasedExecution: this.createPhases(target, participants),
       contentGuidelines: this.generateContentGuides(target),
       timingWindows: this.calculateOptimalWindows(target),
-      participantAllocation: this.allocateParticipants(participants, target)
-    }
+      participantAllocation: this.allocateParticipants(participants, target),
+    };
   }
 }
 ```
@@ -391,52 +391,52 @@ Real-time synchronization ensures coordinated timing across all platforms:
 
 ```typescript
 class CrossPlatformSynchronizer {
-  private syncPoints: Map<string, SyncPoint> = new Map()
-  
+  private syncPoints: Map<string, SyncPoint> = new Map();
+
   async synchronizeRaidExecution(session: RaidSession): Promise<void> {
-    const platforms = session.platforms
-    const syncPoint = this.createSyncPoint(session.id, platforms)
-    
+    const platforms = session.platforms;
+    const syncPoint = this.createSyncPoint(session.id, platforms);
+
     // 1. Prepare all platforms
-    await this.prepareAllPlatforms(session, syncPoint)
-    
+    await this.prepareAllPlatforms(session, syncPoint);
+
     // 2. Wait for all platforms to be ready
-    await this.waitForAllPlatformsReady(syncPoint)
-    
+    await this.waitForAllPlatformsReady(syncPoint);
+
     // 3. Execute synchronized countdown
-    await this.executeCountdown(syncPoint, session.timing.countdown)
-    
+    await this.executeCountdown(syncPoint, session.timing.countdown);
+
     // 4. Trigger simultaneous execution
-    await this.triggerExecution(syncPoint)
-    
+    await this.triggerExecution(syncPoint);
+
     // 5. Monitor cross-platform coordination
-    this.monitorCrossPlatformMetrics(session)
+    this.monitorCrossPlatformMetrics(session);
   }
-  
+
   private async executeCountdown(
-    syncPoint: SyncPoint, 
-    countdownSeconds: number
+    syncPoint: SyncPoint,
+    countdownSeconds: number,
   ): Promise<void> {
     for (let i = countdownSeconds; i > 0; i--) {
-      await this.broadcastCountdown(syncPoint, i)
-      await this.sleep(1000)
+      await this.broadcastCountdown(syncPoint, i);
+      await this.sleep(1000);
     }
-    
-    await this.broadcastCountdown(syncPoint, 0, 'GO! 🚀')
+
+    await this.broadcastCountdown(syncPoint, 0, "GO! 🚀");
   }
-  
+
   private async broadcastCountdown(
-    syncPoint: SyncPoint, 
-    count: number, 
-    message?: string
+    syncPoint: SyncPoint,
+    count: number,
+    message?: string,
   ): Promise<void> {
-    const countdownMessage = message || `${count}...`
-    
-    const broadcasts = syncPoint.platforms.map(platform => 
-      this.sendCountdownToPlatform(platform, countdownMessage)
-    )
-    
-    await Promise.all(broadcasts)
+    const countdownMessage = message || `${count}...`;
+
+    const broadcasts = syncPoint.platforms.map((platform) =>
+      this.sendCountdownToPlatform(platform, countdownMessage),
+    );
+
+    await Promise.all(broadcasts);
   }
 }
 ```
@@ -450,52 +450,47 @@ The system tracks comprehensive metrics during raid execution:
 ```typescript
 interface RaidMetrics {
   // Participation metrics
-  totalParticipants: number
-  activeParticipants: number
-  participationRate: number
-  
+  totalParticipants: number;
+  activeParticipants: number;
+  participationRate: number;
+
   // Engagement metrics
-  totalEngagements: EngagementCounts
-  engagementRate: number
-  avgTimeToEngage: number
-  
+  totalEngagements: EngagementCounts;
+  engagementRate: number;
+  avgTimeToEngage: number;
+
   // Platform-specific metrics
-  platformMetrics: Map<string, PlatformMetrics>
-  
+  platformMetrics: Map<string, PlatformMetrics>;
+
   // Quality metrics
-  contentQualityScore: number
-  spamDetectionRate: number
-  authenticityScore: number
-  
+  contentQualityScore: number;
+  spamDetectionRate: number;
+  authenticityScore: number;
+
   // Performance metrics
-  executionEfficiency: number
-  timingAccuracy: number
-  coordinationScore: number
+  executionEfficiency: number;
+  timingAccuracy: number;
+  coordinationScore: number;
 }
 
 class RaidMetricsCollector {
   async collectRealTimeMetrics(raidId: string): Promise<RaidMetrics> {
-    const [
-      participation,
-      engagement,
-      platformData,
-      quality,
-      performance
-    ] = await Promise.all([
-      this.collectParticipationMetrics(raidId),
-      this.collectEngagementMetrics(raidId),
-      this.collectPlatformMetrics(raidId),
-      this.collectQualityMetrics(raidId),
-      this.collectPerformanceMetrics(raidId)
-    ])
-    
+    const [participation, engagement, platformData, quality, performance] =
+      await Promise.all([
+        this.collectParticipationMetrics(raidId),
+        this.collectEngagementMetrics(raidId),
+        this.collectPlatformMetrics(raidId),
+        this.collectQualityMetrics(raidId),
+        this.collectPerformanceMetrics(raidId),
+      ]);
+
     return {
       ...participation,
       ...engagement,
       platformMetrics: platformData,
       ...quality,
-      ...performance
-    }
+      ...performance,
+    };
   }
 }
 ```
@@ -509,27 +504,27 @@ The system can adjust strategies in real-time based on performance:
 ```typescript
 class AdaptiveStrategyManager {
   async adjustStrategy(raidId: string, metrics: RaidMetrics): Promise<void> {
-    const adjustments = await this.analyzeNeedForAdjustment(metrics)
-    
-    if (adjustments.length === 0) return
-    
+    const adjustments = await this.analyzeNeedForAdjustment(metrics);
+
+    if (adjustments.length === 0) return;
+
     for (const adjustment of adjustments) {
       switch (adjustment.type) {
-        case 'increase_intensity':
-          await this.increaseRaidIntensity(raidId, adjustment.factor)
-          break
-          
-        case 'change_content_strategy':
-          await this.updateContentStrategy(raidId, adjustment.newStrategy)
-          break
-          
-        case 'redistribute_participants':
-          await this.redistributeParticipants(raidId, adjustment.allocation)
-          break
-          
-        case 'adjust_timing':
-          await this.adjustTiming(raidId, adjustment.newTiming)
-          break
+        case "increase_intensity":
+          await this.increaseRaidIntensity(raidId, adjustment.factor);
+          break;
+
+        case "change_content_strategy":
+          await this.updateContentStrategy(raidId, adjustment.newStrategy);
+          break;
+
+        case "redistribute_participants":
+          await this.redistributeParticipants(raidId, adjustment.allocation);
+          break;
+
+        case "adjust_timing":
+          await this.adjustTiming(raidId, adjustment.newTiming);
+          break;
       }
     }
   }

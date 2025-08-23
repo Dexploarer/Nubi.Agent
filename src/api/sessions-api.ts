@@ -231,7 +231,9 @@ export class SessionsAPI {
       } catch (memoryError) {
         logger.warn(
           "[SESSIONS_API] Failed to create memory, continuing:",
-          memoryError,
+          memoryError instanceof Error
+            ? memoryError.message
+            : String(memoryError),
         );
       }
 
@@ -257,7 +259,9 @@ export class SessionsAPI {
       } catch (processError) {
         logger.warn(
           "[SESSIONS_API] Failed to process actions, continuing:",
-          processError,
+          processError instanceof Error
+            ? processError.message
+            : String(processError),
         );
       }
 

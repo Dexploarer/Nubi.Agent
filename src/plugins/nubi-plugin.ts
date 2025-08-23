@@ -583,12 +583,12 @@ const nubiPlugin: Plugin = {
         manager.registerService(def);
       }
       (runtime as any).serviceManager = manager;
-      
+
       try {
         await manager.initialize();
         logger.info("✅ Infrastructure services initialized successfully");
       } catch (infraError) {
-        logger.warn("⚠️ Infrastructure initialization degraded:", infraError);
+        logger.warn("⚠️ Infrastructure initialization degraded:", infraError instanceof Error ? infraError.message : String(infraError));
         // Continue with degraded functionality
       }
 
@@ -608,15 +608,18 @@ const nubiPlugin: Plugin = {
 
       for (const ServiceClass of mainServices) {
         try {
-          const service = new ServiceClass();
-          if (typeof service.initialize === 'function') {
-            await service.initialize(runtime);
+          const service = new ServiceClass(runtime);
+          if (service && typeof (service as any).initialize === "function") {
+            await (service as any).initialize(runtime);
           }
-          if (runtime.registerService) {
-            await runtime.registerService(service);
+          if (runtime.registerService && service) {
+            await runtime.registerService(service as any);
           }
         } catch (error) {
-          logger.warn(`Failed to register service ${ServiceClass.name}:`, error);
+          logger.warn(
+            `Failed to register service ${ServiceClass.name}:`,
+            error instanceof Error ? error.message : String(error),
+          );
         }
       }
 
@@ -677,16 +680,23 @@ const nubiPlugin: Plugin = {
 
       // Log system info if service manager is available
       try {
-        const manager = (runtime as any).serviceManager as SupabaseServiceManager;
+        const manager = (runtime as any)
+          .serviceManager as SupabaseServiceManager;
         if (manager) {
           const sys = manager.getSystemInfo();
           logger.info(`🩺 Infrastructure Status:`);
-          logger.info(`  - Database: ${sys.databaseConnected ? '✅ Connected' : '❌ Disconnected'}`);
-          logger.info(`  - Redis: ${sys.redisConnected ? '✅ Connected' : '⚠️ Not configured'}`);
-          logger.info(`  - Services: ${sys.servicesInitialized}/${sys.totalServices} initialized`);
+          logger.info(
+            `  - Database: ${sys.databaseConnected ? "✅ Connected" : "❌ Disconnected"}`,
+          );
+          logger.info(
+            `  - Redis: ${sys.redisConnected ? "✅ Connected" : "⚠️ Not configured"}`,
+          );
+          logger.info(
+            `  - Services: ${sys.servicesInitialized}/${sys.totalServices} initialized`,
+          );
         }
       } catch (error) {
-        logger.debug("Could not retrieve system info:", error);
+        logger.debug("Could not retrieve system info:", error instanceof Error ? error.message : String(error));
       }
 
       logger.info("✨ Anubis Plugin initialization complete");

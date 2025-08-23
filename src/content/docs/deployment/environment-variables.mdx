@@ -5,7 +5,7 @@ sidebar:
   order: 3
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 This comprehensive guide covers all environment variables needed to configure NUBI for development, staging, and production environments.
 
@@ -21,39 +21,48 @@ Essential variables for basic NUBI operation:
 # .env (Required for all environments)
 
 # Application Identity
-NODE_ENV=production                    # Environment: development | staging | production
-APP_NAME=NUBI                         # Application name for logging and monitoring
-APP_VERSION=2.0.0                     # Version identifier
-PORT=3000                            # HTTP server port
-HOST=0.0.0.0                         # Bind address (0.0.0.0 for containers, localhost for local)
+
+NODE_ENV=production # Environment: development | staging | production
+APP_NAME=NUBI # Application name for logging and monitoring
+APP_VERSION=2.0.0 # Version identifier
+PORT=3000 # HTTP server port
+HOST=0.0.0.0 # Bind address (0.0.0.0 for containers, localhost for local)
 
 # URLs (Critical for CORS and redirects)
-APP_URL=https://anubis.chat           # Frontend application URL
-API_URL=https://api.anubis.chat       # API base URL
-WEBSOCKET_URL=wss://api.anubis.chat   # WebSocket connection URL
+
+APP_URL=https://anubis.chat # Frontend application URL
+API_URL=https://api.anubis.chat # API base URL
+WEBSOCKET_URL=wss://api.anubis.chat # WebSocket connection URL
 
 # Database Connection (Primary data store)
+
 DATABASE_URL=postgresql://user:pass@localhost:5432/nubi_prod
+
 # Format: postgresql://[user]:[password]@[host]:[port]/[database]?[params]
 
 # Redis Connection (Caching and sessions)
+
 REDIS_URL=redis://localhost:6379/0
+
 # Format: redis://[user:pass@]host:port[/db][?options]
 
 # Security Keys (Generate unique values for production!)
+
 JWT_SECRET=your-jwt-secret-minimum-64-characters-for-security
-JWT_EXPIRY=24h                       # Token expiration: 15m, 1h, 24h, 7d
-JWT_REFRESH_EXPIRY=7d               # Refresh token expiration
+JWT_EXPIRY=24h # Token expiration: 15m, 1h, 24h, 7d
+JWT_REFRESH_EXPIRY=7d # Refresh token expiration
 
 SESSION_SECRET=your-session-secret-for-cookie-signing-production
-SESSION_MAX_AGE=86400000            # Session duration in milliseconds (24h)
+SESSION_MAX_AGE=86400000 # Session duration in milliseconds (24h)
 
 # Password Security
-BCRYPT_ROUNDS=12                    # Hashing rounds (10-12 for production)
-PASSWORD_MIN_LENGTH=8               # Minimum password length
-```
+
+BCRYPT_ROUNDS=12 # Hashing rounds (10-12 for production)
+PASSWORD_MIN_LENGTH=8 # Minimum password length
+
+````
   </TabItem>
-  
+
   <TabItem label="Optional Variables">
 ```bash
 # Optional Configuration Variables
@@ -81,7 +90,8 @@ KEEP_ALIVE_TIMEOUT=5000          # Keep-alive timeout
 # Timezone
 TZ=UTC                            # Timezone for the application
 LOCALE=en-US                      # Default locale
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -95,54 +105,67 @@ Advanced database connection and performance settings:
 # PostgreSQL Configuration
 
 # Connection Pool Settings
-DATABASE_POOL_MIN=5               # Minimum pool connections
-DATABASE_POOL_MAX=20              # Maximum pool connections
-DATABASE_POOL_IDLE_TIMEOUT=30000  # Idle connection timeout (ms)
+
+DATABASE_POOL_MIN=5 # Minimum pool connections
+DATABASE_POOL_MAX=20 # Maximum pool connections
+DATABASE_POOL_IDLE_TIMEOUT=30000 # Idle connection timeout (ms)
 DATABASE_POOL_ACQUIRE_TIMEOUT=60000 # Connection acquire timeout (ms)
 
-# Query Configuration  
-DATABASE_STATEMENT_TIMEOUT=10000  # Statement timeout (ms)
-DATABASE_QUERY_TIMEOUT=5000      # Individual query timeout (ms)
-DATABASE_COMMAND_TIMEOUT=30000   # Command timeout (ms)
+# Query Configuration
+
+DATABASE_STATEMENT_TIMEOUT=10000 # Statement timeout (ms)
+DATABASE_QUERY_TIMEOUT=5000 # Individual query timeout (ms)
+DATABASE_COMMAND_TIMEOUT=30000 # Command timeout (ms)
 
 # SSL Configuration
-DATABASE_SSL=true                 # Enable SSL connection
+
+DATABASE_SSL=true # Enable SSL connection
 DATABASE_SSL_REJECT_UNAUTHORIZED=true # Reject unauthorized SSL
 DATABASE_SSL_CA_CERT_PATH=/path/to/ca-cert.pem # CA certificate path
 DATABASE_SSL_CLIENT_CERT_PATH=/path/to/client-cert.pem # Client cert
 DATABASE_SSL_CLIENT_KEY_PATH=/path/to/client-key.pem # Client key
 
 # Performance Tuning
+
 DATABASE_MAX_PREPARED_STATEMENTS=100 # Max prepared statements
-DATABASE_ENABLE_QUERY_LOGGING=false  # Log all queries (dev only)
-DATABASE_SLOW_QUERY_THRESHOLD=1000   # Log slow queries over N ms
+DATABASE_ENABLE_QUERY_LOGGING=false # Log all queries (dev only)
+DATABASE_SLOW_QUERY_THRESHOLD=1000 # Log slow queries over N ms
 
 # Migrations
+
 DATABASE_MIGRATIONS_DIR=./migrations # Migrations directory
 DATABASE_MIGRATIONS_TABLE=knex_migrations # Migrations table name
-DATABASE_AUTO_MIGRATE=false         # Auto-run migrations on startup
+DATABASE_AUTO_MIGRATE=false # Auto-run migrations on startup
 
 # Example connection strings for different environments:
+
 # Local development:
+
 # DATABASE_URL=postgresql://nubi:password@localhost:5432/nubi_dev
 
 # Docker compose:
+
 # DATABASE_URL=postgresql://nubi:password@postgres:5432/nubi_dev
 
 # Production with SSL:
+
 # DATABASE_URL=postgresql://user:pass@prod-host:5432/nubi_prod?sslmode=require
 
 # Amazon RDS:
+
 # DATABASE_URL=postgresql://user:pass@nubi.abcd1234.us-west-2.rds.amazonaws.com:5432/nubi
 
 # Google Cloud SQL:
+
 # DATABASE_URL=postgresql://user:pass@10.1.1.1:5432/nubi?sslmode=require
 
 # Azure Database:
+
 # DATABASE_URL=postgresql://user%40server:pass@server.postgres.database.azure.com:5432/nubi?sslmode=require
-```
+
+````
   </TabItem>
-  
+
   <TabItem label="Redis Settings">
 ```bash
 # Redis Configuration
@@ -201,7 +224,8 @@ REDIS_KEY_PREFIX=nubi:         # Key prefix for namespacing
 
 # Azure Cache for Redis:
 # REDIS_URL=rediss://:password@cachename.redis.cache.windows.net:6380/0
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -217,41 +241,49 @@ Configuration for Telegram, Discord, X/Twitter, and other platform integrations:
 # Telegram Bot Configuration
 
 # Bot Authentication (Required)
+
 TELEGRAM_BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ # From @BotFather
-TELEGRAM_BOT_USERNAME=YourBotUsername                    # Bot username without @
+TELEGRAM_BOT_USERNAME=YourBotUsername # Bot username without @
 
 # Webhook Configuration (Production)
+
 TELEGRAM_WEBHOOK_URL=https://api.anubis.chat/webhooks/telegram
 TELEGRAM_WEBHOOK_SECRET=your-webhook-secret-for-verification
-TELEGRAM_WEBHOOK_PORT=8443                              # Webhook port (optional)
-TELEGRAM_USE_POLLING=false                              # Use polling instead of webhook
+TELEGRAM_WEBHOOK_PORT=8443 # Webhook port (optional)
+TELEGRAM_USE_POLLING=false # Use polling instead of webhook
 
 # Bot Settings
-TELEGRAM_ADMIN_USER_IDS=123456789,987654321            # Comma-separated admin user IDs
-TELEGRAM_MAIN_CHAT_ID=@anubis_community                # Main community chat
-TELEGRAM_RAID_COORDINATION_CHAT=@anubis_raids          # Raid coordination chat
-TELEGRAM_ANNOUNCEMENTS_CHAT=@anubis_announcements      # Announcements channel
+
+TELEGRAM_ADMIN_USER_IDS=123456789,987654321 # Comma-separated admin user IDs
+TELEGRAM_MAIN_CHAT_ID=@anubis_community # Main community chat
+TELEGRAM_RAID_COORDINATION_CHAT=@anubis_raids # Raid coordination chat
+TELEGRAM_ANNOUNCEMENTS_CHAT=@anubis_announcements # Announcements channel
 
 # Rate Limiting
-TELEGRAM_RATE_LIMIT_MESSAGES_PER_SECOND=30            # Max messages per second
-TELEGRAM_RATE_LIMIT_MESSAGES_PER_MINUTE=20            # Max messages per minute to same chat
-TELEGRAM_RATE_LIMIT_EDITS_PER_MINUTE=1000             # Max message edits per minute
+
+TELEGRAM_RATE_LIMIT_MESSAGES_PER_SECOND=30 # Max messages per second
+TELEGRAM_RATE_LIMIT_MESSAGES_PER_MINUTE=20 # Max messages per minute to same chat
+TELEGRAM_RATE_LIMIT_EDITS_PER_MINUTE=1000 # Max message edits per minute
 
 # Media Settings
-TELEGRAM_MAX_FILE_SIZE=50485760                        # Max file size (48MB)
-TELEGRAM_MEDIA_CACHE_TTL=3600                         # Media cache TTL seconds
+
+TELEGRAM_MAX_FILE_SIZE=50485760 # Max file size (48MB)
+TELEGRAM_MEDIA_CACHE_TTL=3600 # Media cache TTL seconds
 
 # Feature Flags
-TELEGRAM_ENABLE_INLINE_QUERIES=true                   # Enable inline queries
-TELEGRAM_ENABLE_WEB_APP=false                         # Enable Telegram Web App
-TELEGRAM_ENABLE_PAYMENTS=false                        # Enable Telegram Payments
+
+TELEGRAM_ENABLE_INLINE_QUERIES=true # Enable inline queries
+TELEGRAM_ENABLE_WEB_APP=false # Enable Telegram Web App
+TELEGRAM_ENABLE_PAYMENTS=false # Enable Telegram Payments
 
 # Development Settings
-TELEGRAM_TEST_ENVIRONMENT=false                       # Use test environment
-TELEGRAM_LOG_ALL_UPDATES=false                       # Log all incoming updates
-```
+
+TELEGRAM_TEST_ENVIRONMENT=false # Use test environment
+TELEGRAM_LOG_ALL_UPDATES=false # Log all incoming updates
+
+````
   </TabItem>
-  
+
   <TabItem label="Discord Configuration">
 ```bash
 # Discord Bot Configuration
@@ -293,7 +325,8 @@ DISCORD_ACTIVITY_NAME=Managing Community             # Activity name
 # Developer Settings
 DISCORD_DEVELOPER_MODE=false                         # Enable developer features
 DISCORD_LOG_GATEWAY_EVENTS=false                    # Log gateway events
-```
+````
+
   </TabItem>
   
   <TabItem label="X/Twitter Configuration">
@@ -301,56 +334,67 @@ DISCORD_LOG_GATEWAY_EVENTS=false                    # Log gateway events
 # X/Twitter API Configuration
 
 # API Credentials (Required - Twitter API v2)
-TWITTER_API_KEY=your-twitter-api-key                 # API Key
-TWITTER_API_SECRET=your-twitter-api-secret           # API Secret Key
-TWITTER_ACCESS_TOKEN=your-twitter-access-token       # Access Token
+
+TWITTER_API_KEY=your-twitter-api-key # API Key
+TWITTER_API_SECRET=your-twitter-api-secret # API Secret Key
+TWITTER_ACCESS_TOKEN=your-twitter-access-token # Access Token
 TWITTER_ACCESS_TOKEN_SECRET=your-access-token-secret # Access Token Secret
-TWITTER_BEARER_TOKEN=your-twitter-bearer-token       # Bearer Token
+TWITTER_BEARER_TOKEN=your-twitter-bearer-token # Bearer Token
 
 # API Version Settings
-TWITTER_API_VERSION=2                                # API version (1.1 or 2)
-TWITTER_API_BASE_URL=https://api.twitter.com        # API base URL
+
+TWITTER_API_VERSION=2 # API version (1.1 or 2)
+TWITTER_API_BASE_URL=https://api.twitter.com # API base URL
 
 # Bot Account Information
-TWITTER_BOT_USERNAME=NubiAI                         # Bot account username
-TWITTER_BOT_USER_ID=1234567890123456789             # Bot account user ID
+
+TWITTER_BOT_USERNAME=NubiAI # Bot account username
+TWITTER_BOT_USER_ID=1234567890123456789 # Bot account user ID
 
 # Rate Limiting (Twitter API limits)
-TWITTER_RATE_LIMIT_TWEETS_PER_HOUR=300              # Max tweets per hour
-TWITTER_RATE_LIMIT_FOLLOWS_PER_DAY=400              # Max follows per day
-TWITTER_RATE_LIMIT_LIKES_PER_HOUR=1000              # Max likes per hour
-TWITTER_RATE_LIMIT_RETWEETS_PER_HOUR=600            # Max retweets per hour
+
+TWITTER_RATE_LIMIT_TWEETS_PER_HOUR=300 # Max tweets per hour
+TWITTER_RATE_LIMIT_FOLLOWS_PER_DAY=400 # Max follows per day
+TWITTER_RATE_LIMIT_LIKES_PER_HOUR=1000 # Max likes per hour
+TWITTER_RATE_LIMIT_RETWEETS_PER_HOUR=600 # Max retweets per hour
 
 # Content Settings
-TWITTER_MAX_TWEET_LENGTH=280                         # Max tweet length
-TWITTER_ENABLE_THREADS=true                          # Enable thread creation
-TWITTER_ENABLE_MEDIA_UPLOADS=true                    # Enable media uploads
-TWITTER_MAX_MEDIA_SIZE=5242880                       # Max media size (5MB)
+
+TWITTER_MAX_TWEET_LENGTH=280 # Max tweet length
+TWITTER_ENABLE_THREADS=true # Enable thread creation
+TWITTER_ENABLE_MEDIA_UPLOADS=true # Enable media uploads
+TWITTER_MAX_MEDIA_SIZE=5242880 # Max media size (5MB)
 
 # Webhook Configuration (Twitter API Premium/Enterprise)
+
 TWITTER_WEBHOOK_URL=https://api.anubis.chat/webhooks/twitter
-TWITTER_WEBHOOK_ENVIRONMENT=prod                     # Webhook environment name
-TWITTER_WEBHOOK_SECRET=your-webhook-secret           # Webhook secret
+TWITTER_WEBHOOK_ENVIRONMENT=prod # Webhook environment name
+TWITTER_WEBHOOK_SECRET=your-webhook-secret # Webhook secret
 
 # Search and Monitoring
-TWITTER_MONITOR_KEYWORDS=anubis,nubi,ai              # Keywords to monitor
-TWITTER_MONITOR_HASHTAGS=#AnubisChat,#AI             # Hashtags to monitor
-TWITTER_SENTIMENT_ANALYSIS=true                      # Enable sentiment analysis
+
+TWITTER_MONITOR_KEYWORDS=anubis,nubi,ai # Keywords to monitor
+TWITTER_MONITOR_HASHTAGS=#AnubisChat,#AI # Hashtags to monitor
+TWITTER_SENTIMENT_ANALYSIS=true # Enable sentiment analysis
 
 # Automation Settings
-TWITTER_AUTO_REPLY=false                             # Auto-reply to mentions
-TWITTER_AUTO_FOLLOW_BACK=false                       # Auto-follow followers
-TWITTER_SPAM_DETECTION=true                          # Enable spam detection
+
+TWITTER_AUTO_REPLY=false # Auto-reply to mentions
+TWITTER_AUTO_FOLLOW_BACK=false # Auto-follow followers
+TWITTER_SPAM_DETECTION=true # Enable spam detection
 
 # Content Moderation
-TWITTER_BLOCK_SPAM_ACCOUNTS=true                     # Block spam accounts
-TWITTER_FILTER_INAPPROPRIATE_CONTENT=true           # Filter inappropriate content
-TWITTER_MIN_ACCOUNT_AGE_DAYS=30                     # Min account age for interactions
+
+TWITTER_BLOCK_SPAM_ACCOUNTS=true # Block spam accounts
+TWITTER_FILTER_INAPPROPRIATE_CONTENT=true # Filter inappropriate content
+TWITTER_MIN_ACCOUNT_AGE_DAYS=30 # Min account age for interactions
 
 # Development Settings
-TWITTER_SANDBOX_MODE=false                           # Use sandbox environment
-TWITTER_LOG_API_REQUESTS=false                      # Log API requests
-```
+
+TWITTER_SANDBOX_MODE=false # Use sandbox environment
+TWITTER_LOG_API_REQUESTS=false # Log API requests
+
+````
   </TabItem>
 </Tabs>
 
@@ -404,7 +448,8 @@ AI_MAX_CONVERSATION_LENGTH=50                     # Max messages in memory
 AI_MONTHLY_BUDGET_LIMIT=1000                      # Monthly budget limit ($)
 AI_COST_TRACKING=true                             # Track AI costs
 AI_COST_ALERT_THRESHOLD=0.8                      # Alert at 80% of budget
-```
+````
+
   </TabItem>
   
   <TabItem label="Analytics & Monitoring">
@@ -412,50 +457,58 @@ AI_COST_ALERT_THRESHOLD=0.8                      # Alert at 80% of budget
 # Analytics and Monitoring Configuration
 
 # Sentry Error Tracking
-SENTRY_DSN=your-sentry-dsn-url                     # Sentry DSN for error tracking
-SENTRY_ENVIRONMENT=production                       # Environment name
-SENTRY_RELEASE=nubi@2.0.0                         # Release version
-SENTRY_SAMPLE_RATE=1.0                            # Error sample rate (0-1)
-SENTRY_TRACES_SAMPLE_RATE=0.1                     # Performance sample rate
-SENTRY_DEBUG=false                                 # Enable Sentry debugging
+
+SENTRY_DSN=your-sentry-dsn-url # Sentry DSN for error tracking
+SENTRY_ENVIRONMENT=production # Environment name
+SENTRY_RELEASE=nubi@2.0.0 # Release version
+SENTRY_SAMPLE_RATE=1.0 # Error sample rate (0-1)
+SENTRY_TRACES_SAMPLE_RATE=0.1 # Performance sample rate
+SENTRY_DEBUG=false # Enable Sentry debugging
 
 # Google Analytics
-GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX                  # Google Analytics tracking ID
-GOOGLE_ANALYTICS_ENHANCED_ECOMMERCE=false         # Enhanced ecommerce tracking
-GA_MEASUREMENT_ID=G-XXXXXXXXXX                    # GA4 Measurement ID
+
+GOOGLE_ANALYTICS_ID=GA-XXXXXXXXX # Google Analytics tracking ID
+GOOGLE_ANALYTICS_ENHANCED_ECOMMERCE=false # Enhanced ecommerce tracking
+GA_MEASUREMENT_ID=G-XXXXXXXXXX # GA4 Measurement ID
 
 # Application Performance Monitoring
-APM_ENABLED=true                                   # Enable APM
-APM_SERVICE_NAME=nubi                              # Service name for APM
-APM_ENVIRONMENT=production                         # Environment name
-APM_SERVER_URL=https://apm.company.com            # APM server URL
-APM_SECRET_TOKEN=your-apm-secret                   # APM secret token
+
+APM_ENABLED=true # Enable APM
+APM_SERVICE_NAME=nubi # Service name for APM
+APM_ENVIRONMENT=production # Environment name
+APM_SERVER_URL=https://apm.company.com # APM server URL
+APM_SECRET_TOKEN=your-apm-secret # APM secret token
 
 # Metrics Collection
-METRICS_ENABLED=true                               # Enable metrics collection
-METRICS_PORT=9090                                  # Metrics endpoint port
-METRICS_PATH=/metrics                              # Metrics endpoint path
-METRICS_INTERVAL=30000                             # Metrics collection interval (ms)
+
+METRICS_ENABLED=true # Enable metrics collection
+METRICS_PORT=9090 # Metrics endpoint port
+METRICS_PATH=/metrics # Metrics endpoint path
+METRICS_INTERVAL=30000 # Metrics collection interval (ms)
 
 # Logging Services
-LOG_SHIPPING_ENABLED=false                         # Ship logs to external service
-LOG_SHIPPING_ENDPOINT=https://logs.company.com     # Log shipping endpoint
-LOG_SHIPPING_API_KEY=your-log-shipping-key         # API key for log service
+
+LOG_SHIPPING_ENABLED=false # Ship logs to external service
+LOG_SHIPPING_ENDPOINT=https://logs.company.com # Log shipping endpoint
+LOG_SHIPPING_API_KEY=your-log-shipping-key # API key for log service
 
 # Health Monitoring
-HEALTH_CHECK_ENABLED=true                          # Enable health checks
-HEALTH_CHECK_PATH=/health                          # Health check endpoint
-UPTIME_MONITORING_URL=https://monitor.company.com  # Uptime monitoring webhook
-UPTIME_CHECK_INTERVAL=60000                        # Uptime check interval (ms)
+
+HEALTH_CHECK_ENABLED=true # Enable health checks
+HEALTH_CHECK_PATH=/health # Health check endpoint
+UPTIME_MONITORING_URL=https://monitor.company.com # Uptime monitoring webhook
+UPTIME_CHECK_INTERVAL=60000 # Uptime check interval (ms)
 
 # Performance Monitoring
-PERFORMANCE_MONITORING=true                        # Monitor performance metrics
-SLOW_REQUEST_THRESHOLD=5000                        # Log requests slower than N ms
-MEMORY_USAGE_ALERT_THRESHOLD=0.9                  # Alert at 90% memory usage
-CPU_USAGE_ALERT_THRESHOLD=0.8                     # Alert at 80% CPU usage
-```
+
+PERFORMANCE_MONITORING=true # Monitor performance metrics
+SLOW_REQUEST_THRESHOLD=5000 # Log requests slower than N ms
+MEMORY_USAGE_ALERT_THRESHOLD=0.9 # Alert at 90% memory usage
+CPU_USAGE_ALERT_THRESHOLD=0.8 # Alert at 80% CPU usage
+
+````
   </TabItem>
-  
+
   <TabItem label="Email & Notifications">
 ```bash
 # Email Configuration
@@ -491,7 +544,8 @@ PUSH_NOTIFICATIONS_ENABLED=false                   # Enable push notifications
 VAPID_PUBLIC_KEY=your-vapid-public-key             # VAPID public key
 VAPID_PRIVATE_KEY=your-vapid-private-key           # VAPID private key
 VAPID_SUBJECT=mailto:admin@anubis.chat             # VAPID subject
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -507,72 +561,83 @@ Critical security settings for production deployments:
 # Security Configuration
 
 # CORS (Cross-Origin Resource Sharing)
+
 CORS_ORIGIN=https://anubis.chat,https://app.anubis.chat # Allowed origins
-CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS              # Allowed methods
-CORS_HEADERS=Content-Type,Authorization,X-API-Key     # Allowed headers
-CORS_CREDENTIALS=true                                  # Allow credentials
-CORS_MAX_AGE=86400                                    # Preflight cache duration
+CORS_METHODS=GET,POST,PUT,DELETE,OPTIONS # Allowed methods
+CORS_HEADERS=Content-Type,Authorization,X-API-Key # Allowed headers
+CORS_CREDENTIALS=true # Allow credentials
+CORS_MAX_AGE=86400 # Preflight cache duration
 
 # Rate Limiting
-RATE_LIMIT_ENABLED=true                               # Enable rate limiting
-RATE_LIMIT_WINDOW_MS=900000                          # Rate limit window (15 minutes)
-RATE_LIMIT_MAX_REQUESTS=100                          # Max requests per window
-RATE_LIMIT_SKIP_SUCCESS_RESPONSES=false              # Skip successful responses
-RATE_LIMIT_HEADERS=true                              # Send rate limit headers
+
+RATE_LIMIT_ENABLED=true # Enable rate limiting
+RATE_LIMIT_WINDOW_MS=900000 # Rate limit window (15 minutes)
+RATE_LIMIT_MAX_REQUESTS=100 # Max requests per window
+RATE_LIMIT_SKIP_SUCCESS_RESPONSES=false # Skip successful responses
+RATE_LIMIT_HEADERS=true # Send rate limit headers
 
 # API Rate Limiting
-API_RATE_LIMIT_ENABLED=true                          # Enable API rate limiting
-API_RATE_LIMIT_REQUESTS_PER_MINUTE=60               # API requests per minute
-API_RATE_LIMIT_BURST=10                             # Burst allowance
+
+API_RATE_LIMIT_ENABLED=true # Enable API rate limiting
+API_RATE_LIMIT_REQUESTS_PER_MINUTE=60 # API requests per minute
+API_RATE_LIMIT_BURST=10 # Burst allowance
 
 # Content Security Policy
-CSP_ENABLED=true                                     # Enable CSP headers
-CSP_REPORT_ONLY=false                               # Report-only mode
-CSP_REPORT_URI=/csp-report                          # CSP report endpoint
+
+CSP_ENABLED=true # Enable CSP headers
+CSP_REPORT_ONLY=false # Report-only mode
+CSP_REPORT_URI=/csp-report # CSP report endpoint
 
 # SSL/TLS Configuration
-SSL_REDIRECT=true                                    # Redirect HTTP to HTTPS
-SSL_HSTS_ENABLED=true                               # Enable HSTS headers
-SSL_HSTS_MAX_AGE=31536000                          # HSTS max age (1 year)
-SSL_HSTS_INCLUDE_SUBDOMAINS=true                   # Include subdomains in HSTS
-SSL_HSTS_PRELOAD=true                              # Include in HSTS preload list
+
+SSL_REDIRECT=true # Redirect HTTP to HTTPS
+SSL_HSTS_ENABLED=true # Enable HSTS headers
+SSL_HSTS_MAX_AGE=31536000 # HSTS max age (1 year)
+SSL_HSTS_INCLUDE_SUBDOMAINS=true # Include subdomains in HSTS
+SSL_HSTS_PRELOAD=true # Include in HSTS preload list
 
 # Security Headers
-SECURITY_HEADERS_ENABLED=true                        # Enable security headers
-X_FRAME_OPTIONS=DENY                                # X-Frame-Options header
-X_CONTENT_TYPE_OPTIONS=nosniff                      # X-Content-Type-Options header
-X_XSS_PROTECTION=1; mode=block                      # X-XSS-Protection header
-REFERRER_POLICY=strict-origin-when-cross-origin     # Referrer-Policy header
+
+SECURITY_HEADERS_ENABLED=true # Enable security headers
+X_FRAME_OPTIONS=DENY # X-Frame-Options header
+X_CONTENT_TYPE_OPTIONS=nosniff # X-Content-Type-Options header
+X_XSS_PROTECTION=1; mode=block # X-XSS-Protection header
+REFERRER_POLICY=strict-origin-when-cross-origin # Referrer-Policy header
 
 # Input Validation
-INPUT_VALIDATION_ENABLED=true                       # Enable input validation
-MAX_REQUEST_SIZE=10mb                               # Max request body size
-MAX_URL_LENGTH=2048                                 # Max URL length
-MAX_PARAMETER_COUNT=100                             # Max query parameters
+
+INPUT_VALIDATION_ENABLED=true # Enable input validation
+MAX_REQUEST_SIZE=10mb # Max request body size
+MAX_URL_LENGTH=2048 # Max URL length
+MAX_PARAMETER_COUNT=100 # Max query parameters
 
 # File Upload Security
-FILE_UPLOAD_ENABLED=true                            # Enable file uploads
-FILE_UPLOAD_MAX_SIZE=5242880                        # Max file size (5MB)
+
+FILE_UPLOAD_ENABLED=true # Enable file uploads
+FILE_UPLOAD_MAX_SIZE=5242880 # Max file size (5MB)
 FILE_UPLOAD_ALLOWED_TYPES=image/jpeg,image/png,image/gif # Allowed MIME types
-FILE_UPLOAD_SCAN_VIRUS=false                        # Enable virus scanning
-FILE_UPLOAD_PATH=./uploads                          # Upload directory
+FILE_UPLOAD_SCAN_VIRUS=false # Enable virus scanning
+FILE_UPLOAD_PATH=./uploads # Upload directory
 
 # Authentication Security
-AUTH_LOCKOUT_ENABLED=true                           # Enable account lockout
-AUTH_MAX_LOGIN_ATTEMPTS=5                           # Max failed login attempts
-AUTH_LOCKOUT_DURATION=900000                        # Lockout duration (15 minutes)
-AUTH_PASSWORD_POLICY_ENABLED=true                   # Enable password policy
-AUTH_REQUIRE_STRONG_PASSWORDS=true                  # Require strong passwords
-AUTH_2FA_ENABLED=false                              # Enable 2FA (future feature)
+
+AUTH_LOCKOUT_ENABLED=true # Enable account lockout
+AUTH_MAX_LOGIN_ATTEMPTS=5 # Max failed login attempts
+AUTH_LOCKOUT_DURATION=900000 # Lockout duration (15 minutes)
+AUTH_PASSWORD_POLICY_ENABLED=true # Enable password policy
+AUTH_REQUIRE_STRONG_PASSWORDS=true # Require strong passwords
+AUTH_2FA_ENABLED=false # Enable 2FA (future feature)
 
 # Data Protection
-DATA_ENCRYPTION_AT_REST=false                       # Encrypt sensitive data at rest
-DATA_ENCRYPTION_KEY=your-data-encryption-key        # Data encryption key
-DATA_RETENTION_DAYS=365                             # Data retention period
-DATA_ANONYMIZATION_ENABLED=false                    # Enable data anonymization
-```
+
+DATA_ENCRYPTION_AT_REST=false # Encrypt sensitive data at rest
+DATA_ENCRYPTION_KEY=your-data-encryption-key # Data encryption key
+DATA_RETENTION_DAYS=365 # Data retention period
+DATA_ANONYMIZATION_ENABLED=false # Enable data anonymization
+
+````
   </TabItem>
-  
+
   <TabItem label="Performance Settings">
 ```bash
 # Performance Configuration
@@ -638,7 +703,8 @@ MEMORY_GC_INTERVAL=300000                         # GC interval (5 minutes)
 CPU_PROFILING_ENABLED=false                       # Enable CPU profiling
 CPU_USAGE_MONITORING=true                         # Monitor CPU usage
 CPU_USAGE_ALERT_THRESHOLD=80                      # CPU usage alert threshold (%)
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -652,55 +718,68 @@ CPU_USAGE_ALERT_THRESHOLD=80                      # CPU usage alert threshold (%
 # Development Environment Configuration
 
 # Basic Settings
+
 NODE_ENV=development
 APP_URL=http://localhost:3000
 API_URL=http://localhost:3000
 WEBSOCKET_URL=ws://localhost:3000
 
 # Database (Local PostgreSQL)
+
 DATABASE_URL=postgresql://nubi:dev_password@localhost:5432/nubi_development
 
 # PGLite (Alternative for development)
+
 PGLITE_DATA_DIR=./.eliza/.elizadb
 USE_PGLITE=true
 
 # Redis (Local)
+
 REDIS_URL=redis://localhost:6379/0
 
 # Security (Relaxed for development)
+
 JWT_SECRET=dev-secret-not-for-production-use-only
 SESSION_SECRET=dev-session-secret-not-secure
 
 # CORS (Allow all origins in development)
-CORS_ORIGIN=*
+
+CORS_ORIGIN=\*
 
 # Rate Limiting (Disabled in development)
+
 RATE_LIMIT_ENABLED=false
 
 # Logging (Verbose in development)
+
 LOG_LEVEL=debug
 LOG_FORMAT=pretty
 
 # Hot Reloading
+
 HOT_RELOAD=true
 WATCH_FILES=true
 
 # Development Tools
+
 DEBUG_MODE=true
 PROFILER_ENABLED=true
 QUERY_LOGGING=true
 
 # Test Platform Credentials (Use test tokens)
+
 TELEGRAM_BOT_TOKEN=your-test-bot-token
 DISCORD_BOT_TOKEN=your-test-discord-token
 
 # Disable External Services in Development
+
 EMAIL_ENABLED=false
 SENTRY_ENABLED=false
 ANALYTICS_ENABLED=false
-```
+
+````
   </TabItem>
-  
+
   <TabItem label="Staging (.env.staging)">
 ```bash
 # Staging Environment Configuration
@@ -750,7 +829,8 @@ SMTP_USER=noreply-staging@anubis.chat
 # Feature Flags (Test new features)
 ENABLE_EXPERIMENTAL_FEATURES=true
 BETA_FEATURES=true
-```
+````
+
   </TabItem>
   
   <TabItem label="Production (.env.production)">
@@ -758,12 +838,14 @@ BETA_FEATURES=true
 # Production Environment Configuration
 
 # Basic Settings
+
 NODE_ENV=production
 APP_URL=https://anubis.chat
 API_URL=https://api.anubis.chat
 WEBSOCKET_URL=wss://api.anubis.chat
 
 # Database (Production cluster)
+
 DATABASE_URL=postgresql://nubi_prod:ultra_secure_password@prod-db-cluster:5432/nubi_production?sslmode=require
 DATABASE_SSL=true
 DATABASE_SSL_REJECT_UNAUTHORIZED=true
@@ -771,57 +853,69 @@ DATABASE_POOL_MIN=10
 DATABASE_POOL_MAX=50
 
 # Redis (Production cluster)
+
 REDIS_URL=rediss://prod-redis-cluster:6380/0
 REDIS_CLUSTER_MODE=true
 REDIS_TLS=true
 
 # Security (Maximum security)
+
 JWT_SECRET=production-jwt-secret-ultra-secure-64-character-minimum-random-key
 SESSION_SECRET=production-session-secret-ultra-secure-random-key-for-cookies
 BCRYPT_ROUNDS=12
 
 # CORS (Strict origins)
+
 CORS_ORIGIN=https://anubis.chat,https://app.anubis.chat
 
 # Rate Limiting (Strict)
+
 RATE_LIMIT_ENABLED=true
 RATE_LIMIT_MAX_REQUESTS=100
 API_RATE_LIMIT_REQUESTS_PER_MINUTE=60
 
 # Logging (Optimized for production)
+
 LOG_LEVEL=info
 LOG_FORMAT=json
 
 # SSL/Security Headers
+
 SSL_REDIRECT=true
 SSL_HSTS_ENABLED=true
 SECURITY_HEADERS_ENABLED=true
 
 # Production Platform Credentials
+
 TELEGRAM_BOT_TOKEN=production-telegram-bot-token
 DISCORD_BOT_TOKEN=production-discord-bot-token
 TWITTER_API_KEY=production-twitter-api-key
 
 # Monitoring (Full monitoring)
+
 SENTRY_DSN=https://production-sentry-dsn
 SENTRY_ENVIRONMENT=production
 GOOGLE_ANALYTICS_ID=GA-PRODUCTION-ID
 
 # Email (Production SMTP)
+
 SMTP_HOST=smtp.sendgrid.net
 SMTP_USER=apikey
 SMTP_FROM=NUBI <noreply@anubis.chat>
 
 # Performance (Optimized)
+
 CLUSTER_WORKERS=auto
 COMPRESSION_ENABLED=true
 CACHE_ENABLED=true
 QUEUE_CONCURRENCY=20
 
 # Feature Flags (Stable features only)
+
 ENABLE_EXPERIMENTAL_FEATURES=false
 BETA_FEATURES=false
-```
+
+````
   </TabItem>
 </Tabs>
 
@@ -869,7 +963,7 @@ fi
 check_required() {
     local var_name=$1
     local var_value=${!var_name}
-    
+
     if [[ -z "$var_value" ]]; then
         error "Required environment variable $var_name is not set"
     else
@@ -881,7 +975,7 @@ check_required() {
 validate_url() {
     local var_name=$1
     local url=${!var_name}
-    
+
     if [[ ! "$url" =~ ^https?:// ]]; then
         error "$var_name must be a valid URL starting with http:// or https://"
     else
@@ -892,11 +986,11 @@ validate_url() {
 # Database connection check
 check_database() {
     log "Checking database connection..."
-    
+
     if [[ -z "$DATABASE_URL" ]]; then
         error "DATABASE_URL is required"
     fi
-    
+
     # Test database connection
     if command -v psql &> /dev/null; then
         if psql "$DATABASE_URL" -c "SELECT 1;" &> /dev/null; then
@@ -912,16 +1006,16 @@ check_database() {
 # Redis connection check
 check_redis() {
     log "Checking Redis connection..."
-    
+
     if [[ -z "$REDIS_URL" ]]; then
         error "REDIS_URL is required"
     fi
-    
+
     # Test Redis connection
     if command -v redis-cli &> /dev/null; then
         local redis_host=$(echo "$REDIS_URL" | sed -n 's/.*\/\/\([^:@]*\):.*/\1/p')
         local redis_port=$(echo "$REDIS_URL" | sed -n 's/.*:\([0-9]*\).*/\1/p')
-        
+
         if redis-cli -h "$redis_host" -p "$redis_port" ping &> /dev/null; then
             log "✓ Redis connection successful"
         else
@@ -935,31 +1029,31 @@ check_redis() {
 # Security validation
 validate_security() {
     log "Validating security configuration..."
-    
+
     # JWT Secret validation
     if [[ ${#JWT_SECRET} -lt 64 ]]; then
         error "JWT_SECRET must be at least 64 characters long"
     else
         log "✓ JWT_SECRET length is adequate"
     fi
-    
+
     # Session Secret validation
     if [[ ${#SESSION_SECRET} -lt 32 ]]; then
         error "SESSION_SECRET must be at least 32 characters long"
     else
         log "✓ SESSION_SECRET length is adequate"
     fi
-    
+
     # Production security checks
     if [[ "$NODE_ENV" == "production" ]]; then
         if [[ "$JWT_SECRET" == *"dev"* ]] || [[ "$JWT_SECRET" == *"test"* ]]; then
             error "Production JWT_SECRET should not contain 'dev' or 'test'"
         fi
-        
+
         if [[ "$CORS_ORIGIN" == "*" ]]; then
             error "CORS_ORIGIN should not be '*' in production"
         fi
-        
+
         if [[ "$SSL_REDIRECT" != "true" ]]; then
             warn "SSL_REDIRECT should be enabled in production"
         fi
@@ -969,7 +1063,7 @@ validate_security() {
 # Main validation
 main() {
     log "Starting environment validation for NODE_ENV=${NODE_ENV:-development}"
-    
+
     # Check required variables
     check_required NODE_ENV
     check_required PORT
@@ -977,7 +1071,7 @@ main() {
     check_required REDIS_URL
     check_required JWT_SECRET
     check_required SESSION_SECRET
-    
+
     # Validate URLs
     if [[ -n "$APP_URL" ]]; then
         validate_url APP_URL
@@ -985,18 +1079,18 @@ main() {
     if [[ -n "$API_URL" ]]; then
         validate_url API_URL
     fi
-    
+
     # Check service connections
     check_database
     check_redis
-    
+
     # Validate security
     validate_security
-    
+
     log "Environment validation completed successfully!"
 }
 
 main "$@"
-```
+````
 
 This comprehensive environment variables reference ensures your NUBI deployment is properly configured for any environment, from local development to enterprise production setups.

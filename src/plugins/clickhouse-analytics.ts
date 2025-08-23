@@ -91,7 +91,7 @@ class ClickHouseAnalytics {
 
       if (!response.ok) {
         logger.error(
-          `ClickHouse insert failed: ${response.status} - ${response.statusText}`
+          `ClickHouse insert failed: ${response.status} - ${response.statusText}`,
         );
         // Re-queue events for retry with exponential backoff
         this.requeueEvents(events);
@@ -99,7 +99,10 @@ class ClickHouseAnalytics {
         logger.info(`✅ Flushed ${events.length} events to ClickHouse`);
       }
     } catch (error) {
-      logger.error("ClickHouse connection error:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "ClickHouse connection error:",
+        error instanceof Error ? error.message : String(error),
+      );
       // Re-queue events for retry with exponential backoff
       this.requeueEvents(events);
     }
@@ -112,9 +115,7 @@ class ClickHouseAnalytics {
     // If queue is getting too large, drop oldest events
     if (this.eventQueue.length > this.config.batchSize! * 10) {
       const dropped = this.eventQueue.splice(this.config.batchSize! * 5);
-      logger.warn(
-        `Dropped ${dropped.length} old events due to queue overflow`,
-      );
+      logger.warn(`Dropped ${dropped.length} old events due to queue overflow`);
     }
   }
 

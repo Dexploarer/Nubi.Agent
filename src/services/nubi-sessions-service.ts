@@ -11,7 +11,7 @@ import { DatabaseMemoryService } from "./database-memory-service";
 
 /**
  * NUBI Sessions Service
- * 
+ *
  * Implements ElizaOS Sessions API patterns for NUBI with:
  * - Session lifecycle management
  * - Real-time raid coordination sessions
@@ -26,7 +26,7 @@ export interface SessionConfig {
   metadata?: Record<string, any>;
   timeout?: number;
   autoRenewal?: boolean;
-  sessionType?: 'conversation' | 'raid' | 'community';
+  sessionType?: "conversation" | "raid" | "community";
 }
 
 export interface Session {
@@ -43,7 +43,7 @@ export interface Session {
 }
 
 export interface SessionState {
-  status: 'active' | 'idle' | 'expiring' | 'expired';
+  status: "active" | "idle" | "expiring" | "expired";
   context: Record<string, any>;
   messages: number;
   lastInteraction: Date;
@@ -58,7 +58,7 @@ export interface RaidSessionConfig extends SessionConfig {
 }
 
 export interface RaidObjective {
-  type: 'like' | 'retweet' | 'reply' | 'quote' | 'follow';
+  type: "like" | "retweet" | "reply" | "quote" | "follow";
   target: string;
   count: number;
   points: number;
@@ -83,7 +83,7 @@ export interface RaidParticipant {
 }
 
 export interface RaidProgress {
-  status: 'active' | 'paused' | 'completed' | 'failed';
+  status: "active" | "paused" | "completed" | "failed";
   participantCount: number;
   totalActions: number;
   completionRate: number;
@@ -92,7 +92,8 @@ export interface RaidProgress {
 
 export class NUBISessionsService extends Service {
   static serviceType = "nubi_sessions" as const;
-  capabilityDescription = "ElizaOS Sessions API implementation with NUBI-specific extensions";
+  capabilityDescription =
+    "ElizaOS Sessions API implementation with NUBI-specific extensions";
 
   declare protected runtime: IAgentRuntime;
   private poolerManager?: DatabasePoolerManager;
@@ -112,23 +113,32 @@ export class NUBISessionsService extends Service {
       this.isRunning = true;
 
       if (!this.runtime) {
-        logger.warn("[NUBI_SESSIONS] No runtime available, service will operate in limited mode");
+        logger.warn(
+          "[NUBI_SESSIONS] No runtime available, service will operate in limited mode",
+        );
         return;
       }
 
       // Get database pooler manager
       try {
-        this.poolerManager = this.runtime.getService<DatabasePoolerManager>("database-pooler-manager") ?? undefined;
+        this.poolerManager =
+          this.runtime.getService<DatabasePoolerManager>(
+            "database-pooler-manager",
+          ) ?? undefined;
         if (this.poolerManager) {
           logger.info("[NUBI_SESSIONS] Connected to database pooler manager");
         }
       } catch (error) {
-        logger.warn("[NUBI_SESSIONS] Database pooler manager not available, using ElizaOS built-in database");
+        logger.warn(
+          "[NUBI_SESSIONS] Database pooler manager not available, using ElizaOS built-in database",
+        );
       }
 
       // Get memory service
       try {
-        this.memoryService = this.runtime.getService<DatabaseMemoryService>("database_memory") ?? undefined;
+        this.memoryService =
+          this.runtime.getService<DatabaseMemoryService>("database_memory") ??
+          undefined;
         if (this.memoryService) {
           logger.info("[NUBI_SESSIONS] Connected to database memory service");
         }
@@ -147,7 +157,7 @@ export class NUBISessionsService extends Service {
 
       logger.info("[NUBI_SESSIONS] NUBI Sessions Service started successfully");
     } catch (error) {
-      logger.error("[NUBI_SESSIONS] Failed to start:", error);
+      logger.error("[NUBI_SESSIONS] Failed to start:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -210,10 +220,12 @@ export class NUBISessionsService extends Service {
     `;
 
     try {
-      await this.poolerManager.query(createTablesSQL, [], { poolType: PoolType.SESSION });
+      await this.poolerManager.query(createTablesSQL, [], {
+        poolType: PoolType.SESSION,
+      });
       logger.info("[NUBI_SESSIONS] Database tables initialized successfully");
     } catch (error) {
-      logger.error("[NUBI_SESSIONS] Failed to initialize tables:", error);
+      logger.error("[NUBI_SESSIONS] Failed to initialize tables:", error instanceof Error ? error.message : String(error));
       throw error;
     }
   }
@@ -225,7 +237,7 @@ export class NUBISessionsService extends Service {
     if (!this.isRunning) {
       throw new Error("Sessions service is not running");
     }
-    
+
     const sessionId = crypto.randomUUID() as UUID;
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (config.timeout || 3600000)); // 1 hour default
@@ -234,9 +246,9 @@ export class NUBISessionsService extends Service {
       id: sessionId,
       agentId: config.agentId,
       userId: config.userId,
-      roomId: config.roomId || crypto.randomUUID() as UUID,
+      roomId: config.roomId || (crypto.randomUUID() as UUID),
       state: {
-        status: 'active',
+        status: "active",
         context: {},
         messages: 0,
         lastInteraction: now,
@@ -256,18 +268,22 @@ export class NUBISessionsService extends Service {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       `;
 
-      await this.poolerManager.query(insertSQL, [
-        session.id,
-        session.agentId,
-        session.userId,
-        session.roomId,
-        config.sessionType || 'conversation',
-        session.state.status,
-        JSON.stringify(session.config),
-        JSON.stringify(session.state),
-        JSON.stringify(session.metadata),
-        session.expiresAt,
-      ], { poolType: PoolType.TRANSACTION });
+      await this.poolerManager.query(
+        insertSQL,
+        [
+          session.id,
+          session.agentId,
+          session.userId,
+          session.roomId,
+          config.sessionType || "conversation",
+          session.state.status,
+          JSON.stringify(session.config),
+          JSON.stringify(session.state),
+          JSON.stringify(session.metadata),
+          session.expiresAt,
+        ],
+        { poolType: PoolType.TRANSACTION },
+      );
     }
 
     // Store in memory
@@ -282,12 +298,12 @@ export class NUBISessionsService extends Service {
         id: crypto.randomUUID() as UUID,
         agentId: session.agentId,
         entityId: session.userId || session.agentId,
-        roomId: session.roomId,
+        roomId: session.roomId || (crypto.randomUUID() as UUID),
         content: {
           text: `Session created: ${session.id}`,
-          type: 'session_created',
+          type: "session_created",
           sessionId: session.id,
-          sessionType: config.sessionType || 'conversation',
+          sessionType: config.sessionType || "conversation",
           metadata: session.metadata,
         },
         embedding: undefined,
@@ -305,10 +321,10 @@ export class NUBISessionsService extends Service {
    * Create a raid session
    */
   async createRaidSession(config: RaidSessionConfig): Promise<RaidSession> {
-    const session = await this.createSession({
+    const session = (await this.createSession({
       ...config,
-      sessionType: 'raid',
-    }) as RaidSession;
+      sessionType: "raid",
+    })) as RaidSession;
 
     // Add raid-specific properties
     session.raidId = config.raidId;
@@ -316,7 +332,7 @@ export class NUBISessionsService extends Service {
     session.objectives = config.objectives;
     session.participants = [];
     session.progress = {
-      status: 'active',
+      status: "active",
       participantCount: 0,
       totalActions: 0,
       completionRate: 0,
@@ -331,20 +347,26 @@ export class NUBISessionsService extends Service {
         VALUES ($1, $2, $3, $4, $5, $6)
       `;
 
-      await this.poolerManager.query(insertRaidSQL, [
-        session.id,
-        config.raidId,
-        config.targetUrl,
-        JSON.stringify(config.objectives),
-        config.maxParticipants,
-        config.duration,
-      ], { poolType: PoolType.TRANSACTION });
+      await this.poolerManager.query(
+        insertRaidSQL,
+        [
+          session.id,
+          config.raidId,
+          config.targetUrl,
+          JSON.stringify(config.objectives),
+          config.maxParticipants,
+          config.duration,
+        ],
+        { poolType: PoolType.TRANSACTION },
+      );
     }
 
     // Update memory cache
     this.sessions.set(session.id, session);
 
-    logger.info(`[NUBI_SESSIONS] Created raid session: ${session.id} for raid: ${config.raidId}`);
+    logger.info(
+      `[NUBI_SESSIONS] Created raid session: ${session.id} for raid: ${config.raidId}`,
+    );
     return session;
   }
 
@@ -385,7 +407,10 @@ export class NUBISessionsService extends Service {
   /**
    * Update session activity
    */
-  async updateSessionActivity(sessionId: string, context?: Record<string, any>): Promise<boolean> {
+  async updateSessionActivity(
+    sessionId: string,
+    context?: Record<string, any>,
+  ): Promise<boolean> {
     const session = await this.getSession(sessionId);
     if (!session) return false;
 
@@ -406,11 +431,11 @@ export class NUBISessionsService extends Service {
         WHERE id = $3
       `;
 
-      await this.poolerManager.query(updateSQL, [
-        now,
-        JSON.stringify(session.state),
-        sessionId,
-      ], { poolType: PoolType.TRANSACTION });
+      await this.poolerManager.query(
+        updateSQL,
+        [now, JSON.stringify(session.state), sessionId],
+        { poolType: PoolType.TRANSACTION },
+      );
     }
 
     // Update memory cache
@@ -422,8 +447,14 @@ export class NUBISessionsService extends Service {
   /**
    * Add participant to raid session
    */
-  async joinRaidSession(sessionId: string, participant: Omit<RaidParticipant, 'joinedAt' | 'actionsCompleted' | 'pointsEarned' | 'verified'>): Promise<boolean> {
-    const session = await this.getSession(sessionId) as RaidSession;
+  async joinRaidSession(
+    sessionId: string,
+    participant: Omit<
+      RaidParticipant,
+      "joinedAt" | "actionsCompleted" | "pointsEarned" | "verified"
+    >,
+  ): Promise<boolean> {
+    const session = (await this.getSession(sessionId)) as RaidSession;
     if (!session || !session.raidId) return false;
 
     const raidParticipant: RaidParticipant = {
@@ -443,19 +474,23 @@ export class NUBISessionsService extends Service {
         ON CONFLICT (raid_id, telegram_id) DO NOTHING
       `;
 
-      await this.poolerManager.query(insertSQL, [
-        sessionId,
-        session.raidId,
-        participant.telegramId,
-        participant.telegramUsername,
-        participant.twitterUsername,
-      ], { poolType: PoolType.TRANSACTION });
+      await this.poolerManager.query(
+        insertSQL,
+        [
+          sessionId,
+          session.raidId,
+          participant.telegramId,
+          participant.telegramUsername,
+          participant.twitterUsername,
+        ],
+        { poolType: PoolType.TRANSACTION },
+      );
     }
 
     // Store in ElizaOS memory for raid context
     if (this.memoryService) {
       await this.memoryService.storeRaidParticipant(
-        session.roomId,
+        session.roomId || "default-room",
         session.raidId,
         {
           telegramId: raidParticipant.telegramId,
@@ -464,7 +499,7 @@ export class NUBISessionsService extends Service {
           actionsCompleted: 0,
           pointsEarned: 0,
           verified: false,
-        }
+        },
       );
     }
 
@@ -474,7 +509,9 @@ export class NUBISessionsService extends Service {
     session.progress.participantCount = session.participants.length;
     this.sessions.set(sessionId, session);
 
-    logger.info(`[NUBI_SESSIONS] Participant ${participant.telegramUsername} joined raid session: ${sessionId}`);
+    logger.info(
+      `[NUBI_SESSIONS] Participant ${participant.telegramUsername} joined raid session: ${sessionId}`,
+    );
     return true;
   }
 
@@ -495,9 +532,9 @@ export class NUBISessionsService extends Service {
     };
 
     for (const session of this.sessions.values()) {
-      if (session.state.status === 'active') stats.active++;
-      if (session.config.sessionType === 'raid') stats.raids++;
-      if (session.config.sessionType === 'community') stats.community++;
+      if (session.state.status === "active") stats.active++;
+      if (session.config.sessionType === "raid") stats.raids++;
+      if (session.config.sessionType === "community") stats.community++;
     }
 
     return stats;
@@ -514,7 +551,7 @@ export class NUBISessionsService extends Service {
       createdAt: new Date(row.created_at),
       lastActivity: new Date(row.last_activity),
       expiresAt: new Date(row.expires_at),
-      metadata: JSON.parse(row.metadata || '{}'),
+      metadata: JSON.parse(row.metadata || "{}"),
     };
 
     // If it's a raid session, add raid properties
@@ -525,7 +562,7 @@ export class NUBISessionsService extends Service {
       raidSession.objectives = JSON.parse(row.objectives);
       raidSession.participants = [];
       raidSession.progress = {
-        status: 'active',
+        status: "active",
         participantCount: 0,
         totalActions: 0,
         completionRate: 0,
@@ -543,7 +580,7 @@ export class NUBISessionsService extends Service {
       const timer = setTimeout(() => {
         this.expireSession(sessionId);
       }, timeout);
-      
+
       this.sessionTimers.set(sessionId, timer);
     }
   }
@@ -552,7 +589,7 @@ export class NUBISessionsService extends Service {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
-    session.state.status = 'expired';
+    session.state.status = "expired";
 
     // Update database
     if (this.poolerManager) {
@@ -593,7 +630,9 @@ export class NUBISessionsService extends Service {
       this.setSessionTimer(session.id, session.expiresAt);
     }
 
-    logger.info(`[NUBI_SESSIONS] Loaded ${result.rows.length} existing sessions`);
+    logger.info(
+      `[NUBI_SESSIONS] Loaded ${result.rows.length} existing sessions`,
+    );
   }
 
   private startCleanupTimer(): void {
@@ -603,7 +642,7 @@ export class NUBISessionsService extends Service {
       const now = new Date();
 
       for (const [sessionId, session] of this.sessions) {
-        if (session.expiresAt <= now && session.state.status !== 'expired') {
+        if (session.expiresAt <= now && session.state.status !== "expired") {
           expired.push(sessionId);
         }
       }
@@ -613,14 +652,16 @@ export class NUBISessionsService extends Service {
       }
 
       if (expired.length > 0) {
-        logger.info(`[NUBI_SESSIONS] Cleaned up ${expired.length} expired sessions`);
+        logger.info(
+          `[NUBI_SESSIONS] Cleaned up ${expired.length} expired sessions`,
+        );
       }
     }, 300000); // 5 minutes
   }
 
   async stop(): Promise<void> {
     this.isRunning = false;
-    
+
     // Clear all timers
     for (const timer of this.sessionTimers.values()) {
       clearTimeout(timer);

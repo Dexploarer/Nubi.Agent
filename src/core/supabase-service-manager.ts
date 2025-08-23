@@ -45,7 +45,9 @@ export class SupabaseServiceManager {
       return;
     }
 
-    logger.info(`🚀 Initializing ${this.serviceDefinitions.length} services...`);
+    logger.info(
+      `🚀 Initializing ${this.serviceDefinitions.length} services...`,
+    );
 
     // Sort services by dependencies
     const sortedDefinitions = this.sortServicesByDependencies();
@@ -54,26 +56,26 @@ export class SupabaseServiceManager {
     for (const def of sortedDefinitions) {
       try {
         logger.info(`  ⚙️ Initializing ${def.name}...`);
-        
+
         // Create service instance
         const ServiceClass = def.service as any;
         const serviceInstance = new ServiceClass();
-        
+
         // Initialize if method exists
-        if (typeof serviceInstance.initialize === 'function') {
+        if (typeof serviceInstance.initialize === "function") {
           await serviceInstance.initialize(this.runtime);
         }
-        
+
         // Register with runtime if possible
         if (this.runtime.registerService) {
           await this.runtime.registerService(serviceInstance);
         }
-        
+
         this.services.set(def.name, serviceInstance);
         logger.info(`  ✅ ${def.name} initialized`);
       } catch (error) {
         const errorMsg = `Failed to initialize ${def.name}: ${error}`;
-        
+
         if (def.required) {
           logger.error(`  ❌ ${errorMsg}`);
           throw new Error(errorMsg);
@@ -84,7 +86,9 @@ export class SupabaseServiceManager {
     }
 
     this.initialized = true;
-    logger.info(`✨ Service initialization complete (${this.services.size}/${this.serviceDefinitions.length})`);
+    logger.info(
+      `✨ Service initialization complete (${this.services.size}/${this.serviceDefinitions.length})`,
+    );
   }
 
   /**
@@ -100,10 +104,10 @@ export class SupabaseServiceManager {
   getSystemInfo(): SystemInfo {
     // Check database connection
     const databaseConnected = this.checkDatabaseConnection();
-    
+
     // Check Redis connection (if applicable)
     const redisConnected = this.checkRedisConnection();
-    
+
     return {
       databaseConnected,
       redisConnected,
@@ -117,21 +121,24 @@ export class SupabaseServiceManager {
    */
   async shutdown(): Promise<void> {
     logger.info("🛑 Shutting down services...");
-    
+
     // Shutdown in reverse order
     const reverseServices = Array.from(this.services.entries()).reverse();
-    
+
     for (const [name, service] of reverseServices) {
       try {
-        if (typeof (service as any).shutdown === 'function') {
+        if (typeof (service as any).shutdown === "function") {
           await (service as any).shutdown();
         }
         logger.info(`  ✅ ${name} shutdown`);
       } catch (error) {
-        logger.error(`  ❌ Failed to shutdown ${name}:`, error instanceof Error ? error.message : String(error));
+        logger.error(
+          `  ❌ Failed to shutdown ${name}:`,
+          error instanceof Error ? error.message : String(error),
+        );
       }
     }
-    
+
     this.services.clear();
     this.initialized = false;
   }
@@ -155,7 +162,9 @@ export class SupabaseServiceManager {
       // Visit dependencies first
       if (def.dependencies) {
         for (const depName of def.dependencies) {
-          const depDef = this.serviceDefinitions.find(d => d.name === depName);
+          const depDef = this.serviceDefinitions.find(
+            (d) => d.name === depName,
+          );
           if (depDef) {
             visit(depDef);
           }
@@ -181,16 +190,19 @@ export class SupabaseServiceManager {
     try {
       // Check if database adapter exists and is connected
       const dbAdapter = (this.runtime as any).databaseAdapter;
-      if (dbAdapter && typeof dbAdapter.isConnected === 'function') {
+      if (dbAdapter && typeof dbAdapter.isConnected === "function") {
         return dbAdapter.isConnected();
       }
-      
+
       // Check for database pooler manager
-      const poolerManager = this.getService('database-pooler-manager');
-      if (poolerManager && typeof (poolerManager as any).isConnected === 'function') {
+      const poolerManager = this.getService("database-pooler-manager");
+      if (
+        poolerManager &&
+        typeof (poolerManager as any).isConnected === "function"
+      ) {
         return (poolerManager as any).isConnected();
       }
-      
+
       return false;
     } catch {
       return false;
@@ -203,11 +215,14 @@ export class SupabaseServiceManager {
   private checkRedisConnection(): boolean {
     try {
       // Check for Redis service
-      const redisService = this.getService('redis');
-      if (redisService && typeof (redisService as any).isConnected === 'function') {
+      const redisService = this.getService("redis");
+      if (
+        redisService &&
+        typeof (redisService as any).isConnected === "function"
+      ) {
         return (redisService as any).isConnected();
       }
-      
+
       return false;
     } catch {
       return false;

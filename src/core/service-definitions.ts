@@ -97,7 +97,11 @@ export const SERVICE_DEFINITIONS: ServiceDefinition[] = [
     name: "enhanced-response-generator",
     service: EnhancedResponseGenerator as any,
     required: true,
-    dependencies: ["personality-evolution", "emotional-state", "database-memory"],
+    dependencies: [
+      "personality-evolution",
+      "emotional-state",
+      "database-memory",
+    ],
   },
 
   // Socket.IO services

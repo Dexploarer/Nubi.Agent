@@ -12,7 +12,7 @@ export class ResponseStrategyEvaluator implements Evaluator {
   async validate(
     runtime: IAgentRuntime,
     message: Memory,
-    state?: State
+    state?: State,
   ): Promise<boolean> {
     // Only evaluate for non-agent messages
     return message.entityId !== runtime.agentId;
@@ -21,28 +21,36 @@ export class ResponseStrategyEvaluator implements Evaluator {
   async handler(
     runtime: IAgentRuntime,
     message: Memory,
-    state?: State
+    state?: State,
   ): Promise<void> {
     try {
       // Simple strategy evaluation
-      const text = (message.content as any)?.text || '';
+      const text = (message.content as any)?.text || "";
       const wordCount = text.split(/\s+/).length;
-      
+
       // Determine if streaming would be beneficial
-      const shouldStream = wordCount > 50 || text.includes('explain') || text.includes('implement');
-      
+      const shouldStream =
+        wordCount > 50 ||
+        text.includes("explain") ||
+        text.includes("implement");
+
       // Store strategy in state for other components
       if (state) {
         (state as any).responseStrategy = {
           shouldStream,
-          method: shouldStream ? 'stream' : 'batch',
-          confidence: 0.8
+          method: shouldStream ? "stream" : "batch",
+          confidence: 0.8,
         };
       }
-      
-      logger.debug(`[RESPONSE_STRATEGY] Evaluated: ${shouldStream ? 'stream' : 'batch'} for ${wordCount} words`);
+
+      logger.debug(
+        `[RESPONSE_STRATEGY] Evaluated: ${shouldStream ? "stream" : "batch"} for ${wordCount} words`,
+      );
     } catch (error) {
-      logger.error("[RESPONSE_STRATEGY] Error:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[RESPONSE_STRATEGY] Error:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 }

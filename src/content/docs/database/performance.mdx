@@ -25,28 +25,28 @@ graph TB
     A[Application Queries] --> B[Query Optimizer]
     B --> C[Connection Pool Router]
     C --> D{Query Analysis}
-    
+
     D -->|Simple| E[Transaction Pool]
     D -->|Complex| F[Session Pool]
     D -->|Vector| F
-    
+
     E --> G[Query Cache]
     F --> G
     G --> H[Database Execution]
-    
+
     H --> I[Result Cache]
     I --> J[Performance Metrics]
     J --> K[Adaptive Optimization]
-    
+
     K --> L[Pool Scaling]
     K --> M[Query Rewriting]
     K --> N[Index Optimization]
     K --> O[Cache Tuning]
-    
+
     P[Real-time Monitor] --> Q[Performance Dashboard]
     P --> R[Alert System]
     P --> S[Auto-healing]
-    
+
     J --> P
     L --> C
     M --> B
@@ -59,13 +59,15 @@ graph TB
     **Consistently fast queries** with 95% of simple operations completing under 50ms and complex analytics under 200ms.
   </Card>
 
-  <Card title="📊 Intelligent Monitoring" icon="chart">
-    **Real-time performance tracking** with automatic bottleneck detection, performance regression alerts, and adaptive optimization.
-  </Card>
+<Card title="📊 Intelligent Monitoring" icon="chart">
+  **Real-time performance tracking** with automatic bottleneck detection,
+  performance regression alerts, and adaptive optimization.
+</Card>
 
-  <Card title="🔄 Auto-scaling Pools" icon="approve-check">
-    **Dynamic connection management** that automatically scales pool sizes based on load patterns and performance metrics.
-  </Card>
+<Card title="🔄 Auto-scaling Pools" icon="approve-check">
+  **Dynamic connection management** that automatically scales pool sizes based
+  on load patterns and performance metrics.
+</Card>
 
   <Card title="🧠 Smart Caching" icon="setting">
     **Multi-layer caching strategy** with query result caching, connection pooling, and embedding caching for optimal resource utilization.
@@ -1037,7 +1039,7 @@ NUBI's optimized database system delivers exceptional performance across all ope
         </div>
       </div>
     </div>
-    
+
     <div class="benchmark-item session-pool">
       <h3>🧠 Session Pool Performance</h3>
       <div class="benchmark-stats">
@@ -1059,7 +1061,7 @@ NUBI's optimized database system delivers exceptional performance across all ope
         </div>
       </div>
     </div>
-    
+
     <div class="benchmark-item vector-operations">
       <h3>🔍 Vector Operations</h3>
       <div class="benchmark-stats">
@@ -1081,7 +1083,7 @@ NUBI's optimized database system delivers exceptional performance across all ope
         </div>
       </div>
     </div>
-    
+
     <div class="benchmark-item system-health">
       <h3>📊 System Health</h3>
       <div class="benchmark-stats">
@@ -1110,7 +1112,7 @@ NUBI's optimized database system delivers exceptional performance across all ope
 
 <div class="optimization-checklist">
   <h3>🎯 Performance Optimization Checklist</h3>
-  
+
   <div class="checklist-section">
     <h4>📊 Query Optimization</h4>
     <ul>
@@ -1121,7 +1123,7 @@ NUBI's optimized database system delivers exceptional performance across all ope
       <li>✅ Query timeout and resource limit enforcement</li>
     </ul>
   </div>
-  
+
   <div class="checklist-section">
     <h4>🔗 Connection Management</h4>
     <ul>
@@ -1132,7 +1134,7 @@ NUBI's optimized database system delivers exceptional performance across all ope
       <li>✅ Resource leak detection and prevention</li>
     </ul>
   </div>
-  
+
   <div class="checklist-section">
     <h4>💾 Caching Strategy</h4>
     <ul>
@@ -1143,7 +1145,7 @@ NUBI's optimized database system delivers exceptional performance across all ope
       <li>✅ Cache performance monitoring and optimization</li>
     </ul>
   </div>
-  
+
   <div class="checklist-section">
     <h4>🔍 Monitoring & Alerting</h4>
     <ul>
@@ -1159,9 +1161,14 @@ NUBI's optimized database system delivers exceptional performance across all ope
 ---
 
 <div class="nubi-note">
-  <strong>🚀 Performance Benefits:</strong> NUBI's comprehensive performance optimization system ensures consistent sub-100ms response times, automatic scaling and healing, intelligent caching, and proactive monitoring that maintains optimal database performance under all conditions.
+  <strong>🚀 Performance Benefits:</strong> NUBI's comprehensive performance
+  optimization system ensures consistent sub-100ms response times, automatic
+  scaling and healing, intelligent caching, and proactive monitoring that
+  maintains optimal database performance under all conditions.
 </div>
 
 <Aside type="tip">
-  **Database Complete**: You've now explored NUBI's complete database system. Continue with the [Telegram Raids](/telegram-raids/overview/) section to understand the raid coordination capabilities.
+  **Database Complete**: You've now explored NUBI's complete database system.
+  Continue with the [Telegram Raids](/telegram-raids/overview/) section to
+  understand the raid coordination capabilities.
 </Aside>

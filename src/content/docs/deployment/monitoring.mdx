@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 Comprehensive monitoring and observability setup ensures your NUBI deployment maintains optimal performance, reliability, and user experience at scale.
 
@@ -23,48 +23,48 @@ graph TB
         DB[(PostgreSQL)]
         REDIS[(Redis)]
     end
-    
+
     subgraph "Metrics Collection"
         PROM[Prometheus]
         NODE[Node Exporter]
         POSTGRES[PostgreSQL Exporter]
         REDIS_EXP[Redis Exporter]
     end
-    
+
     subgraph "Logging Stack"
         LOKI[Loki]
         PROMTAIL[Promtail]
         GRAFANA[Grafana]
     end
-    
+
     subgraph "Tracing"
         JAEGER[Jaeger]
         OTEL[OpenTelemetry]
     end
-    
+
     subgraph "Alerting"
         AM[Alertmanager]
         SLACK[Slack]
         EMAIL[Email]
         PD[PagerDuty]
     end
-    
+
     NUBI --> PROM
     WORKER --> PROM
     DB --> POSTGRES
     REDIS --> REDIS_EXP
-    
+
     NUBI --> OTEL
     OTEL --> JAEGER
-    
+
     NUBI --> PROMTAIL
     PROMTAIL --> LOKI
-    
+
     PROM --> AM
     AM --> SLACK
     AM --> EMAIL
     AM --> PD
-    
+
     LOKI --> GRAFANA
     PROM --> GRAFANA
     JAEGER --> GRAFANA
@@ -77,20 +77,22 @@ graph TB
 version: '3.8'
 
 services:
-  # Prometheus for metrics collection
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: nubi-prometheus
-    restart: unless-stopped
-    
+
+# Prometheus for metrics collection
+
+prometheus:
+image: prom/prometheus:latest
+container_name: nubi-prometheus
+restart: unless-stopped
+
     ports:
       - "9090:9090"
-    
+
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./monitoring/prometheus/rules:/etc/prometheus/rules:ro
       - prometheus_data:/prometheus
-    
+
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -100,163 +102,172 @@ services:
       - '--web.enable-lifecycle'
       - '--web.enable-admin-api'
       - '--log.level=info'
-    
+
     networks:
       - nubi-monitoring
 
-  # Grafana for visualization
-  grafana:
-    image: grafana/grafana:latest
-    container_name: nubi-grafana
-    restart: unless-stopped
-    
+# Grafana for visualization
+
+grafana:
+image: grafana/grafana:latest
+container_name: nubi-grafana
+restart: unless-stopped
+
     ports:
       - "3001:3000"
-    
+
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_INSTALL_PLUGINS=redis-datasource,postgres-datasource
-    
+
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    
+
     networks:
       - nubi-monitoring
 
-  # Loki for log aggregation
-  loki:
-    image: grafana/loki:latest
-    container_name: nubi-loki
-    restart: unless-stopped
-    
+# Loki for log aggregation
+
+loki:
+image: grafana/loki:latest
+container_name: nubi-loki
+restart: unless-stopped
+
     ports:
       - "3100:3100"
-    
+
     volumes:
       - ./monitoring/loki/loki.yml:/etc/loki/local-config.yaml:ro
       - loki_data:/loki
-    
+
     command: -config.file=/etc/loki/local-config.yaml
-    
+
     networks:
       - nubi-monitoring
 
-  # Promtail for log shipping
-  promtail:
-    image: grafana/promtail:latest
-    container_name: nubi-promtail
-    restart: unless-stopped
-    
+# Promtail for log shipping
+
+promtail:
+image: grafana/promtail:latest
+container_name: nubi-promtail
+restart: unless-stopped
+
     volumes:
       - ./monitoring/promtail/promtail.yml:/etc/promtail/config.yml:ro
       - ./logs:/var/log/nubi:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    
+
     command: -config.file=/etc/promtail/config.yml
-    
+
     networks:
       - nubi-monitoring
 
-  # Alertmanager for alerting
-  alertmanager:
-    image: prom/alertmanager:latest
-    container_name: nubi-alertmanager
-    restart: unless-stopped
-    
+# Alertmanager for alerting
+
+alertmanager:
+image: prom/alertmanager:latest
+container_name: nubi-alertmanager
+restart: unless-stopped
+
     ports:
       - "9093:9093"
-    
+
     volumes:
       - ./monitoring/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - alertmanager_data:/alertmanager
-    
+
     networks:
       - nubi-monitoring
 
-  # Node Exporter for system metrics
-  node-exporter:
-    image: prom/node-exporter:latest
-    container_name: nubi-node-exporter
-    restart: unless-stopped
-    
+# Node Exporter for system metrics
+
+node-exporter:
+image: prom/node-exporter:latest
+container_name: nubi-node-exporter
+restart: unless-stopped
+
     ports:
       - "9100:9100"
-    
+
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-    
+
     command:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    
+
     networks:
       - nubi-monitoring
 
-  # PostgreSQL Exporter
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: nubi-postgres-exporter
-    restart: unless-stopped
-    
+# PostgreSQL Exporter
+
+postgres-exporter:
+image: prometheuscommunity/postgres-exporter:latest
+container_name: nubi-postgres-exporter
+restart: unless-stopped
+
     ports:
       - "9187:9187"
-    
+
     environment:
       DATA_SOURCE_NAME: ${DATABASE_URL}
-    
+
     networks:
       - nubi-monitoring
 
-  # Redis Exporter
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: nubi-redis-exporter
-    restart: unless-stopped
-    
+# Redis Exporter
+
+redis-exporter:
+image: oliver006/redis_exporter:latest
+container_name: nubi-redis-exporter
+restart: unless-stopped
+
     ports:
       - "9121:9121"
-    
+
     environment:
       REDIS_ADDR: redis://redis:6379
-    
+
     networks:
       - nubi-monitoring
 
-  # Jaeger for distributed tracing
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: nubi-jaeger
-    restart: unless-stopped
-    
+# Jaeger for distributed tracing
+
+jaeger:
+image: jaegertracing/all-in-one:latest
+container_name: nubi-jaeger
+restart: unless-stopped
+
     ports:
       - "16686:16686"
       - "14268:14268"
-    
+
     environment:
       - COLLECTOR_OTLP_ENABLED=true
-    
+
     networks:
       - nubi-monitoring
 
 volumes:
-  prometheus_data:
-  grafana_data:
-  loki_data:
-  alertmanager_data:
+prometheus_data:
+grafana_data:
+loki_data:
+alertmanager_data:
 
 networks:
-  nubi-monitoring:
-    driver: bridge
-```
+nubi-monitoring:
+driver: bridge
+
+````
   </TabItem>
-  
+
   <TabItem label="Kubernetes Monitoring">
 ```yaml
 # k8s/monitoring/namespace.yaml
@@ -387,7 +398,8 @@ spec:
   - port: 3000
     targetPort: 3000
   type: LoadBalancer
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -405,23 +417,23 @@ import { Registry, Counter, Histogram, Gauge } from 'prom-client'
 import { logger } from '@elizaos/core'
 
 class NubiMetricsCollector {
-  private registry: Registry
-  private metrics: Map<string, any> = new Map()
-  
-  constructor() {
-    this.registry = new Registry()
-    this.initializeMetrics()
-  }
-  
-  private initializeMetrics(): void {
-    // HTTP Request Metrics
-    this.metrics.set('http_requests_total', new Counter({
-      name: 'nubi_http_requests_total',
-      help: 'Total number of HTTP requests',
-      labelNames: ['method', 'route', 'status_code'],
-      registers: [this.registry]
-    }))
-    
+private registry: Registry
+private metrics: Map<string, any> = new Map()
+
+constructor() {
+this.registry = new Registry()
+this.initializeMetrics()
+}
+
+private initializeMetrics(): void {
+// HTTP Request Metrics
+this.metrics.set('http_requests_total', new Counter({
+name: 'nubi_http_requests_total',
+help: 'Total number of HTTP requests',
+labelNames: ['method', 'route', 'status_code'],
+registers: [this.registry]
+}))
+
     this.metrics.set('http_request_duration', new Histogram({
       name: 'nubi_http_request_duration_seconds',
       help: 'HTTP request duration in seconds',
@@ -429,7 +441,7 @@ class NubiMetricsCollector {
       buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2, 5],
       registers: [this.registry]
     }))
-    
+
     // Raid Metrics
     this.metrics.set('raids_total', new Counter({
       name: 'nubi_raids_total',
@@ -437,7 +449,7 @@ class NubiMetricsCollector {
       labelNames: ['status', 'platform'],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('raid_participants', new Histogram({
       name: 'nubi_raid_participants',
       help: 'Number of participants per raid',
@@ -445,7 +457,7 @@ class NubiMetricsCollector {
       buckets: [1, 5, 10, 25, 50, 100, 200, 500],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('raid_duration', new Histogram({
       name: 'nubi_raid_duration_seconds',
       help: 'Raid duration in seconds',
@@ -453,14 +465,14 @@ class NubiMetricsCollector {
       buckets: [60, 300, 600, 1800, 3600, 7200],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('raid_effectiveness', new Histogram({
       name: 'nubi_raid_effectiveness_score',
       help: 'Raid effectiveness score (0-1)',
       buckets: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
       registers: [this.registry]
     }))
-    
+
     // User Engagement Metrics
     this.metrics.set('active_users', new Gauge({
       name: 'nubi_active_users',
@@ -468,14 +480,14 @@ class NubiMetricsCollector {
       labelNames: ['timeframe'],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('user_actions_total', new Counter({
       name: 'nubi_user_actions_total',
       help: 'Total user actions',
       labelNames: ['action_type', 'platform'],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('engagement_quality', new Histogram({
       name: 'nubi_engagement_quality_score',
       help: 'Engagement quality score (0-1)',
@@ -483,21 +495,21 @@ class NubiMetricsCollector {
       buckets: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
       registers: [this.registry]
     }))
-    
+
     // WebSocket Metrics
     this.metrics.set('websocket_connections', new Gauge({
       name: 'nubi_websocket_connections',
       help: 'Current WebSocket connections',
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('websocket_messages_total', new Counter({
       name: 'nubi_websocket_messages_total',
       help: 'Total WebSocket messages',
       labelNames: ['direction', 'event_type'],
       registers: [this.registry]
     }))
-    
+
     // Database Metrics
     this.metrics.set('database_queries_total', new Counter({
       name: 'nubi_database_queries_total',
@@ -505,7 +517,7 @@ class NubiMetricsCollector {
       labelNames: ['operation', 'table'],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('database_query_duration', new Histogram({
       name: 'nubi_database_query_duration_seconds',
       help: 'Database query duration',
@@ -513,14 +525,14 @@ class NubiMetricsCollector {
       buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('database_pool_size', new Gauge({
       name: 'nubi_database_pool_size',
       help: 'Database connection pool size',
       labelNames: ['state'],
       registers: [this.registry]
     }))
-    
+
     // Cache Metrics
     this.metrics.set('cache_operations_total', new Counter({
       name: 'nubi_cache_operations_total',
@@ -528,14 +540,14 @@ class NubiMetricsCollector {
       labelNames: ['operation', 'result'],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('cache_hit_ratio', new Gauge({
       name: 'nubi_cache_hit_ratio',
       help: 'Cache hit ratio',
       labelNames: ['cache_type'],
       registers: [this.registry]
     }))
-    
+
     // AI Service Metrics
     this.metrics.set('ai_requests_total', new Counter({
       name: 'nubi_ai_requests_total',
@@ -543,7 +555,7 @@ class NubiMetricsCollector {
       labelNames: ['provider', 'model', 'status'],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('ai_request_duration', new Histogram({
       name: 'nubi_ai_request_duration_seconds',
       help: 'AI request duration',
@@ -551,84 +563,85 @@ class NubiMetricsCollector {
       buckets: [0.1, 0.5, 1, 2, 5, 10, 20, 30],
       registers: [this.registry]
     }))
-    
+
     this.metrics.set('ai_token_usage', new Counter({
       name: 'nubi_ai_token_usage_total',
       help: 'Total AI tokens used',
       labelNames: ['provider', 'model', 'type'],
       registers: [this.registry]
     }))
-  }
-  
-  // Metric recording methods
-  recordHttpRequest(method: string, route: string, statusCode: number, duration: number): void {
-    this.metrics.get('http_requests_total').inc({ method, route, status_code: statusCode })
-    this.metrics.get('http_request_duration').observe({ method, route }, duration)
-  }
-  
-  recordRaidCreated(platform: string, participants: number): void {
-    this.metrics.get('raids_total').inc({ status: 'created', platform })
-    this.metrics.get('raid_participants').observe({ platform }, participants)
-  }
-  
-  recordRaidCompleted(platform: string, duration: number, effectiveness: number): void {
-    this.metrics.get('raids_total').inc({ status: 'completed', platform })
-    this.metrics.get('raid_duration').observe({ platform }, duration)
-    this.metrics.get('raid_effectiveness').observe({}, effectiveness)
-  }
-  
-  updateActiveUsers(timeframe: string, count: number): void {
-    this.metrics.get('active_users').set({ timeframe }, count)
-  }
-  
-  recordUserAction(actionType: string, platform: string): void {
-    this.metrics.get('user_actions_total').inc({ action_type: actionType, platform })
-  }
-  
-  recordEngagementQuality(platform: string, quality: number): void {
-    this.metrics.get('engagement_quality').observe({ platform }, quality)
-  }
-  
-  updateWebSocketConnections(count: number): void {
-    this.metrics.get('websocket_connections').set(count)
-  }
-  
-  recordWebSocketMessage(direction: 'in' | 'out', eventType: string): void {
-    this.metrics.get('websocket_messages_total').inc({ direction, event_type: eventType })
-  }
-  
-  recordDatabaseQuery(operation: string, table: string, duration: number): void {
-    this.metrics.get('database_queries_total').inc({ operation, table })
-    this.metrics.get('database_query_duration').observe({ operation, table }, duration)
-  }
-  
-  updateDatabasePoolSize(available: number, used: number, idle: number): void {
-    this.metrics.get('database_pool_size').set({ state: 'available' }, available)
-    this.metrics.get('database_pool_size').set({ state: 'used' }, used)
-    this.metrics.get('database_pool_size').set({ state: 'idle' }, idle)
-  }
-  
-  recordCacheOperation(operation: string, result: 'hit' | 'miss'): void {
-    this.metrics.get('cache_operations_total').inc({ operation, result })
-  }
-  
-  updateCacheHitRatio(cacheType: string, ratio: number): void {
-    this.metrics.get('cache_hit_ratio').set({ cache_type: cacheType }, ratio)
-  }
-  
-  recordAIRequest(provider: string, model: string, status: string, duration: number, tokens: number): void {
-    this.metrics.get('ai_requests_total').inc({ provider, model, status })
-    this.metrics.get('ai_request_duration').observe({ provider, model }, duration)
-    this.metrics.get('ai_token_usage').inc({ provider, model, type: 'total' }, tokens)
-  }
-  
-  getMetrics(): Promise<string> {
-    return this.registry.metrics()
-  }
-  
-  getRegistry(): Registry {
-    return this.registry
-  }
+
+}
+
+// Metric recording methods
+recordHttpRequest(method: string, route: string, statusCode: number, duration: number): void {
+this.metrics.get('http_requests_total').inc({ method, route, status_code: statusCode })
+this.metrics.get('http_request_duration').observe({ method, route }, duration)
+}
+
+recordRaidCreated(platform: string, participants: number): void {
+this.metrics.get('raids_total').inc({ status: 'created', platform })
+this.metrics.get('raid_participants').observe({ platform }, participants)
+}
+
+recordRaidCompleted(platform: string, duration: number, effectiveness: number): void {
+this.metrics.get('raids_total').inc({ status: 'completed', platform })
+this.metrics.get('raid_duration').observe({ platform }, duration)
+this.metrics.get('raid_effectiveness').observe({}, effectiveness)
+}
+
+updateActiveUsers(timeframe: string, count: number): void {
+this.metrics.get('active_users').set({ timeframe }, count)
+}
+
+recordUserAction(actionType: string, platform: string): void {
+this.metrics.get('user_actions_total').inc({ action_type: actionType, platform })
+}
+
+recordEngagementQuality(platform: string, quality: number): void {
+this.metrics.get('engagement_quality').observe({ platform }, quality)
+}
+
+updateWebSocketConnections(count: number): void {
+this.metrics.get('websocket_connections').set(count)
+}
+
+recordWebSocketMessage(direction: 'in' | 'out', eventType: string): void {
+this.metrics.get('websocket_messages_total').inc({ direction, event_type: eventType })
+}
+
+recordDatabaseQuery(operation: string, table: string, duration: number): void {
+this.metrics.get('database_queries_total').inc({ operation, table })
+this.metrics.get('database_query_duration').observe({ operation, table }, duration)
+}
+
+updateDatabasePoolSize(available: number, used: number, idle: number): void {
+this.metrics.get('database_pool_size').set({ state: 'available' }, available)
+this.metrics.get('database_pool_size').set({ state: 'used' }, used)
+this.metrics.get('database_pool_size').set({ state: 'idle' }, idle)
+}
+
+recordCacheOperation(operation: string, result: 'hit' | 'miss'): void {
+this.metrics.get('cache_operations_total').inc({ operation, result })
+}
+
+updateCacheHitRatio(cacheType: string, ratio: number): void {
+this.metrics.get('cache_hit_ratio').set({ cache_type: cacheType }, ratio)
+}
+
+recordAIRequest(provider: string, model: string, status: string, duration: number, tokens: number): void {
+this.metrics.get('ai_requests_total').inc({ provider, model, status })
+this.metrics.get('ai_request_duration').observe({ provider, model }, duration)
+this.metrics.get('ai_token_usage').inc({ provider, model, type: 'total' }, tokens)
+}
+
+getMetrics(): Promise<string> {
+return this.registry.metrics()
+}
+
+getRegistry(): Registry {
+return this.registry
+}
 }
 
 export const metricsCollector = new NubiMetricsCollector()
@@ -668,59 +681,62 @@ export const metricsMiddleware = (req: Request, res: Response, next: NextFunctio
 
 // Database query metrics middleware
 export const databaseMetricsMiddleware = {
-  beforeQuery: (sql: string, params?: any[]) => {
-    const startTime = performance.now()
-    const operation = sql.split(' ')[0].toLowerCase()
-    const table = extractTableName(sql)
-    
+beforeQuery: (sql: string, params?: any[]) => {
+const startTime = performance.now()
+const operation = sql.split(' ')[0].toLowerCase()
+const table = extractTableName(sql)
+
     return {
       startTime,
       operation,
       table
     }
-  },
-  
-  afterQuery: (context: any) => {
-    const endTime = performance.now()
-    const duration = (endTime - context.startTime) / 1000
-    
+
+},
+
+afterQuery: (context: any) => {
+const endTime = performance.now()
+const duration = (endTime - context.startTime) / 1000
+
     metricsCollector.recordDatabaseQuery(
       context.operation,
       context.table,
       duration
     )
-  }
+
+}
 }
 
 function extractTableName(sql: string): string {
-  const match = sql.match(/(?:from|into|update|join)\s+([`"]?)(\w+)\1/i)
-  return match ? match[2] : 'unknown'
+const match = sql.match(/(?:from|into|update|join)\s+([`"]?)(\w+)\1/i)
+return match ? match[2] : 'unknown'
 }
 
 // WebSocket metrics middleware
 export const webSocketMetricsMiddleware = (socket: any) => {
-  // Update connection count
-  metricsCollector.updateWebSocketConnections(socket.engine.clientsCount)
-  
-  // Track incoming messages
-  socket.onAny((eventName: string, ...args: any[]) => {
-    metricsCollector.recordWebSocketMessage('in', eventName)
-  })
-  
-  // Track outgoing messages
-  const originalEmit = socket.emit
-  socket.emit = function(eventName: string, ...args: any[]) {
-    metricsCollector.recordWebSocketMessage('out', eventName)
-    return originalEmit.apply(this, arguments)
-  }
-  
-  socket.on('disconnect', () => {
-    metricsCollector.updateWebSocketConnections(socket.engine.clientsCount - 1)
-  })
+// Update connection count
+metricsCollector.updateWebSocketConnections(socket.engine.clientsCount)
+
+// Track incoming messages
+socket.onAny((eventName: string, ...args: any[]) => {
+metricsCollector.recordWebSocketMessage('in', eventName)
+})
+
+// Track outgoing messages
+const originalEmit = socket.emit
+socket.emit = function(eventName: string, ...args: any[]) {
+metricsCollector.recordWebSocketMessage('out', eventName)
+return originalEmit.apply(this, arguments)
 }
-```
+
+socket.on('disconnect', () => {
+metricsCollector.updateWebSocketConnections(socket.engine.clientsCount - 1)
+})
+}
+
+````
   </TabItem>
-  
+
   <TabItem label="Health Checks">
 ```typescript
 // src/monitoring/health-checker.ts
@@ -744,33 +760,33 @@ interface HealthCheckResult {
 
 class HealthChecker {
   private startTime: number = Date.now()
-  
+
   async performHealthCheck(): Promise<HealthCheckResult> {
     const checks: any = {}
-    
+
     // Database health check
     checks.database = await this.checkDatabase()
-    
+
     // Redis health check
     checks.redis = await this.checkRedis()
-    
+
     // External services health check
     checks.telegram = await this.checkTelegram()
     checks.discord = await this.checkDiscord()
     checks.twitter = await this.checkTwitter()
-    
+
     // AI services health check
     checks.openai = await this.checkOpenAI()
-    
+
     // Memory check
     checks.memory = this.checkMemory()
-    
+
     // Disk space check
     checks.disk = await this.checkDiskSpace()
-    
+
     // Determine overall status
     const overallStatus = this.determineOverallStatus(checks)
-    
+
     return {
       status: overallStatus,
       checks,
@@ -778,16 +794,16 @@ class HealthChecker {
       uptime: Date.now() - this.startTime
     }
   }
-  
+
   private async checkDatabase(): Promise<any> {
     const startTime = performance.now()
-    
+
     try {
       const dbManager = DatabaseConnectionManager.getInstance()
       await dbManager.query('SELECT 1 as health_check')
-      
+
       const responseTime = performance.now() - startTime
-      
+
       return {
         status: responseTime > 1000 ? 'slow' : 'up',
         responseTime,
@@ -804,17 +820,17 @@ class HealthChecker {
       }
     }
   }
-  
+
   private async checkRedis(): Promise<any> {
     const startTime = performance.now()
-    
+
     try {
       // Assuming Redis client is available
       const redis = this.getRedisClient()
       await redis.ping()
-      
+
       const responseTime = performance.now() - startTime
-      
+
       return {
         status: responseTime > 500 ? 'slow' : 'up',
         responseTime,
@@ -831,23 +847,23 @@ class HealthChecker {
       }
     }
   }
-  
+
   private async checkTelegram(): Promise<any> {
     const startTime = performance.now()
-    
+
     try {
       if (!process.env.TELEGRAM_BOT_TOKEN) {
         return { status: 'down', error: 'Telegram bot token not configured' }
       }
-      
+
       // Check Telegram API
       const response = await fetch(
         `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`,
         { signal: AbortSignal.timeout(5000) }
       )
-      
+
       const responseTime = performance.now() - startTime
-      
+
       if (response.ok) {
         const data = await response.json()
         return {
@@ -870,14 +886,14 @@ class HealthChecker {
       }
     }
   }
-  
+
   private checkMemory(): any {
     const memUsage = process.memoryUsage()
     const totalMem = require('os').totalmem()
     const freeMem = require('os').freemem()
     const usedMem = totalMem - freeMem
     const memoryUsagePercent = (usedMem / totalMem) * 100
-    
+
     return {
       status: memoryUsagePercent > 90 ? 'down' : memoryUsagePercent > 80 ? 'slow' : 'up',
       details: {
@@ -890,18 +906,18 @@ class HealthChecker {
       }
     }
   }
-  
+
   private async checkDiskSpace(): Promise<any> {
     try {
       const { execAsync } = require('child_process')
       const { promisify } = require('util')
       const exec = promisify(execAsync)
-      
+
       const { stdout } = await exec('df -h /')
       const lines = stdout.split('\n')
       const data = lines[1].split(/\s+/)
       const usage = parseInt(data[4])
-      
+
       return {
         status: usage > 90 ? 'down' : usage > 80 ? 'slow' : 'up',
         details: {
@@ -920,21 +936,21 @@ class HealthChecker {
       }
     }
   }
-  
+
   private determineOverallStatus(checks: any): 'healthy' | 'unhealthy' | 'degraded' {
     const statuses = Object.values(checks).map((check: any) => check.status)
-    
+
     if (statuses.every(status => status === 'up')) {
       return 'healthy'
     }
-    
+
     if (statuses.some(status => status === 'down')) {
       return 'unhealthy'
     }
-    
+
     return 'degraded'
   }
-  
+
   private getRedisClient(): any {
     // Implementation depends on Redis client setup
     // Return configured Redis client instance
@@ -948,13 +964,13 @@ export const healthChecker = new HealthChecker()
 export const healthCheckRoute = async (req: any, res: any) => {
   try {
     const healthResult = await healthChecker.performHealthCheck()
-    
+
     const statusCode = {
       'healthy': 200,
       'degraded': 200,
       'unhealthy': 503
     }[healthResult.status]
-    
+
     res.status(statusCode).json(healthResult)
   } catch (error) {
     logger.error('Health check failed:', error)
@@ -965,7 +981,8 @@ export const healthCheckRoute = async (req: any, res: any) => {
     })
   }
 }
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -983,58 +1000,58 @@ import winston from 'winston'
 import 'winston-daily-rotate-file'
 
 interface LogContext {
-  userId?: string
-  raidId?: string
-  platform?: string
-  action?: string
-  metadata?: any
+userId?: string
+raidId?: string
+platform?: string
+action?: string
+metadata?: any
 }
 
 class NubiLogger {
-  private logger: winston.Logger
-  
-  constructor() {
-    this.logger = winston.createLogger({
-      level: process.env.LOG_LEVEL || 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.errors({ stack: true }),
-        winston.format.json(),
-        winston.format.printf((info) => {
-          const { timestamp, level, message, ...rest } = info
-          return JSON.stringify({
-            timestamp,
-            level,
-            message,
-            service: 'nubi',
-            environment: process.env.NODE_ENV,
-            version: process.env.APP_VERSION,
-            ...rest
-          })
-        })
-      ),
-      defaultMeta: {
-        service: 'nubi',
-        environment: process.env.NODE_ENV,
-        version: process.env.APP_VERSION
-      },
-      transports: this.createTransports()
-    })
-  }
-  
-  private createTransports(): winston.transport[] {
-    const transports: winston.transport[] = []
-    
+private logger: winston.Logger
+
+constructor() {
+this.logger = winston.createLogger({
+level: process.env.LOG_LEVEL || 'info',
+format: winston.format.combine(
+winston.format.timestamp(),
+winston.format.errors({ stack: true }),
+winston.format.json(),
+winston.format.printf((info) => {
+const { timestamp, level, message, ...rest } = info
+return JSON.stringify({
+timestamp,
+level,
+message,
+service: 'nubi',
+environment: process.env.NODE_ENV,
+version: process.env.APP_VERSION,
+...rest
+})
+})
+),
+defaultMeta: {
+service: 'nubi',
+environment: process.env.NODE_ENV,
+version: process.env.APP_VERSION
+},
+transports: this.createTransports()
+})
+}
+
+private createTransports(): winston.transport[] {
+const transports: winston.transport[] = []
+
     // Console transport (always enabled)
     transports.push(new winston.transports.Console({
-      format: process.env.NODE_ENV === 'development' 
+      format: process.env.NODE_ENV === 'development'
         ? winston.format.combine(
             winston.format.colorize(),
             winston.format.simple()
           )
         : winston.format.json()
     }))
-    
+
     // File transports (production)
     if (process.env.NODE_ENV === 'production') {
       // Combined log file
@@ -1045,7 +1062,7 @@ class NubiLogger {
         maxFiles: '30d',
         level: 'info'
       }))
-      
+
       // Error log file
       transports.push(new winston.transports.DailyRotateFile({
         filename: 'logs/nubi-error-%DATE%.log',
@@ -1054,7 +1071,7 @@ class NubiLogger {
         maxFiles: '90d',
         level: 'error'
       }))
-      
+
       // Audit log file
       transports.push(new winston.transports.DailyRotateFile({
         filename: 'logs/nubi-audit-%DATE%.log',
@@ -1068,90 +1085,91 @@ class NubiLogger {
         )
       }))
     }
-    
+
     return transports
-  }
-  
-  // Structured logging methods
-  info(message: string, context?: LogContext): void {
-    this.logger.info(message, context)
-  }
-  
-  warn(message: string, context?: LogContext): void {
-    this.logger.warn(message, context)
-  }
-  
-  error(message: string, error?: Error, context?: LogContext): void {
-    this.logger.error(message, {
-      ...context,
-      error: error ? {
-        name: error.name,
-        message: error.message,
-        stack: error.stack
-      } : undefined
-    })
-  }
-  
-  debug(message: string, context?: LogContext): void {
-    this.logger.debug(message, context)
-  }
-  
-  // Specialized logging methods
-  logRaidAction(action: string, raidId: string, userId: string, metadata?: any): void {
-    this.info(`Raid ${action}`, {
-      action: `raid_${action}`,
-      raidId,
-      userId,
-      metadata
-    })
-  }
-  
-  logUserAction(action: string, userId: string, platform?: string, metadata?: any): void {
-    this.info(`User ${action}`, {
-      action: `user_${action}`,
-      userId,
-      platform,
-      metadata
-    })
-  }
-  
-  logAPICall(method: string, path: string, statusCode: number, duration: number, userId?: string): void {
-    this.info('API call', {
-      action: 'api_call',
-      method,
-      path,
-      statusCode,
-      duration,
-      userId
-    })
-  }
-  
-  logSecurityEvent(event: string, userId?: string, ip?: string, metadata?: any): void {
-    this.warn(`Security event: ${event}`, {
-      action: 'security_event',
-      event,
-      userId,
-      ip,
-      metadata
-    })
-  }
-  
-  logPerformanceIssue(issue: string, duration: number, context?: any): void {
-    this.warn(`Performance issue: ${issue}`, {
-      action: 'performance_issue',
-      issue,
-      duration,
-      context
-    })
-  }
-  
-  logSystemEvent(event: string, level: 'info' | 'warn' | 'error', metadata?: any): void {
-    this.logger.log(level, `System event: ${event}`, {
-      action: 'system_event',
-      event,
-      metadata
-    })
-  }
+
+}
+
+// Structured logging methods
+info(message: string, context?: LogContext): void {
+this.logger.info(message, context)
+}
+
+warn(message: string, context?: LogContext): void {
+this.logger.warn(message, context)
+}
+
+error(message: string, error?: Error, context?: LogContext): void {
+this.logger.error(message, {
+...context,
+error: error ? {
+name: error.name,
+message: error.message,
+stack: error.stack
+} : undefined
+})
+}
+
+debug(message: string, context?: LogContext): void {
+this.logger.debug(message, context)
+}
+
+// Specialized logging methods
+logRaidAction(action: string, raidId: string, userId: string, metadata?: any): void {
+this.info(`Raid ${action}`, {
+action: `raid_${action}`,
+raidId,
+userId,
+metadata
+})
+}
+
+logUserAction(action: string, userId: string, platform?: string, metadata?: any): void {
+this.info(`User ${action}`, {
+action: `user_${action}`,
+userId,
+platform,
+metadata
+})
+}
+
+logAPICall(method: string, path: string, statusCode: number, duration: number, userId?: string): void {
+this.info('API call', {
+action: 'api_call',
+method,
+path,
+statusCode,
+duration,
+userId
+})
+}
+
+logSecurityEvent(event: string, userId?: string, ip?: string, metadata?: any): void {
+this.warn(`Security event: ${event}`, {
+action: 'security_event',
+event,
+userId,
+ip,
+metadata
+})
+}
+
+logPerformanceIssue(issue: string, duration: number, context?: any): void {
+this.warn(`Performance issue: ${issue}`, {
+action: 'performance_issue',
+issue,
+duration,
+context
+})
+}
+
+logSystemEvent(event: string, level: 'info' | 'warn' | 'error', metadata?: any): void {
+this.logger.log(level, `System event: ${event}`, {
+action: 'system_event',
+event,
+metadata
+})
+}
 }
 
 export const nubiLogger = new NubiLogger()
@@ -1164,68 +1182,68 @@ export const nubiLogger = new NubiLogger()
 auth_enabled: false
 
 server:
-  http_listen_port: 3100
-  grpc_listen_port: 9096
+http_listen_port: 3100
+grpc_listen_port: 9096
 
 common:
-  path_prefix: /loki
-  storage:
-    filesystem:
-      chunks_directory: /loki/chunks
-      rules_directory: /loki/rules
-  replication_factor: 1
-  ring:
-    instance_addr: 127.0.0.1
-    kvstore:
-      store: inmemory
+path_prefix: /loki
+storage:
+filesystem:
+chunks_directory: /loki/chunks
+rules_directory: /loki/rules
+replication_factor: 1
+ring:
+instance_addr: 127.0.0.1
+kvstore:
+store: inmemory
 
 query_scheduler:
-  max_outstanding_requests_per_tenant: 2048
+max_outstanding_requests_per_tenant: 2048
 
 frontend:
-  max_outstanding_per_tenant: 2048
+max_outstanding_per_tenant: 2048
 
-schema_config:
-  configs:
-    - from: 2020-10-24
-      store: boltdb-shipper
-      object_store: filesystem
-      schema: v11
-      index:
-        prefix: index_
-        period: 24h
+schema*config:
+configs: - from: 2020-10-24
+store: boltdb-shipper
+object_store: filesystem
+schema: v11
+index:
+prefix: index*
+period: 24h
 
 ruler:
-  alertmanager_url: http://alertmanager:9093
+alertmanager_url: http://alertmanager:9093
 
 analytics:
-  reporting_enabled: false
+reporting_enabled: false
 
 limits_config:
-  enforce_metric_name: false
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h
-  max_cache_freshness_per_query: 10m
-  split_queries_by_interval: 15m
-  max_query_parallelism: 32
-  max_query_series: 1000000
-  max_streams_per_user: 0
-  max_line_size: 256000
-  max_entries_limit_per_query: 5000
-  max_global_streams_per_user: 5000
-  unordered_writes: true
-  max_chunks_per_query: 2000000
-  max_query_length: 721h
+enforce_metric_name: false
+reject_old_samples: true
+reject_old_samples_max_age: 168h
+max_cache_freshness_per_query: 10m
+split_queries_by_interval: 15m
+max_query_parallelism: 32
+max_query_series: 1000000
+max_streams_per_user: 0
+max_line_size: 256000
+max_entries_limit_per_query: 5000
+max_global_streams_per_user: 5000
+unordered_writes: true
+max_chunks_per_query: 2000000
+max_query_length: 721h
 
 chunk_store_config:
-  max_look_back_period: 0s
+max_look_back_period: 0s
 
 table_manager:
-  retention_deletes_enabled: true
-  retention_period: 744h
-```
+retention_deletes_enabled: true
+retention_period: 744h
+
+````
   </TabItem>
-  
+
   <TabItem label="Promtail Configuration">
 ```yaml
 # monitoring/promtail/promtail.yml
@@ -1264,19 +1282,19 @@ scrape_configs:
             raidId: raidId
             platform: platform
             action: action
-      
+
       # Set timestamp
       - timestamp:
           source: timestamp
           format: RFC3339
-      
+
       # Add labels
       - labels:
           level:
           service:
           platform:
           action:
-      
+
       # Output structured log
       - output:
           source: message
@@ -1300,11 +1318,11 @@ scrape_configs:
             message: message
             error: error
             stack: error.stack
-      
+
       - timestamp:
           source: timestamp
           format: RFC3339
-      
+
       - labels:
           level:
           service:
@@ -1314,28 +1332,28 @@ scrape_configs:
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
-    
+
     relabel_configs:
       - source_labels: [__meta_docker_container_name]
         regex: '/nubi-(.*)'
         target_label: container
-      
+
       - source_labels: [__meta_docker_container_label_com_docker_compose_service]
         target_label: service
-    
+
     pipeline_stages:
       - docker: {}
-      
+
       - multiline:
           firstline: '^\d{4}-\d{2}-\d{2}'
           max_wait_time: 3s
-      
+
       - json:
           expressions:
             level: level
             message: message
             timestamp: timestamp
-      
+
       - labels:
           level:
           service:
@@ -1353,11 +1371,11 @@ scrape_configs:
     pipeline_stages:
       - regex:
           expression: '^(?P<timestamp>\S+\s+\d+\s+\d+:\d+:\d+)\s+(?P<hostname>\S+)\s+(?P<service>\S+)(?:\[(?P<pid>\d+)\])?\s*:\s*(?P<message>.*)'
-      
+
       - timestamp:
           source: timestamp
           format: 'Jan _2 15:04:05'
-      
+
       - labels:
           service:
           hostname:
@@ -1376,15 +1394,16 @@ scrape_configs:
     pipeline_stages:
       - regex:
           expression: '^(?P<remote_addr>\S+)\s+-\s+(?P<remote_user>\S+)\s+\[(?P<time_local>[^\]]+)\]\s+"(?P<method>\S+)\s+(?P<request_uri>[^"]*)\s+HTTP/[^"]*"\s+(?P<status>\d+)\s+(?P<body_bytes_sent>\d+)\s+"(?P<http_referer>[^"]*)"\s+"(?P<http_user_agent>[^"]*)"'
-      
+
       - timestamp:
           source: time_local
           format: '02/Jan/2006:15:04:05 -0700'
-      
+
       - labels:
           method:
           status:
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -1476,142 +1495,146 @@ groups:
           summary: "High CPU usage"
           description: "CPU usage is {{ $value }}%"
 
-  - name: nubi.business_metrics
-    interval: 1m
-    rules:
-      # Raid Metrics
-      - alert: LowRaidParticipation
-        expr: avg_over_time(nubi_raid_participants[1h]) < 5
-        for: 30m
-        labels:
-          severity: warning
-          service: raids
-        annotations:
-          summary: "Low raid participation"
-          description: "Average raid participation over the last hour is {{ $value }}"
+- name: nubi.business_metrics
+  interval: 1m
+  rules:
 
-      - alert: RaidFailureRate
-        expr: rate(nubi_raids_total{status="failed"}[1h]) / rate(nubi_raids_total[1h]) > 0.2
-        for: 15m
-        labels:
-          severity: warning
-          service: raids
-        annotations:
-          summary: "High raid failure rate"
-          description: "Raid failure rate is {{ $value | humanizePercentage }} over the last hour"
+  # Raid Metrics
+  - alert: LowRaidParticipation
+    expr: avg_over_time(nubi_raid_participants[1h]) < 5
+    for: 30m
+    labels:
+    severity: warning
+    service: raids
+    annotations:
+    summary: "Low raid participation"
+    description: "Average raid participation over the last hour is {{ $value }}"
 
-      - alert: LowEngagementQuality
-        expr: avg_over_time(nubi_engagement_quality_score[30m]) < 0.6
-        for: 30m
-        labels:
-          severity: warning
-          service: engagement
-        annotations:
-          summary: "Low engagement quality"
-          description: "Average engagement quality is {{ $value }} over the last 30 minutes"
+  - alert: RaidFailureRate
+    expr: rate(nubi_raids_total{status="failed"}[1h]) / rate(nubi_raids_total[1h]) > 0.2
+    for: 15m
+    labels:
+    severity: warning
+    service: raids
+    annotations:
+    summary: "High raid failure rate"
+    description: "Raid failure rate is {{ $value | humanizePercentage }} over the last hour"
 
-      # User Activity
-      - alert: LowUserActivity
-        expr: nubi_active_users{timeframe="1h"} < 10
-        for: 30m
-        labels:
-          severity: warning
-          service: users
-        annotations:
-          summary: "Low user activity"
-          description: "Only {{ $value }} active users in the last hour"
+  - alert: LowEngagementQuality
+    expr: avg_over_time(nubi_engagement_quality_score[30m]) < 0.6
+    for: 30m
+    labels:
+    severity: warning
+    service: engagement
+    annotations:
+    summary: "Low engagement quality"
+    description: "Average engagement quality is {{ $value }} over the last 30 minutes"
 
-      - alert: UserActivityDrop
-        expr: (nubi_active_users{timeframe="1h"} / nubi_active_users{timeframe="1h"} offset 24h - 1) < -0.3
-        for: 15m
-        labels:
-          severity: warning
-          service: users
-        annotations:
-          summary: "Significant drop in user activity"
-          description: "User activity dropped by {{ $value | humanizePercentage }} compared to same time yesterday"
+  # User Activity
+  - alert: LowUserActivity
+    expr: nubi_active_users{timeframe="1h"} < 10
+    for: 30m
+    labels:
+    severity: warning
+    service: users
+    annotations:
+    summary: "Low user activity"
+    description: "Only {{ $value }} active users in the last hour"
 
-  - name: nubi.external_services
-    interval: 2m
-    rules:
-      # Platform Integration
-      - alert: TelegramAPIDown
-        expr: up{job="telegram-health-check"} == 0
-        for: 3m
-        labels:
-          severity: critical
-          service: telegram
-        annotations:
-          summary: "Telegram API is down"
-          description: "Cannot connect to Telegram API"
+  - alert: UserActivityDrop
+    expr: (nubi_active_users{timeframe="1h"} / nubi_active_users{timeframe="1h"} offset 24h - 1) < -0.3
+    for: 15m
+    labels:
+    severity: warning
+    service: users
+    annotations:
+    summary: "Significant drop in user activity"
+    description: "User activity dropped by {{ $value | humanizePercentage }} compared to same time yesterday"
 
-      - alert: DiscordAPIDown
-        expr: up{job="discord-health-check"} == 0
-        for: 3m
-        labels:
-          severity: critical
-          service: discord
-        annotations:
-          summary: "Discord API is down"
-          description: "Cannot connect to Discord API"
+- name: nubi.external_services
+  interval: 2m
+  rules:
 
-      # AI Services
-      - alert: AIServiceHighLatency
-        expr: histogram_quantile(0.95, rate(nubi_ai_request_duration_seconds_bucket[5m])) > 30
-        for: 10m
-        labels:
-          severity: warning
-          service: ai
-        annotations:
-          summary: "AI service high latency"
-          description: "95th percentile AI request time is {{ $value }}s"
+  # Platform Integration
+  - alert: TelegramAPIDown
+    expr: up{job="telegram-health-check"} == 0
+    for: 3m
+    labels:
+    severity: critical
+    service: telegram
+    annotations:
+    summary: "Telegram API is down"
+    description: "Cannot connect to Telegram API"
 
-      - alert: AIServiceHighErrorRate
-        expr: rate(nubi_ai_requests_total{status="error"}[10m]) / rate(nubi_ai_requests_total[10m]) > 0.1
-        for: 5m
-        labels:
-          severity: warning
-          service: ai
-        annotations:
-          summary: "High AI service error rate"
-          description: "AI service error rate is {{ $value | humanizePercentage }}"
+  - alert: DiscordAPIDown
+    expr: up{job="discord-health-check"} == 0
+    for: 3m
+    labels:
+    severity: critical
+    service: discord
+    annotations:
+    summary: "Discord API is down"
+    description: "Cannot connect to Discord API"
 
-  - name: nubi.security
-    interval: 1m
-    rules:
-      # Security Events
-      - alert: SuspiciousActivity
-        expr: rate(nubi_security_events_total[5m]) > 5
-        for: 2m
-        labels:
-          severity: warning
-          service: security
-        annotations:
-          summary: "Unusual security events"
-          description: "{{ $value }} security events per second over the last 5 minutes"
+  # AI Services
+  - alert: AIServiceHighLatency
+    expr: histogram_quantile(0.95, rate(nubi_ai_request_duration_seconds_bucket[5m])) > 30
+    for: 10m
+    labels:
+    severity: warning
+    service: ai
+    annotations:
+    summary: "AI service high latency"
+    description: "95th percentile AI request time is {{ $value }}s"
 
-      - alert: RateLimitExceeded
-        expr: rate(nubi_rate_limit_exceeded_total[5m]) > 10
-        for: 5m
-        labels:
-          severity: warning
-          service: security
-        annotations:
-          summary: "Rate limit frequently exceeded"
-          description: "Rate limit exceeded {{ $value }} times per second"
+  - alert: AIServiceHighErrorRate
+    expr: rate(nubi_ai_requests_total{status="error"}[10m]) / rate(nubi_ai_requests_total[10m]) > 0.1
+    for: 5m
+    labels:
+    severity: warning
+    service: ai
+    annotations:
+    summary: "High AI service error rate"
+    description: "AI service error rate is {{ $value | humanizePercentage }}"
 
-      - alert: FailedLogins
-        expr: rate(nubi_auth_failures_total[10m]) > 2
-        for: 5m
-        labels:
-          severity: warning
-          service: auth
-        annotations:
-          summary: "High failed login rate"
-          description: "{{ $value }} failed logins per second over the last 10 minutes"
-```
+- name: nubi.security
+  interval: 1m
+  rules:
+
+  # Security Events
+  - alert: SuspiciousActivity
+    expr: rate(nubi_security_events_total[5m]) > 5
+    for: 2m
+    labels:
+    severity: warning
+    service: security
+    annotations:
+    summary: "Unusual security events"
+    description: "{{ $value }} security events per second over the last 5 minutes"
+
+  - alert: RateLimitExceeded
+    expr: rate(nubi_rate_limit_exceeded_total[5m]) > 10
+    for: 5m
+    labels:
+    severity: warning
+    service: security
+    annotations:
+    summary: "Rate limit frequently exceeded"
+    description: "Rate limit exceeded {{ $value }} times per second"
+
+  - alert: FailedLogins
+    expr: rate(nubi_auth_failures_total[10m]) > 2
+    for: 5m
+    labels:
+    severity: warning
+    service: auth
+    annotations:
+    summary: "High failed login rate"
+    description: "{{ $value }} failed logins per second over the last 10 minutes"
+
+````
   </TabItem>
-  
+
   <TabItem label="Alertmanager Config">
 ```yaml
 # monitoring/alertmanager/alertmanager.yml
@@ -1628,7 +1651,7 @@ route:
   group_interval: 10s
   repeat_interval: 1h
   receiver: 'default'
-  
+
   routes:
     # Critical alerts go to PagerDuty and Slack immediately
     - match:
@@ -1636,19 +1659,19 @@ route:
       receiver: 'critical-alerts'
       group_wait: 0s
       repeat_interval: 15m
-    
+
     # Warning alerts go to Slack only
     - match:
         severity: warning
       receiver: 'warning-alerts'
       group_wait: 30s
       repeat_interval: 4h
-    
+
     # Business metrics alerts
     - match:
         service: raids
       receiver: 'business-alerts'
-    
+
     # Security alerts
     - match:
         service: security
@@ -1676,12 +1699,12 @@ receivers:
           {{ range .Alerts }}
           *{{ .Annotations.summary }}*
           {{ .Annotations.description }}
-          
+
           *Labels:* {{ range .Labels.SortedPairs }}`{{ .Name }}`: {{ .Value }} {{ end }}
           {{ if .Annotations.runbook_url }}*Runbook:* <{{ .Annotations.runbook_url }}|View Runbook>{{ end }}
           {{ end }}
         send_resolved: true
-    
+
     pagerduty_configs:
       - routing_key: 'your-pagerduty-integration-key'
         description: '{{ .GroupLabels.alertname }}: {{ .GroupLabels.service }}'
@@ -1720,7 +1743,7 @@ receivers:
           *{{ .Annotations.summary }}*
           {{ .Annotations.description }}
           {{ end }}
-    
+
     email_configs:
       - to: 'security@anubis.chat'
         subject: '[SECURITY] NUBI Alert: {{ .GroupLabels.alertname }}'
@@ -1738,7 +1761,8 @@ inhibit_rules:
     target_match_re:
       alertname: 'Nubi.*'
     equal: ['instance']
-```
+````
+
   </TabItem>
 </Tabs>
 

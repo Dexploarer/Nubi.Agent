@@ -7,12 +7,16 @@ import {
   ModelType,
   State,
 } from "@elizaos/core";
-import { NUBISessionsService, Session, RaidSession } from "../services/nubi-sessions-service";
+import {
+  NUBISessionsService,
+  Session,
+  RaidSession,
+} from "../services/nubi-sessions-service";
 import { DatabaseMemoryService } from "../services/database-memory-service";
 
 /**
  * Session Context Provider
- * 
+ *
  * ElizaOS Provider that enriches agent context with session-aware data:
  * - Current session state and metadata
  * - Session history and conversation context
@@ -55,7 +59,7 @@ export interface RaidContext {
     status: string;
     progress: number;
     participantCount: number;
-    userRole?: 'participant' | 'leader' | 'observer';
+    userRole?: "participant" | "leader" | "observer";
   }>;
   raidHistory: Array<{
     raidId: string;
@@ -92,7 +96,7 @@ export interface MemoryContext {
 
 export class SessionContextProvider implements Provider {
   name = "session_context";
-  
+
   private runtime: IAgentRuntime;
   private sessionsService: NUBISessionsService;
   private memoryService: DatabaseMemoryService;
@@ -100,7 +104,7 @@ export class SessionContextProvider implements Provider {
   constructor(
     runtime: IAgentRuntime,
     sessionsService: NUBISessionsService,
-    memoryService: DatabaseMemoryService
+    memoryService: DatabaseMemoryService,
   ) {
     this.runtime = runtime;
     this.sessionsService = sessionsService;
@@ -113,27 +117,30 @@ export class SessionContextProvider implements Provider {
   async get(
     runtime: IAgentRuntime,
     message: Memory,
-    state: State
+    state: State,
   ): Promise<{ values: { sessionContext: string } }> {
     try {
       logger.debug("[SESSION_CONTEXT_PROVIDER] Building session context");
 
       const context = await this.buildSessionContext(message, state);
-      
+
       // Format context as structured text for ElizaOS
       const formattedContext = this.formatContextForEliza(context);
-      
+
       return {
         values: {
-          sessionContext: formattedContext
-        }
+          sessionContext: formattedContext,
+        },
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to build context:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSION_CONTEXT_PROVIDER] Failed to build context:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         values: {
-          sessionContext: "Session context unavailable"
-        }
+          sessionContext: "Session context unavailable",
+        },
       };
     }
   }
@@ -143,24 +150,24 @@ export class SessionContextProvider implements Provider {
    */
   private async buildSessionContext(
     message: Memory,
-    state?: State
+    state?: State,
   ): Promise<SessionContext> {
     const sessionId = this.extractSessionId(message, state);
-    
+
     const [
       currentSession,
       sessionHistory,
       conversationContext,
       raidContext,
       communityContext,
-      memoryContext
+      memoryContext,
     ] = await Promise.all([
       this.getCurrentSession(sessionId),
       this.getSessionHistory(message.entityId),
       this.getConversationContext(message.roomId, message.entityId),
       this.getRaidContext(message.entityId, sessionId),
       this.getCommunityContext(message.entityId),
-      this.getMemoryContext(message.roomId, message.entityId)
+      this.getMemoryContext(message.roomId, message.entityId),
     ]);
 
     return {
@@ -176,14 +183,19 @@ export class SessionContextProvider implements Provider {
   /**
    * Get current session information
    */
-  private async getCurrentSession(sessionId?: string): Promise<Session | undefined> {
+  private async getCurrentSession(
+    sessionId?: string,
+  ): Promise<Session | undefined> {
     if (!sessionId) return undefined;
 
     try {
       const session = await this.sessionsService.getSession(sessionId);
       return session || undefined;
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get current session:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSION_CONTEXT_PROVIDER] Failed to get current session:",
+        error instanceof Error ? error.message : String(error),
+      );
       return undefined;
     }
   }
@@ -191,7 +203,9 @@ export class SessionContextProvider implements Provider {
   /**
    * Get session history for user
    */
-  private async getSessionHistory(userId?: UUID): Promise<SessionHistoryEntry[]> {
+  private async getSessionHistory(
+    userId?: UUID,
+  ): Promise<SessionHistoryEntry[]> {
     if (!userId) return [];
 
     try {
@@ -209,24 +223,27 @@ export class SessionContextProvider implements Provider {
 
       // Extract session history from memories
       const sessionHistory: SessionHistoryEntry[] = sessionMemories
-        .filter(m => (m.content as any)?.type === 'session_created')
-        .map(m => {
+        .filter((m) => (m.content as any)?.type === "session_created")
+        .map((m) => {
           const content = m.content as any;
           return {
-            sessionId: content.sessionId || 'unknown',
-            sessionType: content.sessionType || 'conversation',
-            startTime: new Date(m.createdAt),
+            sessionId: content.sessionId || "unknown",
+            sessionType: content.sessionType || "conversation",
+            startTime: new Date(m.createdAt || Date.now()),
             endTime: undefined, // Would need additional tracking
             messageCount: 0, // Would need to count from messages
             participants: [userId], // Simplified
-            summary: content.text || 'Session activity',
+            summary: content.text || "Session activity",
           };
         })
         .slice(0, 10); // Last 10 sessions
 
       return sessionHistory;
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get session history:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSION_CONTEXT_PROVIDER] Failed to get session history:",
+        error instanceof Error ? error.message : String(error),
+      );
       return [];
     }
   }
@@ -236,7 +253,7 @@ export class SessionContextProvider implements Provider {
    */
   private async getConversationContext(
     roomId?: UUID,
-    userId?: UUID
+    userId?: UUID,
   ): Promise<ConversationContext> {
     if (!roomId) {
       return {
@@ -259,17 +276,21 @@ export class SessionContextProvider implements Provider {
 
       // Extract topics from recent messages
       const topicFlow = this.extractTopics(recentMemories);
-      
+
       // Calculate sentiment trend (simplified)
       const sentimentTrend = this.calculateSentimentTrend(recentMemories);
-      
+
       // Calculate engagement level
-      const engagementLevel = this.calculateEngagementLevel(recentMemories, userId);
-      
+      const engagementLevel = this.calculateEngagementLevel(
+        recentMemories,
+        userId,
+      );
+
       // Get last interaction time
-      const lastInteractionTime = recentMemories.length > 0 
-        ? new Date(recentMemories[0].createdAt)
-        : new Date();
+      const lastInteractionTime =
+        recentMemories.length > 0
+          ? new Date(recentMemories[0].createdAt || Date.now())
+          : new Date();
 
       return {
         recentMessages: recentMemories.slice(0, 10),
@@ -279,7 +300,10 @@ export class SessionContextProvider implements Provider {
         lastInteractionTime,
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get conversation context:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSION_CONTEXT_PROVIDER] Failed to get conversation context:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         recentMessages: [],
         topicFlow: [],
@@ -295,26 +319,26 @@ export class SessionContextProvider implements Provider {
    */
   private async getRaidContext(
     userId?: UUID,
-    sessionId?: string
+    sessionId?: string,
   ): Promise<RaidContext | undefined> {
     if (!userId) return undefined;
 
     try {
       // Get raid-related context from memory service
       const raidContext = await this.memoryService.getRaidContext(
-        sessionId || 'unknown',
+        sessionId || "unknown",
         undefined,
-        50
+        50,
       );
 
       const activeRaids = raidContext.raidMemories
-        .filter(m => (m.content as any)?.type === 'raid_progress')
-        .map(m => {
+        .filter((m) => (m.content as any)?.type === "raid_progress")
+        .map((m) => {
           const content = m.content as any;
           return {
-            raidId: content.raidId || 'unknown',
-            sessionId: content.sessionId || sessionId || 'unknown',
-            status: content.status || 'unknown',
+            raidId: content.raidId || "unknown",
+            sessionId: content.sessionId || sessionId || "unknown",
+            status: content.status || "unknown",
             progress: content.completionRate || 0,
             participantCount: content.participantCount || 0,
             userRole: this.determineUserRole(userId, content),
@@ -332,7 +356,10 @@ export class SessionContextProvider implements Provider {
         totalPointsEarned: this.calculateTotalPoints(raidContext.participants),
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get raid context:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSION_CONTEXT_PROVIDER] Failed to get raid context:",
+        error instanceof Error ? error.message : String(error),
+      );
       return undefined;
     }
   }
@@ -344,7 +371,7 @@ export class SessionContextProvider implements Provider {
     if (!userId) {
       return {
         userReputation: 0,
-        communityRank: 'newcomer',
+        communityRank: "newcomer",
         recentActivities: [],
         socialConnections: [],
       };
@@ -365,7 +392,7 @@ export class SessionContextProvider implements Provider {
 
       // Extract community activities
       const recentActivities = communityMemories
-        .map(m => (m.content as any)?.text || 'Activity')
+        .map((m) => (m.content as any)?.text || "Activity")
         .slice(0, 10);
 
       // Calculate reputation (simplified)
@@ -375,7 +402,8 @@ export class SessionContextProvider implements Provider {
       const communityRank = this.determineCommunityRank(userReputation);
 
       // Extract social connections
-      const socialConnections = this.extractSocialConnections(communityMemories);
+      const socialConnections =
+        this.extractSocialConnections(communityMemories);
 
       return {
         userReputation,
@@ -384,10 +412,13 @@ export class SessionContextProvider implements Provider {
         socialConnections,
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get community context:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSION_CONTEXT_PROVIDER] Failed to get community context:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         userReputation: 0,
-        communityRank: 'newcomer',
+        communityRank: "newcomer",
         recentActivities: [],
         socialConnections: [],
       };
@@ -399,25 +430,30 @@ export class SessionContextProvider implements Provider {
    */
   private async getMemoryContext(
     roomId?: UUID,
-    userId?: UUID
+    userId?: UUID,
   ): Promise<MemoryContext> {
     try {
       // Get enhanced context from memory service
       const enhancedContext = await this.memoryService.getEnhancedContext(
-        roomId || crypto.randomUUID() as UUID,
+        roomId || (crypto.randomUUID() as UUID),
         userId,
         undefined,
-        20
+        20,
       );
 
       // Extract personality traits from settings
-      const personalityTraits = this.runtime.getSetting("personality_traits") || {};
+      const personalityTraits =
+        this.runtime.getSetting("personality_traits") || {};
 
       // Analyze behavior patterns from memories
-      const behaviorHistory = this.analyzeBehaviorPatterns(enhancedContext.recentMemories);
+      const behaviorHistory = this.analyzeBehaviorPatterns(
+        enhancedContext.recentMemories,
+      );
 
       // Extract preference patterns
-      const preferencePatterns = this.extractPreferences(enhancedContext.recentMemories);
+      const preferencePatterns = this.extractPreferences(
+        enhancedContext.recentMemories,
+      );
 
       return {
         relevantMemories: enhancedContext.semanticMemories,
@@ -426,7 +462,10 @@ export class SessionContextProvider implements Provider {
         behaviorHistory,
       };
     } catch (error) {
-      logger.error("[SESSION_CONTEXT_PROVIDER] Failed to get memory context:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSION_CONTEXT_PROVIDER] Failed to get memory context:",
+        error instanceof Error ? error.message : String(error),
+      );
       return {
         relevantMemories: [],
         personalityTraits: {},
@@ -444,24 +483,36 @@ export class SessionContextProvider implements Provider {
 
     // Current session info
     if (context.currentSession) {
-      sections.push(`CURRENT SESSION: ${context.currentSession.config.sessionType} (${context.currentSession.id})`);
+      sections.push(
+        `CURRENT SESSION: ${context.currentSession.config.sessionType} (${context.currentSession.id})`,
+      );
       sections.push(`Session Status: ${context.currentSession.state.status}`);
       sections.push(`Messages: ${context.currentSession.state.messages}`);
     }
 
     // Conversation context
     sections.push(`CONVERSATION CONTEXT:`);
-    sections.push(`Recent Topics: ${context.conversationContext.topicFlow.join(', ')}`);
-    sections.push(`Engagement Level: ${Math.round(context.conversationContext.engagementLevel * 100)}%`);
-    sections.push(`Sentiment: ${context.conversationContext.sentimentTrend > 0 ? 'Positive' : 'Neutral'}`);
+    sections.push(
+      `Recent Topics: ${context.conversationContext.topicFlow.join(", ")}`,
+    );
+    sections.push(
+      `Engagement Level: ${Math.round(context.conversationContext.engagementLevel * 100)}%`,
+    );
+    sections.push(
+      `Sentiment: ${context.conversationContext.sentimentTrend > 0 ? "Positive" : "Neutral"}`,
+    );
 
     // Raid context
     if (context.raidContext && context.raidContext.activeRaids.length > 0) {
       sections.push(`ACTIVE RAIDS:`);
-      context.raidContext.activeRaids.forEach(raid => {
-        sections.push(`• ${raid.raidId}: ${Math.round(raid.progress * 100)}% complete (${raid.participantCount} participants)`);
+      context.raidContext.activeRaids.forEach((raid) => {
+        sections.push(
+          `• ${raid.raidId}: ${Math.round(raid.progress * 100)}% complete (${raid.participantCount} participants)`,
+        );
       });
-      sections.push(`Total Points Earned: ${context.raidContext.totalPointsEarned}`);
+      sections.push(
+        `Total Points Earned: ${context.raidContext.totalPointsEarned}`,
+      );
     }
 
     // Community context
@@ -471,10 +522,12 @@ export class SessionContextProvider implements Provider {
 
     // Memory insights
     if (context.memoryContext.relevantMemories.length > 0) {
-      sections.push(`RELEVANT MEMORIES: ${context.memoryContext.relevantMemories.length} related memories found`);
+      sections.push(
+        `RELEVANT MEMORIES: ${context.memoryContext.relevantMemories.length} related memories found`,
+      );
     }
 
-    return sections.join('\n');
+    return sections.join("\n");
   }
 
   // Utility methods
@@ -487,9 +540,9 @@ export class SessionContextProvider implements Provider {
 
   private extractTopics(memories: Memory[]): string[] {
     return memories
-      .map(m => (m.content as any)?.text || '')
-      .filter(text => text.length > 10)
-      .map(text => text.split(' ').slice(0, 3).join(' '))
+      .map((m) => (m.content as any)?.text || "")
+      .filter((text) => text.length > 10)
+      .map((text) => text.split(" ").slice(0, 3).join(" "))
       .slice(0, 5);
   }
 
@@ -500,22 +553,27 @@ export class SessionContextProvider implements Provider {
 
   private calculateEngagementLevel(memories: Memory[], userId?: UUID): number {
     if (!userId) return 0;
-    
-    const userMessages = memories.filter(m => m.entityId === userId);
+
+    const userMessages = memories.filter((m) => m.entityId === userId);
     return Math.min(userMessages.length / memories.length, 1.0);
   }
 
-  private determineUserRole(userId: UUID, content: any): 'participant' | 'leader' | 'observer' {
+  private determineUserRole(
+    userId: UUID,
+    content: any,
+  ): "participant" | "leader" | "observer" {
     // Simplified role determination
-    return 'participant';
+    return "participant";
   }
 
-  private async getUserRaidHistory(userId: UUID): Promise<Array<{
-    raidId: string;
-    completionRate: number;
-    userPerformance: number;
-    rank: number;
-  }>> {
+  private async getUserRaidHistory(userId: UUID): Promise<
+    Array<{
+      raidId: string;
+      completionRate: number;
+      userPerformance: number;
+      rank: number;
+    }>
+  > {
     // Simplified raid history - would query actual data
     return [];
   }
@@ -530,10 +588,10 @@ export class SessionContextProvider implements Provider {
   }
 
   private determineCommunityRank(reputation: number): string {
-    if (reputation > 500) return 'veteran';
-    if (reputation > 200) return 'active';
-    if (reputation > 50) return 'member';
-    return 'newcomer';
+    if (reputation > 500) return "veteran";
+    if (reputation > 200) return "active";
+    if (reputation > 50) return "member";
+    return "newcomer";
   }
 
   private extractSocialConnections(memories: Memory[]): Array<{

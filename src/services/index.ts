@@ -243,7 +243,12 @@ export const SERVICE_CATEGORIES = {
   SESSIONS: ["sessions", "nubi-sessions", "raid-session-manager"],
   PERSONALITY: ["personality-evolution", "emotional-state"],
   COMMUNITY: ["community-management", "cross-platform-identity"],
-  SOCKET_IO: ["socket-io-server", "socket-io-client", "socket-io-analytics", "socketio-sessions"],
+  SOCKET_IO: [
+    "socket-io-server",
+    "socket-io-client",
+    "socket-io-analytics",
+    "socketio-sessions",
+  ],
   TELEGRAM: [
     "optimized-telegram",
     "enhanced-raid-coordinator",
@@ -272,7 +277,7 @@ export const ACTIVE_SERVICES = [
   "OptimizedRaidDatabase",
   // ElizaOS Sessions API Services
   "NUBISessionsService",
-  "RaidSessionManager", 
+  "RaidSessionManager",
   "SocketIOSessionsService",
   "StreamingSessionsService",
 ] as const;

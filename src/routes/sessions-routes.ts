@@ -6,7 +6,7 @@ import { SessionsAPI } from "../api/sessions-api";
 
 /**
  * NUBI Sessions API Routes
- * 
+ *
  * Comprehensive implementation of ElizaOS Sessions API with NUBI enhancements:
  * - Full ElizaOS Sessions API compliance
  * - NUBI-specific raid coordination endpoints
@@ -16,8 +16,12 @@ import { SessionsAPI } from "../api/sessions-api";
 
 export interface SessionRoute {
   path: string;
-  type: "GET" | "POST" | "DELETE" | "PUT" | "PATCH";
-  handler: (req: Request, res: Response, runtime: IAgentRuntime) => Promise<void>;
+  type: "GET" | "POST" | "DELETE" | "PUT" | "STATIC";
+  handler: (
+    req: Request,
+    res: Response,
+    runtime: IAgentRuntime,
+  ) => Promise<void>;
   requiresAuth?: boolean;
   rateLimit?: number;
 }
@@ -28,7 +32,7 @@ export interface SessionRoute {
 export function createSessionsRoutes(
   runtime: IAgentRuntime,
   sessionsService: NUBISessionsService,
-  raidManager?: RaidSessionManager
+  raidManager?: RaidSessionManager,
 ): SessionRoute[] {
   const sessionsAPI = new SessionsAPI(runtime, sessionsService);
 
@@ -49,15 +53,17 @@ export function createSessionsRoutes(
       rateLimit: 10, // 10 requests per minute
       handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
         try {
-          const { agentId, userId, roomId, metadata, timeout, autoRenewal } = req.body;
+          const { agentId, userId, roomId, metadata, timeout, autoRenewal } =
+            req.body;
 
           // Validate required fields
           if (!agentId) {
-            return res.status(400).json({
+            res.status(400).json({
               success: false,
               error: "agentId is required",
-              code: "INVALID_REQUEST"
+              code: "INVALID_REQUEST",
             });
+            return;
           }
 
           const result = await sessionsAPI.createSession({
@@ -67,19 +73,22 @@ export function createSessionsRoutes(
             sessionType: req.body.sessionType || "conversation",
             timeout: timeout || 3600000, // 1 hour default
             autoRenewal: autoRenewal !== false, // Default true
-            metadata: metadata || {}
+            metadata: metadata || {},
           });
 
           res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to create session:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to create session:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -94,19 +103,22 @@ export function createSessionsRoutes(
       handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
         try {
           const { sessionId } = req.params;
-          
+
           const result = await sessionsAPI.getSession(sessionId);
-          
+
           res.status(result.success ? 200 : 404).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get session:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to get session:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -125,29 +137,33 @@ export function createSessionsRoutes(
           const { content, type, metadata } = req.body;
 
           if (!content) {
-            return res.status(400).json({
+            res.status(400).json({
               success: false,
               error: "Message content is required",
-              code: "INVALID_REQUEST"
+              code: "INVALID_REQUEST",
             });
+            return;
           }
 
           const result = await sessionsAPI.sendMessage(sessionId, {
             content,
             type: type || "text",
-            metadata: metadata || {}
+            metadata: metadata || {},
           });
 
           res.status(result.success ? 200 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to send message:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to send message:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -166,23 +182,24 @@ export function createSessionsRoutes(
 
           const session = await sessionsService.getSession(sessionId);
           if (!session) {
-            return res.status(404).json({
+            res.status(404).json({
               success: false,
               error: "Session not found",
-              code: "SESSION_NOT_FOUND"
+              code: "SESSION_NOT_FOUND",
             });
+            return;
           }
 
           // Extend session expiration
           const newExpiration = new Date(
-            Date.now() + (extensionTime || session.config.timeout || 3600000)
+            Date.now() + (extensionTime || session.config.timeout || 3600000),
           );
           session.expiresAt = newExpiration;
 
           // Update activity
           await sessionsService.updateSessionActivity(sessionId, {
             renewed: true,
-            renewalTime: new Date().toISOString()
+            renewalTime: new Date().toISOString(),
           });
 
           res.status(200).json({
@@ -190,18 +207,21 @@ export function createSessionsRoutes(
             data: {
               sessionId,
               expiresAt: newExpiration,
-              renewalCount: (session.metadata.renewalCount || 0) + 1
-            }
+              renewalCount: (session.metadata.renewalCount || 0) + 1,
+            },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to renew session:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to renew session:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -216,19 +236,22 @@ export function createSessionsRoutes(
       handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
         try {
           const { sessionId } = req.params;
-          
+
           const result = await sessionsAPI.deleteSession(sessionId);
-          
+
           res.status(result.success ? 200 : 404).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to delete session:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to delete session:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -247,11 +270,12 @@ export function createSessionsRoutes(
 
           const session = await sessionsService.getSession(sessionId);
           if (!session) {
-            return res.status(404).json({
+            res.status(404).json({
               success: false,
               error: "Session not found",
-              code: "SESSION_NOT_FOUND"
+              code: "SESSION_NOT_FOUND",
             });
+            return;
           }
 
           // Get messages from memory
@@ -259,26 +283,30 @@ export function createSessionsRoutes(
             roomId: session.roomId,
             count: parseInt(limit as string),
             unique: false,
-            tableName: "memories"
+            tableName: "memories",
           });
 
           res.status(200).json({
             success: true,
             data: {
               messages,
-              cursor: messages.length > 0 ? messages[messages.length - 1].id : null,
-              hasMore: messages.length === parseInt(limit as string)
-            }
+              cursor:
+                messages.length > 0 ? messages[messages.length - 1].id : null,
+              hasMore: messages.length === parseInt(limit as string),
+            },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get messages:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to get messages:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     // ============================================================================
@@ -300,11 +328,12 @@ export function createSessionsRoutes(
 
           const session = await sessionsService.getSession(sessionId);
           if (!session) {
-            return res.status(404).json({
+            res.status(404).json({
               success: false,
               error: "Session not found",
-              code: "SESSION_NOT_FOUND"
+              code: "SESSION_NOT_FOUND",
             });
+            return;
           }
 
           res.status(200).json({
@@ -315,24 +344,33 @@ export function createSessionsRoutes(
               version: "4.x",
               events: {
                 client: ["join", "leave", "message", "request-world-state"],
-                server: ["messageBroadcast", "messageComplete", "world-state", "logEntry", "error"]
+                server: [
+                  "messageBroadcast",
+                  "messageComplete",
+                  "world-state",
+                  "logEntry",
+                  "error",
+                ],
               },
               connectionParams: {
                 sessionId,
                 agentId: session.agentId,
-                roomId: session.roomId
-              }
-            }
+                roomId: session.roomId,
+              },
+            },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get WebSocket info:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to get WebSocket info:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     // ============================================================================
@@ -352,15 +390,20 @@ export function createSessionsRoutes(
       handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
         try {
           const {
-            agentId, raidId, targetUrl, objectives,
-            maxParticipants, duration, metadata
+            agentId,
+            raidId,
+            targetUrl,
+            objectives,
+            maxParticipants,
+            duration,
+            metadata,
           } = req.body;
 
           if (!agentId || !raidId || !targetUrl || !objectives) {
-            return res.status(400).json({
+            res.status(400).json({
               success: false,
               error: "Missing required raid parameters",
-              code: "INVALID_REQUEST"
+              code: "INVALID_REQUEST",
             });
           }
 
@@ -372,7 +415,7 @@ export function createSessionsRoutes(
             objectives,
             maxParticipants: maxParticipants || 500,
             duration: duration || 3600,
-            metadata: metadata || {}
+            metadata: metadata || {},
           });
 
           // Start raid monitoring if manager available
@@ -382,14 +425,17 @@ export function createSessionsRoutes(
 
           res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to create raid session:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to create raid session:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -408,29 +454,32 @@ export function createSessionsRoutes(
           const { telegramId, telegramUsername, twitterUsername } = req.body;
 
           if (!telegramId || !telegramUsername) {
-            return res.status(400).json({
+            res.status(400).json({
               success: false,
               error: "Telegram credentials required",
-              code: "INVALID_REQUEST"
+              code: "INVALID_REQUEST",
             });
           }
 
           const result = await sessionsAPI.joinRaidSession(sessionId, {
             telegramId,
             telegramUsername,
-            twitterUsername
+            twitterUsername,
           });
 
           res.status(result.success ? 200 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to join raid:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to join raid:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -449,49 +498,54 @@ export function createSessionsRoutes(
           const { participantId, actionType, targetId, points } = req.body;
 
           if (!participantId || !actionType || !targetId) {
-            return res.status(400).json({
+            res.status(400).json({
               success: false,
               error: "Missing action parameters",
-              code: "INVALID_REQUEST"
+              code: "INVALID_REQUEST",
             });
           }
 
           if (raidManager) {
-            const session = await sessionsService.getSession(sessionId) as any;
+            const session = (await sessionsService.getSession(
+              sessionId,
+            )) as any;
             if (session && session.raidId) {
               const success = await raidManager.recordRaidAction(
                 session.raidId,
                 sessionId,
-                { participantId, actionType, targetId, points: points || 10 }
+                { participantId, actionType, targetId, points: points || 10 },
               );
 
               res.status(200).json({
                 success,
-                data: { recorded: success }
+                data: { recorded: success },
               });
             } else {
               res.status(404).json({
                 success: false,
                 error: "Raid session not found",
-                code: "SESSION_NOT_FOUND"
+                code: "SESSION_NOT_FOUND",
               });
             }
           } else {
             res.status(503).json({
               success: false,
               error: "Raid manager not available",
-              code: "SERVICE_UNAVAILABLE"
+              code: "SERVICE_UNAVAILABLE",
             });
           }
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to record action:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to record action:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -508,12 +562,12 @@ export function createSessionsRoutes(
           const { sessionId } = req.params;
           const { limit = "50" } = req.query;
 
-          const session = await sessionsService.getSession(sessionId) as any;
+          const session = (await sessionsService.getSession(sessionId)) as any;
           if (!session || !session.raidId) {
-            return res.status(404).json({
+            res.status(404).json({
               success: false,
               error: "Raid session not found",
-              code: "SESSION_NOT_FOUND"
+              code: "SESSION_NOT_FOUND",
             });
           }
 
@@ -528,22 +582,25 @@ export function createSessionsRoutes(
               twitterUsername: p.twitterUsername,
               pointsEarned: p.pointsEarned,
               actionsCompleted: p.actionsCompleted,
-              verified: p.verified
+              verified: p.verified,
             }));
 
           res.status(200).json({
             success: true,
-            data: { leaderboard }
+            data: { leaderboard },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get leaderboard:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to get leaderboard:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -559,12 +616,12 @@ export function createSessionsRoutes(
         try {
           const { sessionId } = req.params;
 
-          const session = await sessionsService.getSession(sessionId) as any;
+          const session = (await sessionsService.getSession(sessionId)) as any;
           if (!session || !session.raidId) {
-            return res.status(404).json({
+            res.status(404).json({
               success: false,
               error: "Raid session not found",
-              code: "SESSION_NOT_FOUND"
+              code: "SESSION_NOT_FOUND",
             });
           }
 
@@ -576,22 +633,25 @@ export function createSessionsRoutes(
             completionRate: session.progress?.completionRate || 0,
             timeRemaining: session.progress?.timeRemaining || 0,
             objectives: session.objectives,
-            targetUrl: session.targetUrl
+            targetUrl: session.targetUrl,
           };
 
           res.status(200).json({
             success: true,
-            data: { metrics }
+            data: { metrics },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get metrics:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to get metrics:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     // ============================================================================
@@ -612,7 +672,7 @@ export function createSessionsRoutes(
           const { status, type, limit = "20", offset = "0" } = req.query;
 
           const stats = await sessionsService.getSessionStats();
-          
+
           // This would need actual implementation to list sessions
           res.status(200).json({
             success: true,
@@ -621,18 +681,21 @@ export function createSessionsRoutes(
               total: stats.total,
               active: stats.active,
               raids: stats.raids,
-              community: stats.community
-            }
+              community: stats.community,
+            },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to list sessions:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to list sessions:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -649,14 +712,17 @@ export function createSessionsRoutes(
           const result = await sessionsAPI.getSessionStats();
           res.status(result.success ? 200 : 500).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get stats:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to get stats:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -671,7 +737,7 @@ export function createSessionsRoutes(
       handler: async (req: Request, res: Response, runtime: IAgentRuntime) => {
         try {
           const stats = await sessionsService.getSessionStats();
-          
+
           res.status(200).json({
             success: true,
             data: {
@@ -679,20 +745,23 @@ export function createSessionsRoutes(
               timestamp: new Date().toISOString(),
               sessions: {
                 total: stats.total,
-                active: stats.active
+                active: stats.active,
               },
-              version: "1.0.0"
-            }
+              version: "1.0.0",
+            },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Health check failed:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Health check failed:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(503).json({
             success: false,
             error: "Service unhealthy",
-            code: "SERVICE_UNHEALTHY"
+            code: "SERVICE_UNHEALTHY",
           });
         }
-      }
+      },
     },
 
     // ============================================================================
@@ -719,20 +788,23 @@ export function createSessionsRoutes(
             metadata: {
               ...metadata,
               topic,
-              communityEngagement: true
-            }
+              communityEngagement: true,
+            },
           });
 
           res.status(result.success ? 201 : 400).json(result);
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to create community session:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to create community session:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
+      },
     },
 
     /**
@@ -754,19 +826,22 @@ export function createSessionsRoutes(
             success: true,
             data: {
               sessions: [],
-              userId
-            }
+              userId,
+            },
           });
         } catch (error) {
-          logger.error("[SESSIONS_ROUTES] Failed to get user sessions:", error instanceof Error ? error.message : String(error));
+          logger.error(
+            "[SESSIONS_ROUTES] Failed to get user sessions:",
+            error instanceof Error ? error.message : String(error),
+          );
           res.status(500).json({
             success: false,
             error: "Internal server error",
-            code: "INTERNAL_ERROR"
+            code: "INTERNAL_ERROR",
           });
         }
-      }
-    }
+      },
+    },
   ];
 }
 

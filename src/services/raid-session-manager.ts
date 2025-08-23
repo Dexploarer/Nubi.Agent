@@ -1,17 +1,15 @@
+import { Service, IAgentRuntime, logger, UUID, Memory } from "@elizaos/core";
 import {
-  Service,
-  IAgentRuntime,
-  logger,
-  UUID,
-  Memory,
-} from "@elizaos/core";
-import { NUBISessionsService, RaidSession, RaidParticipant } from "./nubi-sessions-service";
+  NUBISessionsService,
+  RaidSession,
+  RaidParticipant,
+} from "./nubi-sessions-service";
 import { DatabaseMemoryService } from "./database-memory-service";
 import { DatabasePoolerManager, PoolType } from "./database-pooler-manager";
 
 /**
  * Raid Session Manager
- * 
+ *
  * Specialized service for managing raid session lifecycle:
  * - Real-time raid progress tracking
  * - Participant action verification
@@ -22,7 +20,7 @@ import { DatabasePoolerManager, PoolType } from "./database-pooler-manager";
 
 export interface RaidAction {
   participantId: string;
-  actionType: 'like' | 'retweet' | 'reply' | 'quote' | 'follow';
+  actionType: "like" | "retweet" | "reply" | "quote" | "follow";
   targetId: string;
   timestamp: Date;
   verified: boolean;
@@ -52,7 +50,7 @@ export interface RaidLeaderboardEntry {
 export interface RaidCompletionReport {
   raidId: string;
   sessionId: string;
-  status: 'completed' | 'failed' | 'timeout';
+  status: "completed" | "failed" | "timeout";
   metrics: RaidMetrics;
   leaderboard: RaidLeaderboardEntry[];
   objectives: Array<{
@@ -68,24 +66,23 @@ export interface RaidCompletionReport {
 
 export class RaidSessionManager extends Service {
   static serviceType = "raid_session_manager" as const;
-  capabilityDescription = "Advanced raid session management with real-time tracking and analytics";
+  capabilityDescription =
+    "Advanced raid session management with real-time tracking and analytics";
 
-  protected runtime: IAgentRuntime | undefined;
-  private sessionsService: NUBISessionsService;
-  private memoryService: DatabaseMemoryService;
+  declare protected runtime: IAgentRuntime;
+  private sessionsService!: NUBISessionsService;
+  private memoryService!: DatabaseMemoryService;
   private poolerManager?: DatabasePoolerManager;
   private activeRaids: Map<string, NodeJS.Timeout> = new Map();
   private raidMetrics: Map<string, RaidMetrics> = new Map();
 
   constructor(
-    runtime?: IAgentRuntime,
+    runtime: IAgentRuntime,
     sessionsService?: NUBISessionsService,
-    memoryService?: DatabaseMemoryService
+    memoryService?: DatabaseMemoryService,
   ) {
     super(runtime);
-    if (runtime) {
-      this.runtime = runtime;
-    }
+    this.runtime = runtime;
     if (sessionsService) {
       this.sessionsService = sessionsService;
     }
@@ -99,13 +96,17 @@ export class RaidSessionManager extends Service {
       logger.info("[RAID_MANAGER] Starting Raid Session Manager...");
 
       if (!this.runtime) {
-        logger.warn("[RAID_MANAGER] No runtime available, service will operate in limited mode");
+        logger.warn(
+          "[RAID_MANAGER] No runtime available, service will operate in limited mode",
+        );
         return;
       }
 
       // Get database pooler manager
       try {
-        this.poolerManager = this.runtime.getService<DatabasePoolerManager>("database-pooler-manager");
+        this.poolerManager = this.runtime.getService<DatabasePoolerManager>(
+          "database-pooler-manager",
+        ) || undefined;
         if (this.poolerManager) {
           logger.info("[RAID_MANAGER] Connected to database pooler manager");
         }
@@ -124,7 +125,10 @@ export class RaidSessionManager extends Service {
 
       logger.info("[RAID_MANAGER] Raid Session Manager started successfully");
     } catch (error) {
-      logger.error("[RAID_MANAGER] Failed to start:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[RAID_MANAGER] Failed to start:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -188,10 +192,15 @@ export class RaidSessionManager extends Service {
     `;
 
     try {
-      await this.poolerManager.query(createTablesSQL, [], { poolType: PoolType.SESSION });
+      await this.poolerManager.query(createTablesSQL, [], {
+        poolType: PoolType.SESSION,
+      });
       logger.info("[RAID_MANAGER] Analytics tables initialized successfully");
     } catch (error) {
-      logger.error("[RAID_MANAGER] Failed to initialize analytics tables:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[RAID_MANAGER] Failed to initialize analytics tables:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -201,7 +210,9 @@ export class RaidSessionManager extends Service {
    */
   async startRaidMonitoring(raidSession: RaidSession): Promise<void> {
     try {
-      logger.info(`[RAID_MANAGER] Starting monitoring for raid: ${raidSession.raidId}`);
+      logger.info(
+        `[RAID_MANAGER] Starting monitoring for raid: ${raidSession.raidId}`,
+      );
 
       // Initialize metrics
       const initialMetrics: RaidMetrics = {
@@ -211,7 +222,7 @@ export class RaidSessionManager extends Service {
         averageResponseTime: 0,
         successRate: 0,
         engagementScore: 0,
-        timeRemaining: raidSession.config.duration || 3600,
+        timeRemaining: (raidSession.config as any)?.duration || 3600,
       };
 
       this.raidMetrics.set(raidSession.raidId, initialMetrics);
@@ -225,32 +236,44 @@ export class RaidSessionManager extends Service {
       this.activeRaids.set(raidSession.raidId, monitoringInterval);
 
       // Set completion timer
-      const completionTimer = setTimeout(async () => {
-        await this.completeRaid(raidSession.raidId, 'timeout');
-      }, (raidSession.config.duration || 3600) * 1000);
+      const completionTimer = setTimeout(
+        async () => {
+          await this.completeRaid(raidSession.raidId, "timeout");
+        },
+        ((raidSession.config as any)?.duration || 3600) * 1000,
+      );
 
       // Store in ElizaOS memory for context
-      await this.runtime.createMemory({
-        id: crypto.randomUUID() as UUID,
-        agentId: raidSession.agentId,
-        entityId: raidSession.agentId,
-        roomId: raidSession.roomId,
-        content: {
-          text: `Started monitoring raid: ${raidSession.raidId}`,
-          type: 'raid_monitoring_started',
-          raidId: raidSession.raidId,
-          sessionId: raidSession.id,
-          targetUrl: raidSession.targetUrl,
-          objectives: raidSession.objectives,
-          participants: raidSession.participants.length,
+      await this.runtime.createMemory(
+        {
+          id: crypto.randomUUID() as UUID,
+          agentId: raidSession.agentId,
+          entityId: raidSession.agentId,
+          roomId: raidSession.roomId || (crypto.randomUUID() as UUID),
+          content: {
+            text: `Started monitoring raid: ${raidSession.raidId}`,
+            type: "raid_monitoring_started",
+            raidId: raidSession.raidId,
+            sessionId: raidSession.id,
+            targetUrl: raidSession.targetUrl,
+            objectives: raidSession.objectives,
+            participants: raidSession.participants.length,
+          },
+          embedding: undefined,
+          createdAt: Date.now(),
         },
-        embedding: undefined,
-        createdAt: Date.now(),
-      }, "memories", false);
+        "memories",
+        false,
+      );
 
-      logger.info(`[RAID_MANAGER] Monitoring started for raid: ${raidSession.raidId}`);
+      logger.info(
+        `[RAID_MANAGER] Monitoring started for raid: ${raidSession.raidId}`,
+      );
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to start monitoring for raid ${raidSession.raidId}:`, error instanceof Error ? error.message : String(error));
+      logger.error(
+        `[RAID_MANAGER] Failed to start monitoring for raid ${raidSession.raidId}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -261,7 +284,7 @@ export class RaidSessionManager extends Service {
   async recordRaidAction(
     raidId: string,
     sessionId: string,
-    action: Omit<RaidAction, 'timestamp' | 'verified'>
+    action: Omit<RaidAction, "timestamp" | "verified">,
   ): Promise<boolean> {
     try {
       const raidAction: RaidAction = {
@@ -279,49 +302,70 @@ export class RaidSessionManager extends Service {
         `;
 
         // Get participant username from session
-        const session = await this.sessionsService.getSession(sessionId) as RaidSession;
-        const participant = session?.participants.find(p => p.telegramId === action.participantId);
-        const telegramUsername = participant?.telegramUsername || 'unknown';
-
-        await this.poolerManager.query(insertSQL, [
-          raidId,
+        const session = (await this.sessionsService.getSession(
           sessionId,
-          action.participantId,
-          telegramUsername,
-          action.actionType,
-          action.targetId,
-          action.points,
-        ], { poolType: PoolType.TRANSACTION });
+        )) as RaidSession;
+        const participant = session?.participants.find(
+          (p) => p.telegramId === action.participantId,
+        );
+        const telegramUsername = participant?.telegramUsername || "unknown";
+
+        await this.poolerManager.query(
+          insertSQL,
+          [
+            raidId,
+            sessionId,
+            action.participantId,
+            telegramUsername,
+            action.actionType,
+            action.targetId,
+            action.points,
+          ],
+          { poolType: PoolType.TRANSACTION },
+        );
       }
 
       // Store in ElizaOS memory
-      await this.runtime.createMemory({
-        id: crypto.randomUUID() as UUID,
-        agentId: this.runtime.agentId,
-        entityId: action.participantId as UUID,
-        roomId: crypto.randomUUID() as UUID,
-        content: {
-          text: `Raid action: ${action.actionType} by ${action.participantId}`,
-          type: 'raid_action',
-          raidId,
-          sessionId,
-          participantId: action.participantId,
-          actionType: action.actionType,
-          targetId: action.targetId,
-          points: action.points,
-          timestamp: raidAction.timestamp.toISOString(),
+      await this.runtime.createMemory(
+        {
+          id: crypto.randomUUID() as UUID,
+          agentId: this.runtime.agentId,
+          entityId: action.participantId as UUID,
+          roomId: crypto.randomUUID() as UUID,
+          content: {
+            text: `Raid action: ${action.actionType} by ${action.participantId}`,
+            type: "raid_action",
+            raidId,
+            sessionId,
+            participantId: action.participantId,
+            actionType: action.actionType,
+            targetId: action.targetId,
+            points: action.points,
+            timestamp: raidAction.timestamp.toISOString(),
+          },
+          embedding: undefined,
+          createdAt: Date.now(),
         },
-        embedding: undefined,
-        createdAt: Date.now(),
-      }, "memories", false);
+        "memories",
+        false,
+      );
 
       // Update participant progress in sessions service
-      await this.updateParticipantProgress(sessionId, action.participantId, action.points);
+      await this.updateParticipantProgress(
+        sessionId,
+        action.participantId,
+        action.points,
+      );
 
-      logger.debug(`[RAID_MANAGER] Recorded action: ${action.actionType} for raid ${raidId}`);
+      logger.debug(
+        `[RAID_MANAGER] Recorded action: ${action.actionType} for raid ${raidId}`,
+      );
       return true;
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to record action for raid ${raidId}:`, error instanceof Error ? error.message : String(error));
+      logger.error(
+        `[RAID_MANAGER] Failed to record action for raid ${raidId}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       return false;
     }
   }
@@ -354,7 +398,10 @@ export class RaidSessionManager extends Service {
         const metrics: RaidMetrics = {
           totalActions: parseInt(row.total_actions) || 0,
           uniqueParticipants: parseInt(row.unique_participants) || 0,
-          completionRate: this.calculateCompletionRate(raidId, row.total_actions),
+          completionRate: this.calculateCompletionRate(
+            raidId,
+            row.total_actions,
+          ),
           averageResponseTime: 0, // Would need additional tracking
           successRate: parseFloat(row.success_rate) || 0,
           engagementScore: parseFloat(row.total_points) || 0,
@@ -371,19 +418,26 @@ export class RaidSessionManager extends Service {
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `;
 
-        await this.poolerManager.query(insertMetricsSQL, [
-          raidId,
-          crypto.randomUUID(), // Would need to get actual session ID
-          metrics.totalActions,
-          metrics.uniqueParticipants,
-          metrics.completionRate,
-          metrics.successRate,
-          metrics.engagementScore,
-          metrics.timeRemaining,
-        ], { poolType: PoolType.TRANSACTION });
+        await this.poolerManager.query(
+          insertMetricsSQL,
+          [
+            raidId,
+            crypto.randomUUID(), // Would need to get actual session ID
+            metrics.totalActions,
+            metrics.uniqueParticipants,
+            metrics.completionRate,
+            metrics.successRate,
+            metrics.engagementScore,
+            metrics.timeRemaining,
+          ],
+          { poolType: PoolType.TRANSACTION },
+        );
       }
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to update metrics for raid ${raidId}:`, error instanceof Error ? error.message : String(error));
+      logger.error(
+        `[RAID_MANAGER] Failed to update metrics for raid ${raidId}:`,
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 
@@ -396,22 +450,25 @@ export class RaidSessionManager extends Service {
 
     // Check completion criteria
     let shouldComplete = false;
-    let completionStatus: 'completed' | 'failed' | 'timeout' = 'completed';
+    let completionStatus: "completed" | "failed" | "timeout" = "completed";
 
     // Check if all objectives are met
     if (metrics.completionRate >= 1.0) {
       shouldComplete = true;
-      completionStatus = 'completed';
+      completionStatus = "completed";
     }
     // Check if time is up
     else if (metrics.timeRemaining <= 0) {
       shouldComplete = true;
-      completionStatus = 'timeout';
+      completionStatus = "timeout";
     }
     // Check if raid has failed (low participation)
-    else if (metrics.uniqueParticipants === 0 && Date.now() - raidSession.createdAt.getTime() > 300000) {
+    else if (
+      metrics.uniqueParticipants === 0 &&
+      Date.now() - raidSession.createdAt.getTime() > 300000
+    ) {
       shouldComplete = true;
-      completionStatus = 'failed';
+      completionStatus = "failed";
     }
 
     if (shouldComplete) {
@@ -422,9 +479,14 @@ export class RaidSessionManager extends Service {
   /**
    * Complete a raid and generate report
    */
-  async completeRaid(raidId: string, status: 'completed' | 'failed' | 'timeout'): Promise<RaidCompletionReport | null> {
+  async completeRaid(
+    raidId: string,
+    status: "completed" | "failed" | "timeout",
+  ): Promise<RaidCompletionReport | null> {
     try {
-      logger.info(`[RAID_MANAGER] Completing raid: ${raidId} with status: ${status}`);
+      logger.info(
+        `[RAID_MANAGER] Completing raid: ${raidId} with status: ${status}`,
+      );
 
       // Stop monitoring
       const timer = this.activeRaids.get(raidId);
@@ -464,49 +526,64 @@ export class RaidSessionManager extends Service {
           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `;
 
-        await this.poolerManager.query(insertReportSQL, [
-          raidId,
-          completionReport.sessionId,
-          status,
-          JSON.stringify(finalMetrics),
-          JSON.stringify(leaderboard),
-          JSON.stringify(objectivesReport),
-          completionReport.duration,
-          completionReport.participantCount,
-        ], { poolType: PoolType.TRANSACTION });
+        await this.poolerManager.query(
+          insertReportSQL,
+          [
+            raidId,
+            completionReport.sessionId,
+            status,
+            JSON.stringify(finalMetrics),
+            JSON.stringify(leaderboard),
+            JSON.stringify(objectivesReport),
+            completionReport.duration,
+            completionReport.participantCount,
+          ],
+          { poolType: PoolType.TRANSACTION },
+        );
       }
 
       // Store in ElizaOS memory
-      await this.runtime.createMemory({
-        id: crypto.randomUUID() as UUID,
-        agentId: this.runtime.agentId,
-        entityId: this.runtime.agentId,
-        roomId: crypto.randomUUID() as UUID,
-        content: {
-          text: `Raid completed: ${raidId} - Status: ${status}`,
-          type: 'raid_completed',
-          raidId,
-          status,
-          metrics: finalMetrics,
-          participantCount: completionReport.participantCount,
-          leaderboard: leaderboard.slice(0, 5), // Top 5 for memory
+      await this.runtime.createMemory(
+        {
+          id: crypto.randomUUID() as UUID,
+          agentId: this.runtime.agentId,
+          entityId: this.runtime.agentId,
+          roomId: crypto.randomUUID() as UUID,
+          content: {
+            text: `Raid completed: ${raidId} - Status: ${status}`,
+            type: "raid_completed",
+            raidId,
+            status,
+            metrics: finalMetrics,
+            participantCount: completionReport.participantCount,
+            leaderboard: leaderboard.slice(0, 5), // Top 5 for memory
+          },
+          embedding: undefined,
+          createdAt: Date.now(),
         },
-        embedding: undefined,
-        createdAt: Date.now(),
-      }, "memories", false);
+        "memories",
+        false,
+      );
 
       // Clean up metrics cache
       this.raidMetrics.delete(raidId);
 
-      logger.info(`[RAID_MANAGER] Raid ${raidId} completed successfully with status: ${status}`);
+      logger.info(
+        `[RAID_MANAGER] Raid ${raidId} completed successfully with status: ${status}`,
+      );
       return completionReport;
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to complete raid ${raidId}:`, error instanceof Error ? error.message : String(error));
+      logger.error(
+        `[RAID_MANAGER] Failed to complete raid ${raidId}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       return null;
     }
   }
 
-  private async generateLeaderboard(raidId: string): Promise<RaidLeaderboardEntry[]> {
+  private async generateLeaderboard(
+    raidId: string,
+  ): Promise<RaidLeaderboardEntry[]> {
     if (!this.poolerManager) return [];
 
     const leaderboardSQL = `
@@ -540,7 +617,10 @@ export class RaidSessionManager extends Service {
         joinedAt: new Date(row.joined_at),
       }));
     } catch (error) {
-      logger.error(`[RAID_MANAGER] Failed to generate leaderboard for raid ${raidId}:`, error instanceof Error ? error.message : String(error));
+      logger.error(
+        `[RAID_MANAGER] Failed to generate leaderboard for raid ${raidId}:`,
+        error instanceof Error ? error.message : String(error),
+      );
       return [];
     }
   }
@@ -550,7 +630,10 @@ export class RaidSessionManager extends Service {
     return [];
   }
 
-  private calculateCompletionRate(raidId: string, totalActions: number): number {
+  private calculateCompletionRate(
+    raidId: string,
+    totalActions: number,
+  ): number {
     // Simplified calculation - would need to compare against objectives
     return Math.min(totalActions / 100, 1.0); // Assume 100 actions needed
   }
@@ -560,9 +643,15 @@ export class RaidSessionManager extends Service {
     return 3600; // 1 hour default
   }
 
-  private async updateParticipantProgress(sessionId: string, participantId: string, points: number): Promise<void> {
+  private async updateParticipantProgress(
+    sessionId: string,
+    participantId: string,
+    points: number,
+  ): Promise<void> {
     // Update participant in session - would integrate with sessions service
-    logger.debug(`[RAID_MANAGER] Updated progress for participant ${participantId}: +${points} points`);
+    logger.debug(
+      `[RAID_MANAGER] Updated progress for participant ${participantId}: +${points} points`,
+    );
   }
 
   private async loadActiveRaids(): Promise<void> {

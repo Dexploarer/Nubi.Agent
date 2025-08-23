@@ -1,21 +1,22 @@
-import {
-  Service,
-  IAgentRuntime,
-  logger,
-  UUID,
-  Memory,
-} from "@elizaos/core";
+import { Service, IAgentRuntime, logger, UUID, Memory } from "@elizaos/core";
 import { Server as SocketIOServer, Socket } from "socket.io";
 import { createServer } from "http";
-import { NUBISessionsService, Session, RaidSession } from "./nubi-sessions-service";
+import {
+  NUBISessionsService,
+  Session,
+  RaidSession,
+} from "./nubi-sessions-service";
 import { RaidSessionManager } from "./raid-session-manager";
 import { SessionsAPI } from "../api/sessions-api";
-import { StreamingSessionsService, StreamChunk } from "./streaming-sessions-service";
+import {
+  StreamingSessionsService,
+  StreamChunk,
+} from "./streaming-sessions-service";
 import { ResponseStrategyEvaluator } from "../evaluators/response-strategy-evaluator";
 
 /**
  * Socket.IO Sessions Service
- * 
+ *
  * Real-time WebSocket integration for NUBI Sessions API:
  * - Live session management via Socket.IO
  * - Real-time raid coordination and updates
@@ -36,7 +37,7 @@ export interface SocketSessionData {
 }
 
 export interface SessionMessage {
-  type: 'message' | 'system' | 'raid_update' | 'session_event';
+  type: "message" | "system" | "raid_update" | "session_event";
   content: string;
   sessionId: string;
   userId?: UUID;
@@ -47,20 +48,25 @@ export interface SessionMessage {
 export interface RaidUpdate {
   raidId: string;
   sessionId: string;
-  type: 'participant_joined' | 'action_completed' | 'progress_update' | 'raid_completed';
+  type:
+    | "participant_joined"
+    | "action_completed"
+    | "progress_update"
+    | "raid_completed";
   data: any;
   timestamp: Date;
 }
 
 export class SocketIOSessionsService extends Service {
   static serviceType = "socketio_sessions" as const;
-  capabilityDescription = "Real-time Socket.IO integration for ElizaOS Sessions";
+  capabilityDescription =
+    "Real-time Socket.IO integration for ElizaOS Sessions";
 
-  protected runtime: IAgentRuntime | undefined;
+  declare protected runtime: IAgentRuntime;
   private io: SocketIOServer;
   private server: any;
-  private sessionsService: NUBISessionsService;
-  private raidManager: RaidSessionManager;
+  private sessionsService!: NUBISessionsService;
+  private raidManager!: RaidSessionManager;
   private sessionsAPI: SessionsAPI;
   private streamingService?: StreamingSessionsService;
   private strategyEvaluator?: ResponseStrategyEvaluator;
@@ -69,39 +75,39 @@ export class SocketIOSessionsService extends Service {
   private raidRooms: Map<string, Set<string>> = new Map(); // raidId -> socketIds
 
   constructor(
-    runtime?: IAgentRuntime,
+    runtime: IAgentRuntime,
     sessionsService?: NUBISessionsService,
     raidManager?: RaidSessionManager,
-    port: number = 3001
+    port: number = 3001,
   ) {
     super(runtime);
-    if (runtime) {
-      this.runtime = runtime;
-    }
+    this.runtime = runtime;
     if (sessionsService) {
       this.sessionsService = sessionsService;
     }
     if (raidManager) {
       this.raidManager = raidManager;
     }
-    
+
     // Create HTTP server and Socket.IO instance
     this.server = createServer();
     this.io = new SocketIOServer(this.server, {
       cors: {
         origin: "*", // Configure appropriately for production
-        methods: ["GET", "POST"]
+        methods: ["GET", "POST"],
       },
       path: "/socket.io/",
-      transports: ["websocket", "polling"]
+      transports: ["websocket", "polling"],
     });
 
     // Initialize Sessions API
-    this.sessionsAPI = new SessionsAPI(runtime, sessionsService);
+    this.sessionsAPI = new SessionsAPI(runtime, this.sessionsService);
 
     // Set server port
     this.server.listen(port, () => {
-      logger.info(`[SOCKETIO_SESSIONS] Socket.IO server listening on port ${port}`);
+      logger.info(
+        `[SOCKETIO_SESSIONS] Socket.IO server listening on port ${port}`,
+      );
     });
   }
 
@@ -118,9 +124,14 @@ export class SocketIOSessionsService extends Service {
       // Start cleanup timer for inactive connections
       this.startConnectionCleanup();
 
-      logger.info("[SOCKETIO_SESSIONS] Socket.IO Sessions Service started successfully");
+      logger.info(
+        "[SOCKETIO_SESSIONS] Socket.IO Sessions Service started successfully",
+      );
     } catch (error) {
-      logger.error("[SOCKETIO_SESSIONS] Failed to start:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SOCKETIO_SESSIONS] Failed to start:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -138,76 +149,119 @@ export class SocketIOSessionsService extends Service {
       this.activeSockets.set(socket.id, socketData);
 
       // Authentication handler
-      socket.on("session:authenticate", async (data: {
-        sessionId?: string;
-        userId?: UUID;
-        agentId?: UUID;
-      }, callback) => {
-        try {
-          await this.authenticateSocket(socket, data);
-          callback({ success: true, socketId: socket.id });
-        } catch (error) {
-          logger.error("[SOCKETIO_SESSIONS] Authentication failed:", error instanceof Error ? error.message : String(error));
-          callback({ success: false, error: error instanceof Error ? error.message : 'Authentication failed' });
-        }
-      });
+      socket.on(
+        "session:authenticate",
+        async (
+          data: {
+            sessionId?: string;
+            userId?: UUID;
+            agentId?: UUID;
+          },
+          callback,
+        ) => {
+          try {
+            await this.authenticateSocket(socket, data);
+            callback({ success: true, socketId: socket.id });
+          } catch (error) {
+            logger.error(
+              "[SOCKETIO_SESSIONS] Authentication failed:",
+              error instanceof Error ? error.message : String(error),
+            );
+            callback({
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Authentication failed",
+            });
+          }
+        },
+      );
 
       // Session management handlers
       socket.on("session:create", async (data, callback) => {
         const socketHandlers = this.sessionsAPI.generateSocketIOHandlers();
         await socketHandlers["session:create"](data, callback);
-        
+
         // Join session room after creation
-        if (callback && typeof callback === 'function' && data.success) {
+        if (callback && typeof callback === "function" && data.success) {
           await this.joinSessionRoom(socket, data.data.id);
         }
       });
 
-      socket.on("session:join", async (data: { sessionId: string }, callback) => {
-        try {
-          const session = await this.sessionsService.getSession(data.sessionId);
-          if (session) {
-            await this.joinSessionRoom(socket, data.sessionId);
-            callback({ success: true, session });
-          } else {
-            callback({ success: false, error: "Session not found" });
+      socket.on(
+        "session:join",
+        async (data: { sessionId: string }, callback) => {
+          try {
+            const session = await this.sessionsService.getSession(
+              data.sessionId,
+            );
+            if (session) {
+              await this.joinSessionRoom(socket, data.sessionId);
+              callback({ success: true, session });
+            } else {
+              callback({ success: false, error: "Session not found" });
+            }
+          } catch (error) {
+            callback({
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to join session",
+            });
           }
-        } catch (error) {
-          callback({ success: false, error: error instanceof Error ? error.message : 'Failed to join session' });
-        }
-      });
+        },
+      );
 
-      socket.on("session:message", async (data: {
-        sessionId: string;
-        content: string;
-        type?: string;
-        metadata?: Record<string, any>;
-      }, callback) => {
-        try {
-          // Send message through Sessions API
-          const result = await this.sessionsAPI.sendMessage(data.sessionId, {
-            content: data.content,
-            type: data.type,
-            metadata: data.metadata,
-          });
+      socket.on(
+        "session:message",
+        async (
+          data: {
+            sessionId: string;
+            content: string;
+            type?: string;
+            metadata?: Record<string, any>;
+          },
+          callback,
+        ) => {
+          try {
+            // Send message through Sessions API
+            const result = await this.sessionsAPI.sendMessage(data.sessionId, {
+              content: data.content,
+              type: data.type,
+              metadata: data.metadata,
+            });
 
-          // Broadcast to session room
-          const message: SessionMessage = {
-            type: 'message',
-            content: data.content,
-            sessionId: data.sessionId,
-            userId: this.activeSockets.get(socket.id)?.userId,
-            metadata: data.metadata,
-            timestamp: new Date(),
-          };
+            // Broadcast to session room
+            const message: SessionMessage = {
+              type: "message",
+              content: data.content,
+              sessionId: data.sessionId,
+              userId: this.activeSockets.get(socket.id)?.userId,
+              metadata: data.metadata,
+              timestamp: new Date(),
+            };
 
-          this.broadcastToSession(data.sessionId, "session:message", message, socket.id);
-          
-          callback(result);
-        } catch (error) {
-          callback({ success: false, error: error instanceof Error ? error.message : 'Failed to send message' });
-        }
-      });
+            this.broadcastToSession(
+              data.sessionId,
+              "session:message",
+              message,
+              socket.id,
+            );
+
+            callback(result);
+          } catch (error) {
+            callback({
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to send message",
+            });
+          }
+        },
+      );
 
       // Raid-specific handlers
       socket.on("raid:create", async (data, callback) => {
@@ -216,10 +270,10 @@ export class SocketIOSessionsService extends Service {
           if (result.success) {
             // Join raid room
             await this.joinRaidRoom(socket, result.data.raidId);
-            
+
             // Start raid monitoring
             await this.raidManager.startRaidMonitoring(result.data);
-            
+
             // Broadcast raid creation
             this.broadcastToRaid(result.data.raidId, "raid:created", {
               raidId: result.data.raidId,
@@ -233,119 +287,167 @@ export class SocketIOSessionsService extends Service {
         });
       });
 
-      socket.on("raid:join", async (data: {
-        sessionId: string;
-        telegramId: string;
-        telegramUsername: string;
-        twitterUsername?: string;
-      }, callback) => {
-        try {
-          const success = await this.sessionsService.joinRaidSession(data.sessionId, {
-            telegramId: data.telegramId,
-            telegramUsername: data.telegramUsername,
-            twitterUsername: data.twitterUsername,
-          });
+      socket.on(
+        "raid:join",
+        async (
+          data: {
+            sessionId: string;
+            telegramId: string;
+            telegramUsername: string;
+            twitterUsername?: string;
+          },
+          callback,
+        ) => {
+          try {
+            const success = await this.sessionsService.joinRaidSession(
+              data.sessionId,
+              {
+                telegramId: data.telegramId,
+                telegramUsername: data.telegramUsername,
+                twitterUsername: data.twitterUsername,
+              },
+            );
 
-          if (success) {
-            const session = await this.sessionsService.getSession(data.sessionId) as RaidSession;
-            if (session && session.raidId) {
-              await this.joinRaidRoom(socket, session.raidId);
-              
-              // Broadcast participant joined
+            if (success) {
+              const session = (await this.sessionsService.getSession(
+                data.sessionId,
+              )) as RaidSession;
+              if (session && session.raidId) {
+                await this.joinRaidRoom(socket, session.raidId);
+
+                // Broadcast participant joined
+                const update: RaidUpdate = {
+                  raidId: session.raidId,
+                  sessionId: data.sessionId,
+                  type: "participant_joined",
+                  data: {
+                    telegramUsername: data.telegramUsername,
+                    twitterUsername: data.twitterUsername,
+                  },
+                  timestamp: new Date(),
+                };
+
+                this.broadcastToRaid(session.raidId, "raid:update", update);
+              }
+            }
+
+            callback({ success, sessionId: data.sessionId });
+          } catch (error) {
+            callback({
+              success: false,
+              error:
+                error instanceof Error ? error.message : "Failed to join raid",
+            });
+          }
+        },
+      );
+
+      socket.on(
+        "raid:action",
+        async (
+          data: {
+            raidId: string;
+            sessionId: string;
+            actionType: string;
+            targetId: string;
+            points: number;
+          },
+          callback,
+        ) => {
+          try {
+            const socketData = this.activeSockets.get(socket.id);
+            if (!socketData || !socketData.userId) {
+              callback({ success: false, error: "Authentication required" });
+              return;
+            }
+
+            // Record action through raid manager
+            const success = await this.raidManager.recordRaidAction(
+              data.raidId,
+              data.sessionId,
+              {
+                participantId: socketData.userId,
+                actionType: data.actionType as any,
+                targetId: data.targetId,
+                points: data.points,
+              },
+            );
+
+            if (success) {
+              // Broadcast action update
               const update: RaidUpdate = {
-                raidId: session.raidId,
+                raidId: data.raidId,
                 sessionId: data.sessionId,
-                type: 'participant_joined',
+                type: "action_completed",
                 data: {
-                  telegramUsername: data.telegramUsername,
-                  twitterUsername: data.twitterUsername,
+                  participantId: socketData.userId,
+                  actionType: data.actionType,
+                  points: data.points,
                 },
                 timestamp: new Date(),
               };
 
-              this.broadcastToRaid(session.raidId, "raid:update", update);
+              this.broadcastToRaid(data.raidId, "raid:update", update);
             }
+
+            callback({ success });
+          } catch (error) {
+            callback({
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Failed to record action",
+            });
           }
-
-          callback({ success, sessionId: data.sessionId });
-        } catch (error) {
-          callback({ success: false, error: error instanceof Error ? error.message : 'Failed to join raid' });
-        }
-      });
-
-      socket.on("raid:action", async (data: {
-        raidId: string;
-        sessionId: string;
-        actionType: string;
-        targetId: string;
-        points: number;
-      }, callback) => {
-        try {
-          const socketData = this.activeSockets.get(socket.id);
-          if (!socketData || !socketData.userId) {
-            callback({ success: false, error: "Authentication required" });
-            return;
-          }
-
-          // Record action through raid manager
-          const success = await this.raidManager.recordRaidAction(data.raidId, data.sessionId, {
-            participantId: socketData.userId,
-            actionType: data.actionType as any,
-            targetId: data.targetId,
-            points: data.points,
-          });
-
-          if (success) {
-            // Broadcast action update
-            const update: RaidUpdate = {
-              raidId: data.raidId,
-              sessionId: data.sessionId,
-              type: 'action_completed',
-              data: {
-                participantId: socketData.userId,
-                actionType: data.actionType,
-                points: data.points,
-              },
-              timestamp: new Date(),
-            };
-
-            this.broadcastToRaid(data.raidId, "raid:update", update);
-          }
-
-          callback({ success });
-        } catch (error) {
-          callback({ success: false, error: error instanceof Error ? error.message : 'Failed to record action' });
-        }
-      });
+        },
+      );
 
       // Activity tracking
-      socket.on("session:activity", async (data: { sessionId: string, activity: any }) => {
-        try {
-          await this.sessionsService.updateSessionActivity(data.sessionId, data.activity);
-          this.updateSocketActivity(socket.id);
-        } catch (error) {
-          logger.error("[SOCKETIO_SESSIONS] Failed to update activity:", error instanceof Error ? error.message : String(error));
-        }
-      });
+      socket.on(
+        "session:activity",
+        async (data: { sessionId: string; activity: any }) => {
+          try {
+            await this.sessionsService.updateSessionActivity(
+              data.sessionId,
+              data.activity,
+            );
+            this.updateSocketActivity(socket.id);
+          } catch (error) {
+            logger.error(
+              "[SOCKETIO_SESSIONS] Failed to update activity:",
+              error instanceof Error ? error.message : String(error),
+            );
+          }
+        },
+      );
 
       // Disconnect handler
       socket.on("disconnect", (reason) => {
-        logger.info(`[SOCKETIO_SESSIONS] Client disconnected: ${socket.id}, reason: ${reason}`);
+        logger.info(
+          `[SOCKETIO_SESSIONS] Client disconnected: ${socket.id}, reason: ${reason}`,
+        );
         this.handleSocketDisconnect(socket.id);
       });
 
       // Error handler
       socket.on("error", (error) => {
-        logger.error(`[SOCKETIO_SESSIONS] Socket error for ${socket.id}:`, error instanceof Error ? error.message : String(error));
+        logger.error(
+          `[SOCKETIO_SESSIONS] Socket error for ${socket.id}:`,
+          error instanceof Error ? error.message : String(error),
+        );
       });
     });
   }
 
-  private async authenticateSocket(socket: Socket, data: {
-    sessionId?: string;
-    userId?: UUID;
-    agentId?: UUID;
-  }): Promise<void> {
+  private async authenticateSocket(
+    socket: Socket,
+    data: {
+      sessionId?: string;
+      userId?: UUID;
+      agentId?: UUID;
+    },
+  ): Promise<void> {
     const socketData = this.activeSockets.get(socket.id);
     if (!socketData) throw new Error("Socket not found");
 
@@ -370,7 +472,10 @@ export class SocketIOSessionsService extends Service {
     logger.info(`[SOCKETIO_SESSIONS] Socket authenticated: ${socket.id}`);
   }
 
-  private async joinSessionRoom(socket: Socket, sessionId: string): Promise<void> {
+  private async joinSessionRoom(
+    socket: Socket,
+    sessionId: string,
+  ): Promise<void> {
     const roomName = `session:${sessionId}`;
     socket.join(roomName);
 
@@ -387,7 +492,9 @@ export class SocketIOSessionsService extends Service {
       this.activeSockets.set(socket.id, socketData);
     }
 
-    logger.debug(`[SOCKETIO_SESSIONS] Socket ${socket.id} joined session room: ${sessionId}`);
+    logger.debug(
+      `[SOCKETIO_SESSIONS] Socket ${socket.id} joined session room: ${sessionId}`,
+    );
   }
 
   private async joinRaidRoom(socket: Socket, raidId: string): Promise<void> {
@@ -407,10 +514,17 @@ export class SocketIOSessionsService extends Service {
       this.activeSockets.set(socket.id, socketData);
     }
 
-    logger.debug(`[SOCKETIO_SESSIONS] Socket ${socket.id} joined raid room: ${raidId}`);
+    logger.debug(
+      `[SOCKETIO_SESSIONS] Socket ${socket.id} joined raid room: ${raidId}`,
+    );
   }
 
-  private broadcastToSession(sessionId: string, event: string, data: any, excludeSocketId?: string): void {
+  private broadcastToSession(
+    sessionId: string,
+    event: string,
+    data: any,
+    excludeSocketId?: string,
+  ): void {
     const roomName = `session:${sessionId}`;
     if (excludeSocketId) {
       this.io.to(roomName).except(excludeSocketId).emit(event, data);
@@ -419,7 +533,12 @@ export class SocketIOSessionsService extends Service {
     }
   }
 
-  private broadcastToRaid(raidId: string, event: string, data: any, excludeSocketId?: string): void {
+  private broadcastToRaid(
+    raidId: string,
+    event: string,
+    data: any,
+    excludeSocketId?: string,
+  ): void {
     const roomName = `raid:${raidId}`;
     if (excludeSocketId) {
       this.io.to(roomName).except(excludeSocketId).emit(event, data);
@@ -438,7 +557,7 @@ export class SocketIOSessionsService extends Service {
 
   private handleSocketDisconnect(socketId: string): void {
     const socketData = this.activeSockets.get(socketId);
-    
+
     // Remove from session room
     if (socketData?.sessionId) {
       const sessionSockets = this.sessionRooms.get(socketData.sessionId);
@@ -472,10 +591,15 @@ export class SocketIOSessionsService extends Service {
       const staleThreshold = 30 * 60 * 1000; // 30 minutes
 
       for (const [socketId, socketData] of this.activeSockets) {
-        if (now.getTime() - socketData.lastActivity.getTime() > staleThreshold) {
-          logger.info(`[SOCKETIO_SESSIONS] Cleaning up stale connection: ${socketId}`);
+        if (
+          now.getTime() - socketData.lastActivity.getTime() >
+          staleThreshold
+        ) {
+          logger.info(
+            `[SOCKETIO_SESSIONS] Cleaning up stale connection: ${socketId}`,
+          );
           this.handleSocketDisconnect(socketId);
-          
+
           // Disconnect the socket
           const socket = this.io.sockets.sockets.get(socketId);
           if (socket) {
@@ -500,7 +624,11 @@ export class SocketIOSessionsService extends Service {
   /**
    * Send session event to specific session
    */
-  async sendSessionEvent(sessionId: string, event: string, data: any): Promise<void> {
+  async sendSessionEvent(
+    sessionId: string,
+    event: string,
+    data: any,
+  ): Promise<void> {
     this.broadcastToSession(sessionId, event, data);
   }
 
@@ -513,8 +641,9 @@ export class SocketIOSessionsService extends Service {
     sessionsActive: number;
     raidsActive: number;
   } {
-    const authenticated = Array.from(this.activeSockets.values())
-      .filter(s => s.isAuthenticated).length;
+    const authenticated = Array.from(this.activeSockets.values()).filter(
+      (s) => s.isAuthenticated,
+    ).length;
 
     return {
       totalConnections: this.activeSockets.size,
@@ -527,7 +656,7 @@ export class SocketIOSessionsService extends Service {
   async stop(): Promise<void> {
     // Close all socket connections
     this.io.close();
-    
+
     // Close HTTP server
     this.server.close();
 
@@ -546,10 +675,10 @@ export class SocketIOSessionsService extends Service {
     socket: Socket,
     sessionId: string,
     message: Memory,
-    callback: (result: any) => void
+    callback: (result: any) => void,
   ): Promise<void> {
     if (!this.streamingService) {
-      callback({ success: false, error: 'Streaming service not available' });
+      callback({ success: false, error: "Streaming service not available" });
       return;
     }
 
@@ -575,15 +704,20 @@ export class SocketIOSessionsService extends Service {
           });
 
           // Broadcast to session room (except sender)
-          this.broadcastToSession(sessionId, "session:streamChunk", {
+          this.broadcastToSession(
             sessionId,
-            chunkId: chunk.chunkId,
-            content: chunk.content,
-            type: chunk.type,
-            sequenceNumber: chunk.sequenceNumber,
-            timestamp: chunk.timestamp,
-            fromUserId: this.activeSockets.get(socket.id)?.userId,
-          }, socket.id);
+            "session:streamChunk",
+            {
+              sessionId,
+              chunkId: chunk.chunkId,
+              content: chunk.content,
+              type: chunk.type,
+              sequenceNumber: chunk.sequenceNumber,
+              timestamp: chunk.timestamp,
+              fromUserId: this.activeSockets.get(socket.id)?.userId,
+            },
+            socket.id,
+          );
         }
       };
 
@@ -591,7 +725,7 @@ export class SocketIOSessionsService extends Service {
       const finalContent = await this.streamingService.processStreamingMessage(
         sessionId,
         message,
-        chunkHandler
+        chunkHandler,
       );
 
       // Emit stream complete
@@ -603,13 +737,18 @@ export class SocketIOSessionsService extends Service {
       });
 
       // Broadcast completion
-      this.broadcastToSession(sessionId, "session:streamComplete", {
+      this.broadcastToSession(
         sessionId,
-        messageId: message.id,
-        finalContent,
-        timestamp: new Date(),
-        fromUserId: this.activeSockets.get(socket.id)?.userId,
-      }, socket.id);
+        "session:streamComplete",
+        {
+          sessionId,
+          messageId: message.id,
+          finalContent,
+          timestamp: new Date(),
+          fromUserId: this.activeSockets.get(socket.id)?.userId,
+        },
+        socket.id,
+      );
 
       callback({
         success: true,
@@ -622,19 +761,23 @@ export class SocketIOSessionsService extends Service {
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      logger.error("[SOCKETIO_SESSIONS] Streaming error:", error instanceof Error ? error.message : String(error));
-      
+      logger.error(
+        "[SOCKETIO_SESSIONS] Streaming error:",
+        error instanceof Error ? error.message : String(error),
+      );
+
       // Emit error event
       socket.emit("session:streamError", {
         sessionId,
         messageId: message.id,
-        error: error instanceof Error ? error.message : 'Stream failed',
+        error: error instanceof Error ? error.message : "Stream failed",
         timestamp: new Date(),
       });
 
       callback({
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to stream message',
+        error:
+          error instanceof Error ? error.message : "Failed to stream message",
       });
     }
   }
@@ -646,7 +789,7 @@ export class SocketIOSessionsService extends Service {
     socket: Socket,
     sessionId: string,
     data: any,
-    callback: (result: any) => void
+    callback: (result: any) => void,
   ): Promise<void> {
     try {
       // Send message through Sessions API
@@ -658,7 +801,7 @@ export class SocketIOSessionsService extends Service {
 
       // Broadcast to session room
       const message: SessionMessage = {
-        type: 'message',
+        type: "message",
         content: data.content,
         sessionId: sessionId,
         userId: this.activeSockets.get(socket.id)?.userId,
@@ -667,10 +810,14 @@ export class SocketIOSessionsService extends Service {
       };
 
       this.broadcastToSession(sessionId, "session:message", message, socket.id);
-      
+
       callback(result);
     } catch (error) {
-      callback({ success: false, error: error instanceof Error ? error.message : 'Failed to send message' });
+      callback({
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to send message",
+      });
     }
   }
 
@@ -682,21 +829,25 @@ export class SocketIOSessionsService extends Service {
 
     try {
       // Get or create streaming service
-      this.streamingService = this.runtime.getService<StreamingSessionsService>("streaming_sessions");
+      this.streamingService =
+        this.runtime.getService<StreamingSessionsService>("streaming_sessions") || undefined;
       if (!this.streamingService) {
         this.streamingService = new StreamingSessionsService(
           this.runtime,
-          this.sessionsService
+          this.sessionsService,
         );
         await this.streamingService.start();
       }
 
       // Create strategy evaluator
-      this.strategyEvaluator = new ResponseStrategyEvaluator(this.streamingService);
+      this.strategyEvaluator = new ResponseStrategyEvaluator();
 
       logger.info("[SOCKETIO_SESSIONS] Streaming services initialized");
     } catch (error) {
-      logger.warn("[SOCKETIO_SESSIONS] Failed to initialize streaming services:", error);
+      logger.warn(
+        "[SOCKETIO_SESSIONS] Failed to initialize streaming services:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 }

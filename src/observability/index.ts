@@ -77,7 +77,7 @@ export const observabilityUtils = {
         timestamp: new Date().toISOString(),
         type: "metrics",
         ...metrics,
-      })}`
+      })}`,
     );
   },
 };

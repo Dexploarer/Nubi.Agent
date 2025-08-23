@@ -15,7 +15,7 @@ import { SessionContextProvider } from "../providers/session-context-provider";
 
 /**
  * NUBI Sessions Plugin
- * 
+ *
  * Integrates ElizaOS Sessions API with NUBI's existing architecture:
  * - Registers all session-related services
  * - Provides session context to all agent interactions
@@ -25,7 +25,8 @@ import { SessionContextProvider } from "../providers/session-context-provider";
 
 export class SessionsPlugin implements Plugin {
   name = "sessions";
-  description = "ElizaOS Sessions API integration with NUBI-specific extensions";
+  description =
+    "ElizaOS Sessions API integration with NUBI-specific extensions";
   services: Service[] = [];
   providers: Provider[] = [];
   actions: Action[] = [];
@@ -36,9 +37,12 @@ export class SessionsPlugin implements Plugin {
       logger.info("[SESSIONS_PLUGIN] Initializing NUBI Sessions Plugin...");
 
       // Get existing memory service
-      const memoryService = runtime.getService<DatabaseMemoryService>("database_memory");
+      const memoryService =
+        runtime.getService<DatabaseMemoryService>("database_memory");
       if (!memoryService) {
-        logger.warn("[SESSIONS_PLUGIN] DatabaseMemoryService not found - some features may be limited");
+        logger.warn(
+          "[SESSIONS_PLUGIN] DatabaseMemoryService not found - some features may be limited",
+        );
       }
 
       // Initialize core sessions service
@@ -48,7 +52,11 @@ export class SessionsPlugin implements Plugin {
 
       // Initialize raid session manager
       if (memoryService) {
-        const raidManager = new RaidSessionManager(runtime, sessionsService, memoryService);
+        const raidManager = new RaidSessionManager(
+          runtime,
+          sessionsService,
+          memoryService,
+        );
         await raidManager.start();
         this.services.push(raidManager);
 
@@ -57,7 +65,7 @@ export class SessionsPlugin implements Plugin {
           runtime,
           sessionsService,
           raidManager,
-          parseInt(process.env.SOCKETIO_PORT || "3001")
+          parseInt(process.env.SOCKETIO_PORT || "3001"),
         );
         await socketService.start();
         this.services.push(socketService);
@@ -66,14 +74,19 @@ export class SessionsPlugin implements Plugin {
         const sessionProvider = new SessionContextProvider(
           runtime,
           sessionsService,
-          memoryService
+          memoryService,
         );
         this.providers.push(sessionProvider);
       }
 
-      logger.info("[SESSIONS_PLUGIN] NUBI Sessions Plugin initialized successfully");
+      logger.info(
+        "[SESSIONS_PLUGIN] NUBI Sessions Plugin initialized successfully",
+      );
     } catch (error) {
-      logger.error("[SESSIONS_PLUGIN] Failed to initialize:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSIONS_PLUGIN] Failed to initialize:",
+        error instanceof Error ? error.message : String(error),
+      );
       throw error;
     }
   }
@@ -95,7 +108,10 @@ export class SessionsPlugin implements Plugin {
 
       logger.info("[SESSIONS_PLUGIN] NUBI Sessions Plugin cleanup completed");
     } catch (error) {
-      logger.error("[SESSIONS_PLUGIN] Failed to cleanup:", error instanceof Error ? error.message : String(error));
+      logger.error(
+        "[SESSIONS_PLUGIN] Failed to cleanup:",
+        error instanceof Error ? error.message : String(error),
+      );
     }
   }
 }

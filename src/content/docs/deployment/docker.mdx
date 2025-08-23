@@ -5,7 +5,7 @@ sidebar:
   order: 2
 ---
 
-import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from "@astrojs/starlight/components";
 
 This guide covers containerizing NUBI with Docker for consistent deployments across development, staging, and production environments.
 
@@ -22,85 +22,103 @@ Optimized Dockerfile for production builds with minimal image size:
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
+
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Copy package files
-COPY package*.json bun.lockb ./
+
+COPY package\*.json bun.lockb ./
 
 # Install dependencies with bun for faster installation
+
 RUN corepack enable && corepack prepare bun@latest --activate
 RUN bun install --frozen-lockfile --production
 
 # Rebuild the source code only when needed
+
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Set build environment
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install build dependencies
+
 RUN corepack enable && corepack prepare bun@latest --activate
 
 # Build the application
+
 RUN bun install --frozen-lockfile
 RUN bun run build
 
 # Production image, copy all the files and run the application
+
 FROM base AS runner
 WORKDIR /app
 
 # Create non-root user for security
+
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nubiuser
 
 # Set production environment
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Copy built application
+
 COPY --from=builder --chown=nubiuser:nodejs /app/dist ./dist
-COPY --from=builder --chown=nubiuser:nodejs /app/package*.json ./
+COPY --from=builder --chown=nubiuser:nodejs /app/package\*.json ./
 COPY --from=deps --chown=nubiuser:nodejs /app/node_modules ./node_modules
 
 # Copy static assets if any
+
 COPY --from=builder --chown=nubiuser:nodejs /app/public ./public
 COPY --from=builder --chown=nubiuser:nodejs /app/config ./config
 
 # Create necessary directories
+
 RUN mkdir -p logs uploads && chown -R nubiuser:nodejs logs uploads
 
 # Switch to non-root user
+
 USER nubiuser
 
 # Health check
+
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "const http = require('http'); \
-    const options = { \
-      host: 'localhost', \
-      port: process.env.PORT || 3000, \
-      path: '/health', \
-      timeout: 2000 \
-    }; \
-    const request = http.request(options, (res) => { \
-      console.log(\`STATUS: \${res.statusCode}\`); \
-      process.exitCode = (res.statusCode === 200) ? 0 : 1; \
-    }); \
-    request.on('error', () => { process.exitCode = 1; }); \
-    request.end();"
+ CMD node -e "const http = require('http'); \
+ const options = { \
+ host: 'localhost', \
+ port: process.env.PORT || 3000, \
+ path: '/health', \
+ timeout: 2000 \
+ }; \
+ const request = http.request(options, (res) => { \
+ console.log(\`STATUS: \${res.statusCode}\`); \
+ process.exitCode = (res.statusCode === 200) ? 0 : 1; \
+ }); \
+ request.on('error', () => { process.exitCode = 1; }); \
+ request.end();"
 
 # Expose port
+
 EXPOSE 3000
 
 # Start the application
+
 CMD ["node", "dist/index.js"]
-```
+
+````
   </TabItem>
-  
+
   <TabItem label="Development Dockerfile">
 ```dockerfile
 # Dockerfile.dev
@@ -144,7 +162,8 @@ VOLUME ["/app/src", "/app/config"]
 
 # Development command with hot reload
 CMD ["bun", "run", "dev"]
-```
+````
+
   </TabItem>
   
   <TabItem label="Worker Dockerfile">
@@ -153,14 +172,16 @@ CMD ["bun", "run", "dev"]
 FROM node:20-alpine AS base
 
 # Dependencies stage
+
 FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package*.json bun.lockb ./
+COPY package\*.json bun.lockb ./
 RUN corepack enable && corepack prepare bun@latest --activate
 RUN bun install --frozen-lockfile --production
 
 # Builder stage
+
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
@@ -172,34 +193,41 @@ RUN bun install --frozen-lockfile
 RUN bun run build
 
 # Worker runtime
+
 FROM base AS runner
 WORKDIR /app
 
 # Create worker user
+
 RUN addgroup --system --gid 1001 worker
 RUN adduser --system --uid 1001 workeruser
 
 ENV NODE_ENV=production
 
 # Copy worker-specific files
+
 COPY --from=builder --chown=workeruser:worker /app/dist ./dist
-COPY --from=builder --chown=workeruser:worker /app/package*.json ./
+COPY --from=builder --chown=workeruser:worker /app/package\*.json ./
 COPY --from=deps --chown=workeruser:worker /app/node_modules ./node_modules
 
 # Worker-specific directories
+
 RUN mkdir -p logs queue-data && chown -R workeruser:worker logs queue-data
 
 USER workeruser
 
 # Health check for worker process
+
 HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=3 \
-  CMD node -e "console.log('Worker health check'); process.exit(0);"
+ CMD node -e "console.log('Worker health check'); process.exit(0);"
 
 EXPOSE 3001
 
 # Start worker process
+
 CMD ["node", "dist/worker.js"]
-```
+
+````
   </TabItem>
 </Tabs>
 
@@ -220,19 +248,19 @@ services:
       dockerfile: Dockerfile.dev
     container_name: nubi-dev
     restart: unless-stopped
-    
+
     ports:
       - "3000:3000"
       - "9229:9229"  # Debug port
-    
+
     environment:
       - NODE_ENV=development
       - PORT=3000
       - DEBUG=nubi:*
-    
+
     env_file:
       - .env.development
-    
+
     volumes:
       # Hot reload volumes
       - ./src:/app/src
@@ -244,14 +272,14 @@ services:
       - ./uploads:/app/uploads
       # Node modules (avoid overwriting)
       - /app/node_modules
-    
+
     depends_on:
       - postgres-dev
       - redis-dev
-    
+
     networks:
       - nubi-dev-network
-    
+
     # Enable debugging
     command: ["bun", "run", "dev:debug"]
 
@@ -259,23 +287,23 @@ services:
     image: postgres:15-alpine
     container_name: nubi-postgres-dev
     restart: unless-stopped
-    
+
     environment:
       POSTGRES_DB: nubi_development
       POSTGRES_USER: nubi_dev
       POSTGRES_PASSWORD: dev_password
       POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
-    
+
     ports:
       - "5432:5432"
-    
+
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d
-    
+
     networks:
       - nubi-dev-network
-    
+
     # Development PostgreSQL configuration
     command: >
       postgres
@@ -289,17 +317,17 @@ services:
     image: redis:7-alpine
     container_name: nubi-redis-dev
     restart: unless-stopped
-    
+
     ports:
       - "6379:6379"
-    
+
     volumes:
       - redis_dev_data:/data
       - ./docker/redis/redis-dev.conf:/usr/local/etc/redis/redis.conf
-    
+
     networks:
       - nubi-dev-network
-    
+
     command: redis-server /usr/local/etc/redis/redis.conf
 
   # Development tools
@@ -332,7 +360,8 @@ volumes:
 networks:
   nubi-dev-network:
     driver: bridge
-```
+````
+
   </TabItem>
   
   <TabItem label="Production Setup">
@@ -341,41 +370,40 @@ networks:
 version: '3.8'
 
 services:
-  nubi-app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - NODE_ENV=production
-    image: nubi/app:latest
-    container_name: nubi-production
-    restart: unless-stopped
-    
+nubi-app:
+build:
+context: .
+dockerfile: Dockerfile
+args: - NODE_ENV=production
+image: nubi/app:latest
+container_name: nubi-production
+restart: unless-stopped
+
     ports:
       - "3000:3000"
-    
+
     environment:
       - NODE_ENV=production
       - PORT=3000
-    
+
     env_file:
       - .env.production
-    
+
     volumes:
       - ./logs:/app/logs:rw
       - ./uploads:/app/uploads:rw
       - /etc/localtime:/etc/localtime:ro
-    
+
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    
+
     networks:
       - nubi-backend-network
       - nubi-frontend-network
-    
+
     deploy:
       resources:
         limits:
@@ -389,14 +417,14 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
-    
+
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    
+
     logging:
       driver: "json-file"
       options:
@@ -404,34 +432,34 @@ services:
         max-file: "5"
         compress: "true"
 
-  nubi-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    image: nubi/worker:latest
-    container_name: nubi-worker
-    restart: unless-stopped
-    
+nubi-worker:
+build:
+context: .
+dockerfile: Dockerfile.worker
+image: nubi/worker:latest
+container_name: nubi-worker
+restart: unless-stopped
+
     environment:
       - NODE_ENV=production
       - WORKER_TYPE=background
-    
+
     env_file:
       - .env.production
-    
+
     volumes:
       - ./logs:/app/logs:rw
       - ./queue-data:/app/queue-data:rw
-    
+
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    
+
     networks:
       - nubi-backend-network
-    
+
     deploy:
       resources:
         limits:
@@ -440,35 +468,35 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-    
+
     healthcheck:
       test: ["CMD", "node", "-e", "process.exit(0)"]
       interval: 60s
       timeout: 10s
       retries: 3
 
-  postgres:
-    image: postgres:15-alpine
-    container_name: nubi-postgres-prod
-    restart: unless-stopped
-    
+postgres:
+image: postgres:15-alpine
+container_name: nubi-postgres-prod
+restart: unless-stopped
+
     environment:
       POSTGRES_DB: ${DATABASE_NAME}
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       PGDATA: /var/lib/postgresql/data/pgdata
-    
+
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data
       - ./docker/postgres/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./backups:/backups:rw
-    
+
     networks:
       - nubi-backend-network
-    
+
     ports:
       - "127.0.0.1:5432:5432"  # Only bind to localhost
-    
+
     # Production optimized PostgreSQL
     command: >
       postgres
@@ -489,13 +517,13 @@ services:
       -c max_parallel_workers_per_gather=4
       -c max_parallel_workers=8
       -c max_parallel_maintenance_workers=4
-    
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER} -d ${DATABASE_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    
+
     deploy:
       resources:
         limits:
@@ -505,29 +533,29 @@ services:
           cpus: '2.0'
           memory: 2G
 
-  redis:
-    image: redis:7-alpine
-    container_name: nubi-redis-prod
-    restart: unless-stopped
-    
+redis:
+image: redis:7-alpine
+container_name: nubi-redis-prod
+restart: unless-stopped
+
     volumes:
       - redis_prod_data:/data
       - ./docker/redis/redis-prod.conf:/usr/local/etc/redis/redis.conf
-    
+
     networks:
       - nubi-backend-network
-    
+
     ports:
       - "127.0.0.1:6379:6379"  # Only bind to localhost
-    
+
     command: redis-server /usr/local/etc/redis/redis.conf
-    
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
-    
+
     deploy:
       resources:
         limits:
@@ -537,97 +565,98 @@ services:
           cpus: '0.5'
           memory: 512M
 
-  # Reverse proxy
-  nginx:
-    image: nginx:alpine
-    container_name: nubi-nginx-prod
-    restart: unless-stopped
-    
+# Reverse proxy
+
+nginx:
+image: nginx:alpine
+container_name: nubi-nginx-prod
+restart: unless-stopped
+
     ports:
       - "80:80"
       - "443:443"
-    
+
     volumes:
       - ./docker/nginx/nginx-prod.conf:/etc/nginx/nginx.conf:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./ssl:/etc/nginx/ssl:ro
       - ./logs/nginx:/var/log/nginx:rw
       - ./static:/var/www/static:ro
-    
+
     depends_on:
       nubi-app:
         condition: service_healthy
-    
+
     networks:
       - nubi-frontend-network
-    
+
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-    
+
     deploy:
       resources:
         limits:
           cpus: '1.0'
           memory: 512M
 
-  # Backup service
-  backup:
-    image: alpine:latest
-    container_name: nubi-backup
-    restart: "no"
-    
+# Backup service
+
+backup:
+image: alpine:latest
+container_name: nubi-backup
+restart: "no"
+
     volumes:
       - postgres_prod_data:/var/lib/postgresql/data:ro
       - redis_prod_data:/var/lib/redis/data:ro
       - ./backups:/backups:rw
       - ./docker/backup/backup.sh:/backup.sh:ro
-    
+
     networks:
       - nubi-backend-network
-    
+
     depends_on:
       - postgres
       - redis
-    
+
     command: ["sh", "/backup.sh"]
-    
+
     # Run backup daily at 2 AM
     # Use external cron or Kubernetes CronJob for scheduling
 
 volumes:
-  postgres_prod_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /data/nubi/postgres
-  
-  redis_prod_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /data/nubi/redis
+postgres_prod_data:
+driver: local
+driver_opts:
+type: none
+o: bind
+device: /data/nubi/postgres
+
+redis_prod_data:
+driver: local
+driver_opts:
+type: none
+o: bind
+device: /data/nubi/redis
 
 networks:
-  nubi-frontend-network:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.1.0/24
-  
-  nubi-backend-network:
-    driver: bridge
-    internal: true
-    ipam:
-      config:
-        - subnet: 172.20.2.0/24
-```
+nubi-frontend-network:
+driver: bridge
+ipam:
+config: - subnet: 172.20.1.0/24
+
+nubi-backend-network:
+driver: bridge
+internal: true
+ipam:
+config: - subnet: 172.20.2.0/24
+
+````
   </TabItem>
-  
+
   <TabItem label="Testing Environment">
 ```yaml
 # docker-compose.test.yml
@@ -640,46 +669,46 @@ services:
       dockerfile: Dockerfile.dev
       target: base
     container_name: nubi-test-runner
-    
+
     environment:
       - NODE_ENV=test
       - PORT=3001
       - DATABASE_URL=postgresql://test_user:test_pass@postgres-test:5432/nubi_test
       - REDIS_URL=redis://redis-test:6379/0
-    
+
     volumes:
       - ./src:/app/src:ro
       - ./tests:/app/tests:ro
       - ./config:/app/config:ro
       - ./coverage:/app/coverage:rw
       - ./test-results:/app/test-results:rw
-    
+
     depends_on:
       postgres-test:
         condition: service_healthy
       redis-test:
         condition: service_healthy
-    
+
     networks:
       - nubi-test-network
-    
+
     command: ["bun", "run", "test:ci"]
 
   postgres-test:
     image: postgres:15-alpine
     container_name: nubi-postgres-test
-    
+
     environment:
       POSTGRES_DB: nubi_test
       POSTGRES_USER: test_user
       POSTGRES_PASSWORD: test_pass
-    
+
     tmpfs:
       - /var/lib/postgresql/data
-    
+
     networks:
       - nubi-test-network
-    
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U test_user -d nubi_test"]
       interval: 5s
@@ -689,15 +718,15 @@ services:
   redis-test:
     image: redis:7-alpine
     container_name: nubi-redis-test
-    
+
     tmpfs:
       - /data
-    
+
     networks:
       - nubi-test-network
-    
+
     command: redis-server --save ""
-    
+
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -710,22 +739,22 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: nubi-integration-test
-    
+
     environment:
       - NODE_ENV=test
       - TEST_TYPE=integration
-    
+
     volumes:
       - ./tests/integration:/app/tests/integration:ro
       - ./test-results:/app/test-results:rw
-    
+
     depends_on:
       nubi-test:
         condition: service_completed_successfully
-    
+
     networks:
       - nubi-test-network
-    
+
     command: ["bun", "run", "test:integration"]
 
   # End-to-end test services
@@ -734,47 +763,48 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: nubi-e2e-test
-    
+
     environment:
       - NODE_ENV=test
       - TEST_TYPE=e2e
       - BASE_URL=http://nubi-app:3000
-    
+
     volumes:
       - ./tests/e2e:/app/tests/e2e:ro
       - ./test-results:/app/test-results:rw
-    
+
     depends_on:
       nubi-app:
         condition: service_healthy
-    
+
     networks:
       - nubi-test-network
-    
+
     command: ["bun", "run", "test:e2e"]
 
   # Performance test services
   nubi-perf:
     image: loadimpact/k6:latest
     container_name: nubi-perf-test
-    
+
     volumes:
       - ./tests/performance:/scripts:ro
       - ./test-results:/results:rw
-    
+
     depends_on:
       nubi-app:
         condition: service_healthy
-    
+
     networks:
       - nubi-test-network
-    
+
     command: ["run", "--out", "json=/results/performance.json", "/scripts/load-test.js"]
 
 networks:
   nubi-test-network:
     driver: bridge
-```
+````
+
   </TabItem>
 </Tabs>
 
@@ -798,67 +828,80 @@ metadata:
     app.kubernetes.io/instance: production
 
 ---
+
 # k8s/01-configmap.yaml
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: nubi-config
-  namespace: nubi-production
+name: nubi-config
+namespace: nubi-production
 data:
-  NODE_ENV: "production"
-  PORT: "3000"
-  LOG_LEVEL: "info"
-  
-  # Database configuration
-  DATABASE_POOL_MIN: "10"
-  DATABASE_POOL_MAX: "50"
-  DATABASE_SSL: "true"
-  
-  # Redis configuration
-  REDIS_CLUSTER_MODE: "true"
-  REDIS_TLS: "true"
-  
-  # Application configuration
-  APP_NAME: "NUBI"
-  APP_VERSION: "2.0.0"
-  
-  # Rate limiting
-  RATE_LIMIT_WINDOW_MS: "900000"
-  RATE_LIMIT_MAX_REQUESTS: "100"
-  
-  # Session configuration
-  SESSION_MAX_AGE: "86400000"
-  
-  # WebSocket configuration
-  WEBSOCKET_MAX_CONNECTIONS: "10000"
-  WEBSOCKET_PING_INTERVAL: "25000"
+NODE_ENV: "production"
+PORT: "3000"
+LOG_LEVEL: "info"
+
+# Database configuration
+
+DATABASE_POOL_MIN: "10"
+DATABASE_POOL_MAX: "50"
+DATABASE_SSL: "true"
+
+# Redis configuration
+
+REDIS_CLUSTER_MODE: "true"
+REDIS_TLS: "true"
+
+# Application configuration
+
+APP_NAME: "NUBI"
+APP_VERSION: "2.0.0"
+
+# Rate limiting
+
+RATE_LIMIT_WINDOW_MS: "900000"
+RATE_LIMIT_MAX_REQUESTS: "100"
+
+# Session configuration
+
+SESSION_MAX_AGE: "86400000"
+
+# WebSocket configuration
+
+WEBSOCKET_MAX_CONNECTIONS: "10000"
+WEBSOCKET_PING_INTERVAL: "25000"
 
 ---
+
 # k8s/02-secrets.yaml
+
 apiVersion: v1
 kind: Secret
 metadata:
-  name: nubi-secrets
-  namespace: nubi-production
+name: nubi-secrets
+namespace: nubi-production
 type: Opaque
 stringData:
-  database-url: "postgresql://user:password@postgres-service:5432/nubi_production"
-  redis-url: "redis://redis-service:6379/0"
-  jwt-secret: "your-super-secret-jwt-key-64-chars-minimum"
-  session-secret: "your-session-secret-key-for-production"
-  
-  # Platform API keys
-  telegram-bot-token: "your-telegram-bot-token"
-  discord-bot-token: "your-discord-bot-token"
-  twitter-api-key: "your-twitter-api-key"
-  twitter-api-secret: "your-twitter-api-secret"
-  
-  # External service keys
-  openai-api-key: "your-openai-api-key"
-  sentry-dsn: "your-sentry-dsn"
-```
+database-url: "postgresql://user:password@postgres-service:5432/nubi_production"
+redis-url: "redis://redis-service:6379/0"
+jwt-secret: "your-super-secret-jwt-key-64-chars-minimum"
+session-secret: "your-session-secret-key-for-production"
+
+# Platform API keys
+
+telegram-bot-token: "your-telegram-bot-token"
+discord-bot-token: "your-discord-bot-token"
+twitter-api-key: "your-twitter-api-key"
+twitter-api-secret: "your-twitter-api-secret"
+
+# External service keys
+
+openai-api-key: "your-openai-api-key"
+sentry-dsn: "your-sentry-dsn"
+
+````
   </TabItem>
-  
+
   <TabItem label="Application Deployment">
 ```yaml
 # k8s/03-deployment.yaml
@@ -900,18 +943,18 @@ spec:
       - name: nubi
         image: nubi/app:latest
         imagePullPolicy: Always
-        
+
         ports:
         - name: http
           containerPort: 3000
           protocol: TCP
-        
+
         envFrom:
         - configMapRef:
             name: nubi-config
         - secretRef:
             name: nubi-secrets
-        
+
         resources:
           requests:
             memory: "1Gi"
@@ -919,7 +962,7 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "2000m"
-        
+
         readinessProbe:
           httpGet:
             path: /health
@@ -930,7 +973,7 @@ spec:
           timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 3
-        
+
         livenessProbe:
           httpGet:
             path: /health
@@ -941,20 +984,20 @@ spec:
           timeoutSeconds: 10
           successThreshold: 1
           failureThreshold: 3
-        
+
         volumeMounts:
         - name: logs
           mountPath: /app/logs
         - name: uploads
           mountPath: /app/uploads
-        
+
         securityContext:
           allowPrivilegeEscalation: false
           capabilities:
             drop:
             - ALL
           readOnlyRootFilesystem: true
-      
+
       volumes:
       - name: logs
         emptyDir:
@@ -962,7 +1005,7 @@ spec:
       - name: uploads
         persistentVolumeClaim:
           claimName: nubi-uploads-pvc
-      
+
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -1046,7 +1089,8 @@ spec:
             name: nubi-app-service
             port:
               number: 80
-```
+````
+
   </TabItem>
   
   <TabItem label="Database Services">
@@ -1066,31 +1110,31 @@ spec:
       storage: 100Gi
 
 ---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: postgres
-  namespace: nubi-production
+name: postgres
+namespace: nubi-production
 spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      securityContext:
-        runAsUser: 999
-        runAsGroup: 999
-        fsGroup: 999
-      containers:
-      - name: postgres
-        image: postgres:15-alpine
-        
+replicas: 1
+strategy:
+type: Recreate
+selector:
+matchLabels:
+app: postgres
+template:
+metadata:
+labels:
+app: postgres
+spec:
+securityContext:
+runAsUser: 999
+runAsGroup: 999
+fsGroup: 999
+containers: - name: postgres
+image: postgres:15-alpine
+
         env:
         - name: POSTGRES_DB
           value: nubi_production
@@ -1106,14 +1150,14 @@ spec:
               key: password
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
-        
+
         ports:
         - containerPort: 5432
-        
+
         volumeMounts:
         - name: postgres-storage
           mountPath: /var/lib/postgresql/data
-        
+
         resources:
           requests:
             memory: "2Gi"
@@ -1121,7 +1165,7 @@ spec:
           limits:
             memory: "4Gi"
             cpu: "2000m"
-        
+
         readinessProbe:
           exec:
             command:
@@ -1130,7 +1174,7 @@ spec:
               - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1 -p 5432
           initialDelaySeconds: 15
           periodSeconds: 10
-        
+
         livenessProbe:
           exec:
             command:
@@ -1139,75 +1183,78 @@ spec:
               - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB -h 127.0.0.1 -p 5432
           initialDelaySeconds: 45
           periodSeconds: 30
-      
+
       volumes:
       - name: postgres-storage
         persistentVolumeClaim:
           claimName: postgres-pvc
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
-  name: postgres-service
-  namespace: nubi-production
+name: postgres-service
+namespace: nubi-production
 spec:
-  ports:
-  - port: 5432
+ports:
+
+- port: 5432
   selector:
-    app: postgres
+  app: postgres
 
 ---
+
 # k8s/07-redis.yaml
+
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: redis-pvc
-  namespace: nubi-production
+name: redis-pvc
+namespace: nubi-production
 spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: fast-ssd
-  resources:
-    requests:
-      storage: 10Gi
+accessModes: - ReadWriteOnce
+storageClassName: fast-ssd
+resources:
+requests:
+storage: 10Gi
 
 ---
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis
-  namespace: nubi-production
+name: redis
+namespace: nubi-production
 spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  selector:
-    matchLabels:
-      app: redis
-  template:
-    metadata:
-      labels:
-        app: redis
-    spec:
-      securityContext:
-        runAsUser: 999
-        runAsGroup: 999
-        fsGroup: 999
-      containers:
-      - name: redis
-        image: redis:7-alpine
-        
+replicas: 1
+strategy:
+type: Recreate
+selector:
+matchLabels:
+app: redis
+template:
+metadata:
+labels:
+app: redis
+spec:
+securityContext:
+runAsUser: 999
+runAsGroup: 999
+fsGroup: 999
+containers: - name: redis
+image: redis:7-alpine
+
         command: ["redis-server"]
         args: ["--appendonly", "yes", "--maxmemory", "1gb", "--maxmemory-policy", "allkeys-lru"]
-        
+
         ports:
         - containerPort: 6379
-        
+
         volumeMounts:
         - name: redis-storage
           mountPath: /data
-        
+
         resources:
           requests:
             memory: "512Mi"
@@ -1215,7 +1262,7 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
-        
+
         readinessProbe:
           exec:
             command:
@@ -1223,7 +1270,7 @@ spec:
             - ping
           initialDelaySeconds: 5
           periodSeconds: 5
-        
+
         livenessProbe:
           exec:
             command:
@@ -1231,24 +1278,27 @@ spec:
             - ping
           initialDelaySeconds: 30
           periodSeconds: 30
-      
+
       volumes:
       - name: redis-storage
         persistentVolumeClaim:
           claimName: redis-pvc
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
-  name: redis-service
-  namespace: nubi-production
+name: redis-service
+namespace: nubi-production
 spec:
-  ports:
-  - port: 6379
+ports:
+
+- port: 6379
   selector:
-    app: redis
-```
+  app: redis
+
+````
   </TabItem>
 </Tabs>
 
@@ -1293,25 +1343,25 @@ error() {
 # Validate requirements
 check_requirements() {
     log "Checking requirements..."
-    
+
     if ! command -v docker &> /dev/null; then
         error "Docker is not installed"
     fi
-    
+
     if ! docker buildx version &> /dev/null; then
         error "Docker buildx is not available"
     fi
-    
+
     log "Requirements check passed"
 }
 
 # Build multi-architecture images
 build_images() {
     log "Building Docker images..."
-    
+
     # Create buildx builder if it doesn't exist
     docker buildx create --name nubi-builder --use --bootstrap 2>/dev/null || docker buildx use nubi-builder
-    
+
     # Build main application image
     log "Building main application image..."
     docker buildx build \
@@ -1321,7 +1371,7 @@ build_images() {
         --file Dockerfile \
         --push \
         .
-    
+
     # Build worker image
     log "Building worker image..."
     docker buildx build \
@@ -1331,55 +1381,55 @@ build_images() {
         --file Dockerfile.worker \
         --push \
         .
-    
+
     log "Docker images built successfully"
 }
 
 # Run tests in containers
 run_tests() {
     log "Running tests in containers..."
-    
+
     # Pull latest test dependencies
     docker-compose -f docker-compose.test.yml pull
-    
+
     # Run unit tests
     docker-compose -f docker-compose.test.yml run --rm nubi-test
-    
+
     # Run integration tests
     docker-compose -f docker-compose.test.yml run --rm nubi-integration
-    
+
     # Clean up test containers
     docker-compose -f docker-compose.test.yml down -v
-    
+
     log "All tests passed"
 }
 
 # Security scan
 security_scan() {
     log "Running security scan..."
-    
+
     # Install trivy if not present
     if ! command -v trivy &> /dev/null; then
         warn "Trivy not found, installing..."
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
     fi
-    
+
     # Scan images for vulnerabilities
     trivy image --severity HIGH,CRITICAL ${REGISTRY}/app:${VERSION}
     trivy image --severity HIGH,CRITICAL ${REGISTRY}/worker:${VERSION}
-    
+
     log "Security scan completed"
 }
 
 # Main execution
 main() {
     log "Starting Docker build process..."
-    
+
     check_requirements
     run_tests
     build_images
     security_scan
-    
+
     log "Docker build process completed successfully"
     log "Images available:"
     log "  ${REGISTRY}/app:${VERSION}"
@@ -1402,7 +1452,8 @@ case ${1:-build} in
         exit 1
         ;;
 esac
-```
+````
+
   </TabItem>
   
   <TabItem label="Deployment Script">
@@ -1413,96 +1464,105 @@ esac
 set -e
 
 # Configuration
+
 ENVIRONMENT=${ENVIRONMENT:-"production"}
 REGISTRY=${DOCKER_REGISTRY:-"nubi"}
 VERSION=${VERSION:-"latest"}
 COMPOSE_FILE="docker-compose.${ENVIRONMENT}.yml"
 
 # Colors
+
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
 log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
 }
 
 warn() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
+echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
 }
 
 error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
-    exit 1
+echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+exit 1
 }
 
 # Pre-deployment checks
+
 pre_deployment_checks() {
-    log "Running pre-deployment checks..."
-    
+log "Running pre-deployment checks..."
+
     # Check if Docker Compose file exists
     if [[ ! -f "$COMPOSE_FILE" ]]; then
         error "Compose file $COMPOSE_FILE not found"
     fi
-    
+
     # Check if environment file exists
     if [[ ! -f ".env.${ENVIRONMENT}" ]]; then
         error "Environment file .env.${ENVIRONMENT} not found"
     fi
-    
+
     # Validate environment variables
     source ".env.${ENVIRONMENT}"
-    
+
     required_vars=(
         "DATABASE_URL"
         "REDIS_URL"
         "JWT_SECRET"
         "SESSION_SECRET"
     )
-    
+
     for var in "${required_vars[@]}"; do
         if [[ -z "${!var}" ]]; then
             error "Required environment variable $var is not set"
         fi
     done
-    
+
     log "Pre-deployment checks passed"
+
 }
 
 # Create necessary directories
+
 prepare_directories() {
-    log "Preparing directories..."
-    
+log "Preparing directories..."
+
     directories=(
         "./logs"
         "./uploads"
         "./backups"
         "./ssl"
     )
-    
+
     for dir in "${directories[@]}"; do
         if [[ ! -d "$dir" ]]; then
             mkdir -p "$dir"
             log "Created directory: $dir"
         fi
     done
+
 }
 
 # Pull latest images
+
 pull_images() {
-    log "Pulling latest images..."
-    
+log "Pulling latest images..."
+
     export VERSION
     docker-compose -f "$COMPOSE_FILE" pull
-    
+
     log "Images pulled successfully"
+
 }
 
 # Database migrations
+
 run_migrations() {
-    log "Running database migrations..."
-    
+log "Running database migrations..."
+
     # Check if database is accessible
     docker-compose -f "$COMPOSE_FILE" run --rm nubi-app \
         node -e "
@@ -1512,26 +1572,28 @@ run_migrations() {
                 .then(() => { console.log('Database connection successful'); process.exit(0); })
                 .catch(err => { console.error('Database connection failed:', err); process.exit(1); });
         "
-    
+
     # Run migrations
     docker-compose -f "$COMPOSE_FILE" run --rm nubi-app npm run migrate
-    
+
     log "Database migrations completed"
+
 }
 
 # Deploy services
+
 deploy_services() {
-    log "Deploying services..."
-    
+log "Deploying services..."
+
     # Deploy with zero-downtime strategy
     docker-compose -f "$COMPOSE_FILE" up -d --remove-orphans
-    
+
     # Wait for services to be healthy
     log "Waiting for services to be healthy..."
-    
+
     timeout=300  # 5 minutes
     elapsed=0
-    
+
     while [[ $elapsed -lt $timeout ]]; do
         if docker-compose -f "$COMPOSE_FILE" ps | grep -q "unhealthy"; then
             sleep 10
@@ -1541,114 +1603,126 @@ deploy_services() {
             return 0
         fi
     done
-    
+
     error "Services failed to become healthy within $timeout seconds"
+
 }
 
 # Post-deployment verification
+
 post_deployment_verification() {
-    log "Running post-deployment verification..."
-    
+log "Running post-deployment verification..."
+
     # Health check
     if curl -f "http://localhost/health" > /dev/null 2>&1; then
         log "Health check passed"
     else
         error "Health check failed"
     fi
-    
+
     # API check
     if curl -f "http://localhost/api/v1/health" > /dev/null 2>&1; then
         log "API check passed"
     else
         warn "API check failed - this might be expected for some configurations"
     fi
-    
+
     # WebSocket check
     if curl -f "http://localhost/socket.io/" > /dev/null 2>&1; then
         log "WebSocket endpoint check passed"
     else
         warn "WebSocket endpoint check failed"
     fi
-    
+
     log "Post-deployment verification completed"
+
 }
 
 # Cleanup old containers and images
+
 cleanup() {
-    log "Cleaning up old containers and images..."
-    
+log "Cleaning up old containers and images..."
+
     # Remove old containers
     docker container prune -f
-    
+
     # Remove old images (keep last 3 versions)
     docker images "${REGISTRY}/app" --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}" | \
         tail -n +4 | \
         awk '{print $1}' | \
         xargs -r docker rmi
-    
+
     # Remove unused volumes (be careful in production)
     if [[ "$ENVIRONMENT" != "production" ]]; then
         docker volume prune -f
     fi
-    
+
     log "Cleanup completed"
+
 }
 
 # Rollback function
+
 rollback() {
-    local previous_version=${1:-"previous"}
-    
+local previous_version=${1:-"previous"}
+
     warn "Rolling back to version: $previous_version"
-    
+
     VERSION="$previous_version" docker-compose -f "$COMPOSE_FILE" up -d
-    
+
     log "Rollback completed"
+
 }
 
 # Main deployment function
+
 main() {
-    log "Starting deployment to $ENVIRONMENT environment..."
-    
+log "Starting deployment to $ENVIRONMENT environment..."
+
     pre_deployment_checks
     prepare_directories
     pull_images
-    
+
     if [[ "$ENVIRONMENT" == "production" ]]; then
         run_migrations
     fi
-    
+
     deploy_services
     post_deployment_verification
-    
+
     if [[ "$1" != "--no-cleanup" ]]; then
         cleanup
     fi
-    
+
     log "Deployment to $ENVIRONMENT completed successfully!"
+
 }
 
 # Handle script arguments
+
 case ${1:-deploy} in
-    "deploy")
-        main "$2"
-        ;;
-    "rollback")
-        rollback "$2"
-        ;;
-    "health")
-        post_deployment_verification
-        ;;
-    "cleanup")
-        cleanup
-        ;;
-    *)
-        echo "Usage: $0 [deploy|rollback|health|cleanup]"
-        echo "Environment: $ENVIRONMENT"
-        exit 1
-        ;;
+"deploy")
+main "$2"
+;;
+"rollback")
+rollback "$2"
+;;
+"health")
+post_deployment_verification
+;;
+"cleanup")
+cleanup
+;;
+\*)
+echo "Usage: $0 [deploy|rollback|health|cleanup]"
+echo "Environment: $ENVIRONMENT"
+exit 1
+;;
 esac
+
 ```
   </TabItem>
 </Tabs>
 
 This comprehensive Docker deployment guide provides everything needed to containerize NUBI for any environment, from development to enterprise-scale production deployments with proper orchestration, monitoring, and security configurations.
+```
