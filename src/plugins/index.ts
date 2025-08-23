@@ -93,6 +93,8 @@ export interface ProviderRegistry {
 // Plugin implementations
 export { default as nubiPlugin } from "./nubi-plugin";
 export { clickhouseAnalyticsPlugin } from "./clickhouse-analytics";
+export { default as twitterMonitorPlugin } from "./twitter-monitor-plugin";
+export { default as SessionsPlugin } from "./sessions-plugin";
 export { nubiProviders } from "./nubi-providers";
 
 // Plugin manager implementation

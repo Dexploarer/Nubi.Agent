@@ -19,8 +19,8 @@ NUBI is an advanced ElizaOS-based AI agent built for Anubis.Chat - a community-d
 
 ### Prerequisites
 
-- Node.js 18+ or Bun runtime
-- PostgreSQL database (or use PGLite for development)
+- Node.js 18+
+- PostgreSQL database (or PGLite for development)
 - API keys for desired platforms (OpenAI, Discord, Telegram, etc.)
 
 ### Installation
@@ -33,7 +33,7 @@ cd nubi
 
 2. Install dependencies:
 ```bash
-bun install
+npm install
 ```
 
 3. Set up environment variables:
@@ -42,52 +42,39 @@ cp .env.example .env
 # Edit .env with your API keys and configuration
 ```
 
-4. Initialize the database:
-```bash
-bun run db:setup
-```
+### Run with ElizaOS
 
-### Development
+This project uses the ElizaOS CLI and core plugins directly (see `package.json`):
 
 ```bash
-# Development mode (uses PGLite)
-bun run dev
+# Dev mode with hot reload
+npm run dev
 
-# Production mode (uses PostgreSQL)
-bun run start:production
-
-# Run tests
-bun test
-
-# Type checking
-bun run type-check
+# Start in production mode
+npm run start:production
 ```
 
 ## Architecture
 
+### ElizaOS Core Concepts
+
+- **Agents (Characters)**: Defined in `src/character/nubi-character.ts` using ElizaOS `Character`. Native `plugins` array references official plugins (SQL, Bootstrap, Knowledge, MCP, OpenAI, Telegram, Twitter, Discord) without custom wrappers.
+- **Plugins**: Primary capabilities are packaged as an ElizaOS-compliant plugin `src/plugins/nubi-plugin.ts`. Additional optional plugins include `clickhouse-analytics`, `twitter-monitor`, and `sessions-plugin` (exported in `src/plugins/index.ts`).
+- **Projects**: The `Project` is defined in `src/index.ts`, registering `nubiCharacter` and loading `nubiPlugin` and `clickhouseAnalyticsPlugin` per ElizaOS conventions.
+
 ### Core Services
 
 - **Enhanced Realtime Service** - Unified Socket.IO + Supabase Realtime
-- **Database Memory Service** - Semantic memory with vector embeddings
+- **Database Memory Service** - Semantic memory and vector search
 - **Personality Evolution Service** - Dynamic trait adaptation
-- **Telegram Raids Service** - Raid coordination and community engagement
-- **Cross-Platform Identity Service** - User identity management
+- **Telegram Raids Services** - Coordination, database, and orchestration
+- **Cross-Platform Identity Service** - Identity linking
 
 ### ElizaOS Integration
 
-NUBI is built on the ElizaOS framework, providing:
-- Plugin architecture with actions, providers, and evaluators
-- Character-driven personality system
-- Native AI response generation
-- Multi-model support (OpenAI, Anthropic, etc.)
-
-### Database Schema
-
-- **User Identities** - Cross-platform user linking
-- **Personality Snapshots** - Evolution tracking over time
-- **Community Stats** - Engagement metrics and leaderboards
-- **Raid Sessions** - Telegram raid coordination
-- **Memory Records** - Semantic memory storage
+- Native plugin arrays for `actions`, `providers`, `evaluators`, `services`, and `routes`
+- Character-driven personality and style
+- Uses official ElizaOS plugins where available to avoid redundant integrations
 
 ## Configuration
 
@@ -100,7 +87,7 @@ Key configuration options:
 OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_anthropic_key
 
-# Platform Integration
+# Platforms
 TELEGRAM_BOT_TOKEN=your_telegram_token
 DISCORD_API_TOKEN=your_discord_token
 TWITTER_API_KEY=your_twitter_key
@@ -114,11 +101,17 @@ SUPABASE_ANON_KEY=your_supabase_key
 RAIDS_ENABLED=true
 AUTO_RAIDS=false
 RAID_INTERVAL_HOURS=6
+
+# ClickHouse (optional)
+CLICKHOUSE_HOST=
+CLICKHOUSE_USER=
+CLICKHOUSE_PASSWORD=
+CLICKHOUSE_DATABASE=elizaos_analytics
 ```
 
 ### YAML Configuration
 
-Advanced configuration in `config/anubis-config.yaml`:
+Advanced configuration in `configs/nubi-config.yaml`:
 
 ```yaml
 personality:
@@ -127,7 +120,6 @@ personality:
     confidence: 0.8
     creativity: 0.7
     analytical: 0.9
-
 community:
   engagement_threshold: 5
   leaderboard_size: 100
@@ -138,63 +130,34 @@ community:
 
 ## Testing
 
-NUBI includes comprehensive tests following ElizaOS patterns:
-
 ```bash
-# Run all tests
-bun test
+# Unit and integration tests (vitest configured)
+npm test
 
-# Run specific test files
-bun test src/__tests__/character.test.ts
-
-# Run with coverage
-bun run test:coverage
-
-# Watch mode
-bun run test:watch
+# Type checking
+npm run type-check
 ```
-
-### Test Structure
-
-- **Unit Tests** - Individual service and component tests
-- **Integration Tests** - End-to-end functionality tests
-- **ElizaOS Compliance** - Framework compatibility tests
 
 ## Deployment
 
 ### Production Setup
 
-1. Configure production environment:
 ```bash
 NODE_ENV=production
 DATABASE_URL=your_production_db
+npm run build
+npm run start:production
 ```
 
-2. Build and start:
-```bash
-bun run build
-bun run start:production
-```
-
-### Docker Deployment
+### Docker
 
 ```dockerfile
-FROM oven/bun:1-alpine
+FROM node:22-alpine
 WORKDIR /app
 COPY . .
-RUN bun install --production
-RUN bun run build
-CMD ["bun", "run", "start:production"]
-```
-
-### Supabase Edge Functions
-
-Deploy serverless functions:
-
-```bash
-supabase functions deploy webhook-processor
-supabase functions deploy raid-coordinator
-supabase functions deploy analytics-engine
+RUN npm ci --omit=dev
+RUN npm run build
+CMD ["npm","run","start:production"]
 ```
 
 ## Contributing
@@ -208,7 +171,8 @@ supabase functions deploy analytics-engine
 
 ### Development Guidelines
 
-- Follow ElizaOS plugin patterns
+- Follow ElizaOS agent/project/plugin patterns
+- Prefer official ElizaOS plugins over custom wrappers
 - Maintain type safety with TypeScript
 - Write comprehensive tests
 - Use semantic commit messages
@@ -217,13 +181,6 @@ supabase functions deploy analytics-engine
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
-## Support
-
-- **Documentation**: [NUBI Docs](https://docs.anubis.chat)
-- **Discord**: [Anubis Community](https://discord.gg/anubis)
-- **Telegram**: [@AnubisChat](https://t.me/anubischat)
-- **Twitter**: [@AnubisChat](https://twitter.com/anubischat)
 
 ---
 
