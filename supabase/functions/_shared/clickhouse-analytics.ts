@@ -29,12 +29,17 @@ class ClickHouseEdgeAnalytics {
   private auth: string;
   private queue: EdgeFunctionEvent[] = [];
   private flushTimer?: number;
+  private hasAuth: boolean = false;
 
   constructor() {
     this.host = Deno.env.get('CLICKHOUSE_HOST') || '';
     const user = Deno.env.get('CLICKHOUSE_USER') || 'default';
     const pass = Deno.env.get('CLICKHOUSE_PASSWORD') || '';
-    this.auth = btoa(`${user}:${pass}`);
+
+    // If no password provided, avoid sending an invalid Authorization header
+    const credentials = pass.length > 0 ? `${user}:${pass}` : `${user}:`;
+    this.auth = btoa(credentials);
+    this.hasAuth = pass.length > 0;
     
     // Auto-flush every 5 seconds
     if (this.host) {
@@ -80,10 +85,11 @@ class ClickHouseEdgeAnalytics {
         `${this.host}/?database=elizaos_analytics&query=${encodeURIComponent(query)}`,
         {
           method: 'POST',
-          headers: {
-            'Authorization': `Basic ${this.auth}`,
-            'Content-Type': 'application/x-ndjson'
-          },
+          headers: (() => {
+            const h: Record<string, string> = { 'Content-Type': 'application/x-ndjson' };
+            if (this.hasAuth) h['Authorization'] = `Basic ${this.auth}`;
+            return h;
+          })(),
           body: body
         }
       );
@@ -134,9 +140,18 @@ class ClickHouseEdgeAnalytics {
       const functionVersion = Deno.env.get('FUNCTION_VERSION') || '1.0.0';
       const region = Deno.env.get('FUNCTION_REGION') || Deno.env.get('DENO_REGION') || 'unknown';
       
-      // Extract session/user from request
+      // Extract session/user from request (do not include full headers in metadata)
       const sessionId = req.headers.get('x-session-id') || undefined;
       const userId = req.headers.get('x-user-id') || undefined;
+      
+      const safeHeaders: Record<string, string> = {};
+      const allowedHeaderPrefixes = ['x-request-id', 'x-trace-id', 'x-session-id', 'x-user-id'];
+      for (const [k, v] of req.headers.entries()) {
+        const lower = k.toLowerCase();
+        if (allowedHeaderPrefixes.includes(lower)) {
+          safeHeaders[lower] = v;
+        }
+      }
       
       // Track the event
       await this.track({
@@ -159,8 +174,8 @@ class ClickHouseEdgeAnalytics {
         user_id: userId,
         trace_id: traceId,
         metadata: JSON.stringify({
-          headers: Object.fromEntries(req.headers.entries()),
-          url: req.url
+          headers: safeHeaders,
+          url: new URL(req.url).origin + new URL(req.url).pathname
         })
       });
       

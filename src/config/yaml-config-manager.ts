@@ -117,7 +117,7 @@ class YAMLConfigManager {
       }
 
       const fileContents = readFileSync(configFile, "utf8");
-      const loadedConfig = yaml.load(fileContents) as AnubisConfig;
+      const loadedConfig = yaml.load(fileContents, { schema: yaml.JSON_SCHEMA }) as AnubisConfig;
 
       // Validate the loaded config structure
       if (this.validateConfigStructure(loadedConfig)) {

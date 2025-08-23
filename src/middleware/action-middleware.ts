@@ -29,7 +29,7 @@ function detectMentions(text: string): PlatformMention[] {
   const mentions: PlatformMention[] = [];
 
   // Discord mentions: <@123456789> or <@!123456789>
-  const discordRegex = /<@!?(\d+)>/g;
+  const discordRegex = /<@!?([0-9]{5,20})>/g;
   let match;
   while ((match = discordRegex.exec(text)) !== null) {
     mentions.push({
@@ -41,7 +41,8 @@ function detectMentions(text: string): PlatformMention[] {
   }
 
   // Telegram mentions: @username or @username_bot
-  const telegramRegex = /@([a-zA-Z0-9_]{5,32}(?:_bot)?)/g;
+  // Restrict to word boundary to avoid emails and long runs
+  const telegramRegex = /(?<!\w)@([a-zA-Z0-9_]{5,32}(?:_bot)?)(?![a-zA-Z0-9_])/g;
   while ((match = telegramRegex.exec(text)) !== null) {
     mentions.push({
       platform: "telegram",
@@ -51,8 +52,8 @@ function detectMentions(text: string): PlatformMention[] {
     });
   }
 
-  // Twitter mentions: @username
-  const twitterRegex = /@([a-zA-Z0-9_]{1,15})(?![a-zA-Z0-9_])/g;
+  // Twitter mentions: @username, avoid trailing alnum/underscore
+  const twitterRegex = /(?<!\w)@([a-zA-Z0-9_]{1,15})(?![a-zA-Z0-9_])/g;
   while ((match = twitterRegex.exec(text)) !== null) {
     // Skip if it looks like a Telegram bot mention
     if (!match[1].endsWith("_bot")) {
@@ -65,7 +66,17 @@ function detectMentions(text: string): PlatformMention[] {
     }
   }
 
-  return mentions;
+  // Dedupe by raw token to avoid duplicates from overlapping patterns
+  const seen = new Set<string>();
+  const deduped: PlatformMention[] = [];
+  for (const m of mentions) {
+    if (!seen.has(m.raw)) {
+      seen.add(m.raw);
+      deduped.push(m);
+    }
+  }
+
+  return deduped;
 }
 
 /**
@@ -90,7 +101,8 @@ function normalizeMentions(text: string, agentName: string): string {
 
   for (const mention of mentions) {
     const username = mention.username.toLowerCase();
-    if (agentAliases.some((alias) => username.includes(alias))) {
+    // Match alias as a whole word within the username (start or end) to reduce false positives
+    if (agentAliases.some((alias) => username === alias || username.endsWith(`_${alias}`) || username.startsWith(`${alias}_`))) {
       normalizedText = normalizedText.replace(mention.raw, `@${agentName}`);
     }
   }
