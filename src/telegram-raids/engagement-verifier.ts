@@ -40,6 +40,7 @@ export class EngagementVerifier {
   private runtime: IAgentRuntime;
   private userHistory: Map<string, UserEngagementHistory> = new Map();
   private tweetCache: Map<string, TweetStats> = new Map();
+  private cleanupIntervalId: NodeJS.Timeout | null = null;
   private rateLimits = {
     likes: { limit: 5, window: 15 * 60 * 1000 }, // 5 likes per 15 minutes
     retweets: { limit: 5, window: 15 * 60 * 1000 }, // 5 retweets per 15 minutes
@@ -55,8 +56,8 @@ export class EngagementVerifier {
       // Load user history from database
       await this.loadUserHistoryFromDatabase();
 
-      // Set up periodic cache cleanup
-      setInterval(() => this.cleanupCache(), 60 * 60 * 1000); // Every hour
+      // Set up periodic cache cleanup with proper interval tracking
+      this.cleanupIntervalId = setInterval(() => this.cleanupCache(), 60 * 60 * 1000); // Every hour
 
       logger.info("Engagement Verifier initialized successfully");
     } catch (error) {
@@ -441,9 +442,22 @@ export class EngagementVerifier {
   }
 
   async cleanup(): Promise<void> {
+    // Clear the cleanup interval to prevent memory leaks
+    if (this.cleanupIntervalId) {
+      clearInterval(this.cleanupIntervalId);
+      this.cleanupIntervalId = null;
+    }
+
     // Save all user histories
     for (const user of this.userHistory.values()) {
-      await this.saveUserHistoryToDatabase(user);
+      try {
+        await this.saveUserHistoryToDatabase(user);
+      } catch (error) {
+        logger.error(
+          `Failed to save user history for ${user.userId}:`,
+          error instanceof Error ? error.message : String(error),
+        );
+      }
     }
 
     // Clear caches
@@ -451,5 +465,15 @@ export class EngagementVerifier {
     this.tweetCache.clear();
 
     logger.info("Engagement Verifier cleaned up");
+  }
+
+  // Destructor method to ensure cleanup is called
+  destroy(): void {
+    this.cleanup().catch((error) => {
+      logger.error(
+        "Error during Engagement Verifier destruction:",
+        error instanceof Error ? error.message : String(error),
+      );
+    });
   }
 }

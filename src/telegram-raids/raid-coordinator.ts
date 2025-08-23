@@ -48,6 +48,7 @@ export class RaidCoordinator {
   private config!: RaidConfig;
   private personaData: any | undefined;
   private activeRaids: Map<string, NodeJS.Timeout> = new Map();
+  private monitoringIntervals: Map<string, NodeJS.Timeout> = new Map();
 
   constructor(runtime: IAgentRuntime) {
     this.runtime = runtime;
@@ -290,42 +291,65 @@ ${announcement}`;
     // Send updates every 5 minutes
     const updateInterval = setInterval(
       async () => {
-        const raid = await this.raidTracker.getRaid(raidId);
-        if (!raid || raid.status !== "active") {
-          clearInterval(updateInterval);
-          return;
-        }
+        try {
+          const raid = await this.raidTracker.getRaid(raidId);
+          if (!raid || raid.status !== "active") {
+            this.clearMonitoringInterval(raidId);
+            return;
+          }
 
-        const stats = await this.raidTracker.getRaidStats(raidId);
-        const timeLeft = Math.ceil((raid.endTime - Date.now()) / 60000); // minutes
+          const stats = await this.raidTracker.getRaidStats(raidId);
+          const timeLeft = Math.ceil((raid.endTime - Date.now()) / 60000); // minutes
 
-        let update = this.generateRaidMessage(
-          this.config.templates.raid_update,
-          {
-            current_raiders: stats.totalParticipants.toString(),
-            min_raiders: this.config.raid_settings.min_participants.toString(),
-            time_left: timeLeft.toString(),
-            top_raider: stats.topRaider?.username || "None",
-          },
-        );
+          let update = this.generateRaidMessage(
+            this.config.templates.raid_update,
+            {
+              current_raiders: stats.totalParticipants.toString(),
+              min_raiders: this.config.raid_settings.min_participants.toString(),
+              time_left: timeLeft.toString(),
+              top_raider: stats.topRaider?.username || "None",
+            },
+          );
 
-        const during = this.pickPersonaPhrase("during");
-        if (during) {
-          update = `${during}
+          const during = this.pickPersonaPhrase("during");
+          if (during) {
+            update = `${during}
 
 ${update}`;
+          }
+
+          // Edit the original message with update
+          await this.sendTelegramMessage(channelId, update, {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  { text: "📊 Stats", callback_data: `raid_stats:${raidId}` },
+                ],
+              ],
+            },
+          });
+        } catch (error) {
+          logger.error(
+            `Error in raid monitoring for ${raidId}:`,
+            error instanceof Error ? error.message : String(error),
+          );
+          // Clear interval on error to prevent repeated failures
+          this.clearMonitoringInterval(raidId);
         }
-
-        // Edit the original message with update
-        await this.editTelegramMessage(channelId, messageId, update);
       },
-      5 * 60 * 1000,
-    ); // Every 5 minutes
+      5 * 60 * 1000, // 5 minutes
+    );
 
-    // Store the interval so we can clear it later
-    const existingTimer = this.activeRaids.get(raidId);
-    if (existingTimer) {
-      clearTimeout(existingTimer);
+    // Store the monitoring interval for cleanup
+    this.monitoringIntervals.set(raidId, updateInterval);
+  }
+
+  private clearMonitoringInterval(raidId: string): void {
+    const interval = this.monitoringIntervals.get(raidId);
+    if (interval) {
+      clearInterval(interval);
+      this.monitoringIntervals.delete(raidId);
+      logger.debug(`Cleared monitoring interval for raid: ${raidId}`);
     }
   }
 
@@ -348,44 +372,46 @@ ${update}`;
 
   async completeRaid(raidId: string, channelId: string): Promise<void> {
     try {
-      // Mark raid as complete
-      await this.raidTracker.endRaid(raidId);
+      // Clear monitoring interval
+      this.clearMonitoringInterval(raidId);
+
+      // Clear completion timer
+      const completionTimer = this.activeRaids.get(raidId);
+      if (completionTimer) {
+        clearTimeout(completionTimer);
+        this.activeRaids.delete(raidId);
+      }
+
+      // Rest of completion logic...
+      const raid = await this.raidTracker.getRaid(raidId);
+      if (!raid) {
+        logger.warn(`Raid ${raidId} not found for completion`);
+        return;
+      }
+
+      // Update raid status
+      await this.raidTracker.updateRaidStatus(raidId, "completed");
 
       // Get final stats
       const stats = await this.raidTracker.getRaidStats(raidId);
 
-      // Generate completion message
-      let completion = this.generateRaidMessage(
+      // Send completion message
+      const completionMessage = this.generateRaidMessage(
         this.config.templates.raid_complete,
         {
           total_raiders: stats.totalParticipants.toString(),
           engagement_score: stats.totalPoints.toString(),
           top_raider: stats.topRaider?.username || "None",
-          top_points: stats.topRaider?.points?.toString() || "0",
+          top_points: stats.topRaider?.points.toString() || "0",
         },
       );
 
-      const finish = this.pickPersonaPhrase("complete");
-      if (finish) {
-        completion = `${finish}
+      await this.sendTelegramMessage(channelId, completionMessage);
 
-${completion}`;
-      }
-
-      // Send completion message
-      await this.sendTelegramMessage(channelId, completion);
-
-      // Clear timers
-      const timer = this.activeRaids.get(raidId);
-      if (timer) {
-        clearTimeout(timer);
-        this.activeRaids.delete(raidId);
-      }
-
-      logger.info(`Raid completed: ${raidId}`);
+      logger.info(`Raid ${raidId} completed successfully`);
     } catch (error) {
       logger.error(
-        "Failed to complete raid:",
+        `Failed to complete raid ${raidId}:`,
         error instanceof Error ? error.message : String(error),
       );
     }
@@ -452,6 +478,10 @@ ${completion}`;
     // Clear all active timers
     this.activeRaids.forEach((timer) => clearTimeout(timer));
     this.activeRaids.clear();
+
+    // Clear all monitoring intervals
+    this.monitoringIntervals.forEach((interval) => clearInterval(interval));
+    this.monitoringIntervals.clear();
 
     // Close database connections
     await this.raidTracker.cleanup();
