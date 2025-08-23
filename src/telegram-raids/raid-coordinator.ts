@@ -64,7 +64,7 @@ export class RaidCoordinator {
         "raid-config.yaml",
       );
       const configContent = fs.readFileSync(configPath, "utf8");
-      const full = yaml.load(configContent) as any;
+      const full = yaml.load(configContent, { schema: yaml.JSON_SCHEMA }) as any;
 
       // Preserve persona data for tone rotation
       this.personaData = {
